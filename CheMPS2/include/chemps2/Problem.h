@@ -21,6 +21,7 @@
 #define PROBLEM_CHEMPS2_H
 
 #include "Hamiltonian.h"
+#include <complex>
 
 namespace CheMPS2{
 /** Problem class.
@@ -33,16 +34,22 @@ namespace CheMPS2{
      - the targeted particle number
      - the targeted wavefunction irrep */
    class Problem{
-
+      public:
+         // The inital state to be random 
+         static const int INIT_RANDOM = 0;
+     
       public:
       
          //! Constructor
          /** \param Hamin Pointer to the Hamiltonian
              \param TwoSin Twice the targeted spin
              \param Nin The targeted particle number
-             \param Irrepin The targeted irrep  */
-         Problem(const Hamiltonian * Hamin, const int TwoSin, const int Nin, const int Irrepin);
-         
+             \param Irrepin The targeted irrep  
+             \param DtIn The time step for time evoulution */
+         Problem(const Hamiltonian * Hamin, const int TwoSin, const int Nin, const int Irrepin,
+	         const std::complex<double> Dtin = 0.0, const double Tin = 0.0,
+	         const int InitialIn = INIT_RANDOM);
+     
          //! Destructor
          virtual ~Problem();
          
@@ -70,7 +77,19 @@ namespace CheMPS2{
          //! Get the targeted irrep
          /** \return The targeted irrep */
          int gIrrep() const{ return Irrep; }
-         
+
+         //! Get the time step
+         /** \return The time step */
+         std::complex<double> gDt() const{ return Dt; }
+
+         //! Get the maximum time
+         /** \return The maximum time */
+         double gT() const{ return T; }
+
+         //! Get the maximum time
+         /** \return The maximum time */
+         int gInitial() const{ return Initial; }
+     
          //! Get the constant part of the Hamiltonian
          /** \return The constant part of the Hamiltonian */
          double gEconst() const{ return Ham->getEconst(); }
@@ -133,17 +152,26 @@ namespace CheMPS2{
          const Hamiltonian * Ham;
          
          //The number of orbitals
-         int L;
+         const int L;
          
          //Twice the targeted spin
-         int TwoS;
+         const int TwoS;
          
          //The targeted particle number
-         int N;
+         const int N;
          
          //The targeted irrep
-         int Irrep;
-         
+         const int Irrep;
+     
+         //The time step for time evolution
+         const std::complex<double> Dt;
+
+         // The maximum time to propagate to
+         const double T;
+
+         // The type of the inital state
+         const int Initial;
+     
          //Whether or not to reorder
          bool bReorder;
          

@@ -28,19 +28,14 @@
 using std::cout;
 using std::endl;
 
-CheMPS2::Problem::Problem(const Hamiltonian * Hamin, const int TwoSin, const int Nin, const int Irrepin){
-
-   Ham = Hamin;
-   L = Ham->getL();
-   TwoS = TwoSin;
-   N = Nin;
-   Irrep = Irrepin;
-   bReorder = false;
-   
+CheMPS2::Problem::Problem(const Hamiltonian * Hamin, const int TwoSin, const int Nin,
+			  const int Irrepin, const std::complex<double> Dtin,
+			  const double Tin, const int InitialIn)
+  : Ham(Hamin), L(Ham->getL()), TwoS(TwoSin), N(Nin), Irrep(Irrepin),
+    Dt(Dtin), T(Tin), bReorder(false), mx_elem(NULL), Initial(InitialIn) {
    checkConsistency();
-   mx_elem = NULL;
-
 }
+
 
 CheMPS2::Problem::~Problem(){
 
