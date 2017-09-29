@@ -7,8 +7,6 @@
 #include <limits.h>
 #include <unistd.h>
 
-const std::string hashline = "#################################################################\n";
-
 CheMPS2::Logger::Logger(const int storeTypeIn): storeType(storeTypeIn) {
   if(storeType == TOCONSOLE){
     os = &std::cout;

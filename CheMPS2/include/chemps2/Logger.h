@@ -7,23 +7,29 @@
 
 namespace CheMPS2{
 
+const std::string hashline = "#################################################################\n";
+  
 class Logger {
 public:
   static const int TOFILE = 0;
   static const int TOCONSOLE = 1;
+  
  private:
   const int storeType;
-  static const std::string hasline;
   std::ostream *os;
   std::time_t start;
 
   void PrintWelcome();
   void PrintGoodbye();
-  void TextWithDate(const std::string& input, const std::time_t& time);
   
 public:
   Logger(const int storeTypeIn = TOCONSOLE);
+  
   ~Logger();
+
+  void TextWithDate(const std::string& input, const std::time_t& time);
+
+  const std::string& gHashLine() const { return hashline; };
   
   template <typename T>
   Logger& operator<<(const T& value);
