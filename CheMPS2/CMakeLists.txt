@@ -1,3 +1,4 @@
+
 cmake_policy (SET CMP0022 NEW)
 cmake_policy (SET CMP0028 NEW)
 
@@ -39,6 +40,7 @@ set (CHEMPS2LIB_SOURCE_FILES "CASPT2.cpp"
                              "HeffDiagrams5.cpp"
                              "Initialize.cpp"
                              "Irreps.cpp"
+			     "Logger.cpp"
                              "Molden.cpp"
                              "PrintLicense.cpp"
                              "Problem.cpp"
