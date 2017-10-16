@@ -3,6 +3,7 @@
 
 #include "Problem.h"
 #include "Logger.h"
+#include "SyBookkeeper.h"
 // #include "TensorF0.h"
 // #include "TensorF0T.h"
 // #include "TensorF1.h"
@@ -41,9 +42,8 @@ namespace CheMPS2 {
           // TensorT** MPSDT;
 
       
-  // CheMPS2::SyBookkeeper* denBK;
-
-  // CheMPS2::SyBookkeeper* denBKDT;
+          CheMPS2::SyBookkeeper* denBK;
+          CheMPS2::SyBookkeeper* denBKDT;
 
   // // Whether or not allocated
   // int* isAllocated;

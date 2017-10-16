@@ -4,7 +4,6 @@
 #include <iostream>
 
 // #include "Special.h"
-
 // #include "HeffNS.h"
 // #include "Sobject.h"
 // #include "TensorL.h"
@@ -20,15 +19,14 @@ CheMPS2::TimeTaylor::TimeTaylor(Problem* probIn, Logger* loggerIn)
   logger->TextWithDate("Starting to run a time evoultion calculation", time(NULL));
   (*logger) << hashline;
   
-  // denBK = new CheMPS2::SyBookkeeper(prob, 200);
+  denBK = new CheMPS2::SyBookkeeper(prob, 200);
 
-  // MPS = new TensorT*[L];
-  // MPSDT = new TensorT*[L];
-
-  // for (int index = 0; index < L; index++) {
-  //   MPS[index] = new TensorT(index, denBK);
-  // }
+//  MPS = new TensorT*[L];
+  for (int index = 0; index < L; index++) {
+//    MPS[index] = new TensorT(index, denBK);
+  }
   // prob->gStart(MPS);
+  // MPSDT = new TensorT*[L];
 
   // Ltensors = new TensorL**[L - 1];
   // LtensorsT = new TensorLT**[L - 1];
@@ -69,6 +67,8 @@ CheMPS2::TimeTaylor::~TimeTaylor() {
   // delete[] Ltensors;
   // delete[] LtensorsT;
   // delete[] isAllocated;
+  delete denBK;
+
   logger->TextWithDate("Finished to run a time evolution calculation", time(NULL));
   (*logger) << hashline;
 }
