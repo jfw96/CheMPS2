@@ -1,93 +1,89 @@
+/*
+   CheMPS2: a spin-adapted implementation of DMRG for ab initio quantum chemistry
+   Copyright (C) 2013-2017 Sebastian Wouters
 
-#ifndef TENSOR_CHEMPS2_H
-#define TENSOR_CHEMPS2_H
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program; if not, write to the Free Software Foundation, Inc.,
+   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
+#ifndef CTENSOR_CHEMPS2_H
+#define CTENSOR_CHEMPS2_H
 
 #include <complex>
+typedef std::complex< double > dcomplex;
+
 #include "SyBookkeeper.h"
-typedef std::complex<double> dcomplex;
 
 namespace CheMPS2 {
-/** Pure virtual CTensor class.
-    \author Lars-Hendrik Frahm
-    \date September 12, 2017
+   /** Pure virtual Tensor class.
+    \author Lars-Hendrik Frahm <larshendrikfrahm@googlemail.com>
+    \date October 16, 2017
 
-    The CTensor class defines parameters and functions which all CTensors must have. */
-class CTensor {
- public:
-  //! Get the number of tensor blocks
-  /** return The number of tensor blocks */
-  virtual int gNKappa() const = 0;
+    The Tensor class defines parameters and functions which all Tensors must have. */
+   class CTensor {
 
-  //! Get the pointer to the storage
-  /** return pointer to the storage */
-  virtual dcomplex* gStorage() = 0;
+      public:
+      //! Get the number of tensor blocks
+      /** return The number of tensor blocks */
+      virtual int gNKappa() const = 0;
 
-  //! Get the pointer to the constant storage
-  /** return pointer to the storage */
-  virtual const dcomplex* gCStorage() const = 0;
+      //! Get the pointer to the storage
+      /** return pointer to the storage */
+      virtual dcomplex * gStorage() = 0;
 
-  //! Get the index corresponding to a certain tensor block
-  /** \param N1 The left or up particle number sector
-      \param TwoS1 The left or up spin symmetry sector
-      \param I1 The left or up irrep sector
-      \param N2 The right or down particle number sector
-      \param TwoS2 The right or down spin symmetry sector
-      \param I2 The right or down irrep sector
-      \return The kappa corresponding to the input parameters; -1 means no
-      such block */
-  virtual int gKappa(const int N1, const int TwoS1, const int I1, const int N2,
-                     const int TwoS2, const int I2) const = 0;
+      //! Get the index corresponding to a certain tensor block
+      /** \param N1 The left or up particle number sector
+             \param TwoS1 The left or up spin symmetry sector
+             \param I1 The left or up irrep sector
+             \param N2 The right or down particle number sector
+             \param TwoS2 The right or down spin symmetry sector
+             \param I2 The right or down irrep sector
+             \return The kappa corresponding to the input parameters; -1 means no such block */
+      virtual int gKappa( const int N1, const int TwoS1, const int I1, const int N2, const int TwoS2, const int I2 ) const = 0;
 
-  //! Get the storage jump corresponding to a certain tensor block
-  /** \param kappa The symmetry block
-      \return kappa2index[ kappa ], the memory jumper to a certain block */
-  virtual int gKappa2index(const int kappa) const = 0;
+      //! Get the storage jump corresponding to a certain tensor block
+      /** \param kappa The symmetry block
+             \return kappa2index[ kappa ], the memory jumper to a certain block */
+      virtual int gKappa2index( const int kappa ) const = 0;
 
-  //! Get the pointer to the storage of a certain tensor block
-  /** \param N1 The left or up particle number sector
-      \param TwoS1 The left or up spin symmetry sector
-      \param I1 The left or up irrep sector
-      \param N2 The right or down particle number sector
-      \param TwoS2 The right or down spin symmetry sector
-      \param I2 The right or down irrep sector
-      \return Pointer to the storage of the specified tensor block; NULL
-      means no such block */
-  virtual dcomplex* gStorage(const int N1, const int TwoS1, const int I1,
-                             const int N2, const int TwoS2, const int I2) = 0;
+      //! Get the pointer to the storage of a certain tensor block
+      /** \param N1 The left or up particle number sector
+             \param TwoS1 The left or up spin symmetry sector
+             \param I1 The left or up irrep sector
+             \param N2 The right or down particle number sector
+             \param TwoS2 The right or down spin symmetry sector
+             \param I2 The right or down irrep sector
+             \return Pointer to the storage of the specified tensor block; NULL means no such block */
+      virtual dcomplex * gStorage( const int N1, const int TwoS1, const int I1, const int N2, const int TwoS2, const int I2 ) = 0;
 
-  //! Get the pointer to the storage of a certain tensor block
-  /** \param N1 The left or up particle number sector
-      \param TwoS1 The left or up spin symmetry sector
-      \param I1 The left or up irrep sector
-      \param N2 The right or down particle number sector
-      \param TwoS2 The right or down spin symmetry sector
-      \param I2 The right or down irrep sector
-      \return Pointer to the storage of the specified tensor block; NULL
-      means no such block */
-  virtual const dcomplex* gCStorage(const int N1, const int TwoS1, const int I1,
-                                    const int N2, const int TwoS2,
-                                    const int I2) const = 0;
+      //! Get the location index
+      /** \return the index */
+      virtual int gIndex() const = 0;
 
-  //! Get the location index
-  /** \return the index */
-  virtual int gIndex() const = 0;
+      protected:
+      //! Index of the Tensor object. For TensorT: a site index; for other tensors: a boundary index
+      int index;
 
-protected:
-  //! Index of the CTensor object. For CTensorT: a site index; for other tensors:
-  //! a boundary index
-  int index;
+      //! The actual variables. Tensor block kappa begins at storage+kappa2index[kappa] and ends at storage+kappa2index[kappa+1].
+      dcomplex * storage;
 
-  //! Number of tensor blocks.
-  int nKappa;
+      //! Number of Tensor blocks.
+      int nKappa;
 
-  //! The actual variables. CTensor block kappa begins at
-  //! storage+kappa2index[kappa] and ends at storage+kappa2index[kappa+1].
-  dcomplex* storage;
-
-  //! kappa2index[kappa] indicates the start of tensor block kappa in storage.
-  //! kappa2index[nKappa] gives the size of storage.
-  int* kappa2index;
-};
+      //! kappa2index[kappa] indicates the start of tensor block kappa in storage. kappa2index[nKappa] gives the size of storage.
+      int * kappa2index;
+   };
 }
 
 #endif

@@ -22,67 +22,64 @@
 
 #include "SyBookkeeper.h"
 
-namespace CheMPS2{
-/** Pure virtual Tensor class.
+namespace CheMPS2 {
+   /** Pure virtual Tensor class.
     \author Sebastian Wouters <sebastianwouters@gmail.com>
     \date February 15, 2013
 
     The Tensor class defines parameters and functions which all Tensors must have. */
-   class Tensor{
+   class Tensor {
 
       public:
+      //! Get the number of tensor blocks
+      /** return The number of tensor blocks */
+      virtual int gNKappa() const = 0;
 
-         //! Get the number of tensor blocks
-         /** return The number of tensor blocks */
-         virtual int gNKappa() const = 0;
+      //! Get the pointer to the storage
+      /** return pointer to the storage */
+      virtual double *gStorage() = 0;
 
-         //! Get the pointer to the storage
-         /** return pointer to the storage */
-         virtual double * gStorage() = 0;
-
-         //! Get the index corresponding to a certain tensor block
-         /** \param N1 The left or up particle number sector
+      //! Get the index corresponding to a certain tensor block
+      /** \param N1 The left or up particle number sector
              \param TwoS1 The left or up spin symmetry sector
              \param I1 The left or up irrep sector
              \param N2 The right or down particle number sector
              \param TwoS2 The right or down spin symmetry sector
              \param I2 The right or down irrep sector
              \return The kappa corresponding to the input parameters; -1 means no such block */
-         virtual int gKappa( const int N1, const int TwoS1, const int I1, const int N2, const int TwoS2, const int I2 ) const = 0;
+      virtual int gKappa( const int N1, const int TwoS1, const int I1, const int N2, const int TwoS2, const int I2 ) const = 0;
 
-         //! Get the storage jump corresponding to a certain tensor block
-         /** \param kappa The symmetry block
+      //! Get the storage jump corresponding to a certain tensor block
+      /** \param kappa The symmetry block
              \return kappa2index[ kappa ], the memory jumper to a certain block */
-         virtual int gKappa2index( const int kappa ) const = 0;
+      virtual int gKappa2index( const int kappa ) const = 0;
 
-         //! Get the pointer to the storage of a certain tensor block
-         /** \param N1 The left or up particle number sector
+      //! Get the pointer to the storage of a certain tensor block
+      /** \param N1 The left or up particle number sector
              \param TwoS1 The left or up spin symmetry sector
              \param I1 The left or up irrep sector
              \param N2 The right or down particle number sector
              \param TwoS2 The right or down spin symmetry sector
              \param I2 The right or down irrep sector
              \return Pointer to the storage of the specified tensor block; NULL means no such block */
-         virtual double * gStorage( const int N1, const int TwoS1, const int I1, const int N2, const int TwoS2, const int I2 ) = 0;
+      virtual double *gStorage( const int N1, const int TwoS1, const int I1, const int N2, const int TwoS2, const int I2 ) = 0;
 
-         //! Get the location index
-         /** \return the index */
-         virtual int gIndex() const = 0;
+      //! Get the location index
+      /** \return the index */
+      virtual int gIndex() const = 0;
 
       protected:
+      //! Index of the Tensor object. For TensorT: a site index; for other tensors: a boundary index
+      int index;
 
-         //! Index of the Tensor object. For TensorT: a site index; for other tensors: a boundary index
-         int index;
+      //! The actual variables. Tensor block kappa begins at storage+kappa2index[kappa] and ends at storage+kappa2index[kappa+1].
+      double *storage;
 
-         //! The actual variables. Tensor block kappa begins at storage+kappa2index[kappa] and ends at storage+kappa2index[kappa+1].
-         double * storage;
+      //! Number of Tensor blocks.
+      int nKappa;
 
-         //! Number of Tensor blocks.
-         int nKappa;
-
-         //! kappa2index[kappa] indicates the start of tensor block kappa in storage. kappa2index[nKappa] gives the size of storage.
-         int * kappa2index;
-
+      //! kappa2index[kappa] indicates the start of tensor block kappa in storage. kappa2index[nKappa] gives the size of storage.
+      int *kappa2index;
    };
 }
 

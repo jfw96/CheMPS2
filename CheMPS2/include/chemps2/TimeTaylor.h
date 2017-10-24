@@ -1,112 +1,113 @@
 #ifndef TIMETAYLOR_CHEMPS2_H
 #define TIMETAYLOR_CHEMPS2_H
 
-#include "Problem.h"
+#include "CTensorF0.h"
+#include "CTensorF0T.h"
+#include "CTensorF1.h"
+#include "CTensorF1T.h"
+#include "CTensorL.h"
+#include "CTensorLT.h"
+#include "CTensorQ.h"
+#include "CTensorQT.h"
+#include "CTensorS0.h"
+#include "CTensorS0T.h"
+#include "CTensorS1.h"
+#include "CTensorS1T.h"
+#include "CTensorT.h"
+#include "CTensorX.h"
+#include "ConvergenceScheme.h"
 #include "Logger.h"
+#include "Problem.h"
 #include "SyBookkeeper.h"
-// #include "TensorF0.h"
-// #include "TensorF0T.h"
-// #include "TensorF1.h"
-// #include "TensorF1T.h"
-// #include "TensorL.h"
-// #include "TensorLT.h"
-// #include "TensorQ.h"
-// #include "TensorQT.h"
-// #include "TensorS0.h"
-// #include "TensorS0T.h"
-// #include "TensorS1.h"
-// #include "TensorS1T.h"
-// #include "TensorT.h"
-// #include "TensorX.h"
 
 namespace CheMPS2 {
+
    class TimeTaylor {
       public:
-      
-          //! Constructor
-          /** \param Problem to problem to be solved*/
-      TimeTaylor(Problem* probIn, Logger* loggerIn);
+      //! Constructor
+      /** \param Problem to problem to be solved*/
+      TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn, Logger * loggerIn );
 
-          ~TimeTaylor();
+      ~TimeTaylor();
 
-          // void Propagate();
+      void Propagate();
+
+      double Energy();
 
       private:
-          const int L;
+      const int L;
 
-          Problem* prob;
+      Problem * prob;
 
-          Logger* logger;
+      ConvergenceScheme * scheme;
 
-          // TensorT** MPS;
-          // TensorT** MPSDT;
+      Logger * logger;
 
-      
-          CheMPS2::SyBookkeeper* denBK;
-          CheMPS2::SyBookkeeper* denBKDT;
+      CTensorT ** MPS;
+      CTensorT ** MPSDT;
 
-  // // Whether or not allocated
-  // int* isAllocated;
+      SyBookkeeper * denBK;
+      SyBookkeeper * denBKDT;
 
-  // // TensorL's
-  // // Ltensors_**upperMPS**_**lowerMPS**
-  // TensorL*** Ltensors;
-  // TensorLT*** LtensorsT;
+      // Whether or not allocated
+      int * isAllocated;
 
-  // // TensorX's
-  // TensorX** Xtensors;
+      // TensorL's
+      CTensorL *** Ltensors;
+      CTensorLT *** LtensorsT;
 
-  // // TensorF0F0's
-  // TensorF0**** F0tensors;
-  // TensorF0T**** F0tensorsT;
+      // TensorX's
+      CTensorX ** Xtensors;
 
-  // // TensorF1F1's
-  // TensorF1**** F1tensors;
-  // TensorF1T**** F1tensorsT;
+      // TensorF0F0's
+      CTensorF0 **** F0tensors;
+      CTensorF0T **** F0tensorsT;
 
-  // // TensorS0S0's
-  // TensorS0**** S0tensors;
-  // TensorS0T**** S0tensorsT;
+      // TensorF1F1's
+      CTensorF1 **** F1tensors;
+      CTensorF1T **** F1tensorsT;
 
-  // // TensorS1S1's
-  // TensorS1**** S1tensors;
-  // TensorS1T**** S1tensorsT;
+      // TensorS0S0's
+      CTensorS0 **** S0tensors;
+      CTensorS0T **** S0tensorsT;
 
-  // // ABCD-tensors
-  // TensorOperator**** Atensors;
-  // TensorOperator**** AtensorsT;
-  // TensorOperator**** Btensors;
-  // TensorOperator**** BtensorsT;
-  // TensorOperator**** Ctensors;
-  // TensorOperator**** CtensorsT;
-  // TensorOperator**** Dtensors;
-  // TensorOperator**** DtensorsT;
+      // TensorS1S1's
+      CTensorS1 **** S1tensors;
+      CTensorS1T **** S1tensorsT;
 
-  // // TensorQQ's
-  // TensorQ*** Qtensors;
-  // TensorQT*** QtensorsT;
+      // ABCD-tensors
+      CTensorOperator **** Atensors;
+      CTensorOperator **** AtensorsT;
+      CTensorOperator **** Btensors;
+      CTensorOperator **** BtensorsT;
+      CTensorOperator **** Ctensors;
+      CTensorOperator **** CtensorsT;
+      CTensorOperator **** Dtensors;
+      CTensorOperator **** DtensorsT;
 
-  // // TensorO's
-  // TensorO** Otensors;
+      // TensorQQ's
+      CTensorQ *** Qtensors;
+      CTensorQT *** QtensorsT;
 
-  // void deleteAllBoundaryOperators();
+      // TensorO's
+      CTensorO ** Otensors;
 
-  // void deleteTensors(const int index, const bool movingRight);
+      void updateMovingRightSafe( const int cnt );
 
-  // void updateMovingRightSafe(const int cnt);
+      void updateMovingRight( const int index );
 
-  // void updateMovingRight(const int index);
+      void updateMovingLeftSafe( const int cnt );
 
-  // void allocateTensors(const int index, const bool movingRight);
+      void updateMovingLeft( const int index );
 
-  // void doStep();
+      void allocateTensors( const int index, const bool movingRight );
 
-  // void updateMovingLeftSafe(const int cnt);
+      void deleteAllBoundaryOperators();
 
-  // void updateMovingLeft(const int index);
+      void deleteTensors( const int index, const bool movingRight );
 
-  // double calcEnergy();
-};
+      void doStep( const int currentInstruction );
+   };
 }
 
 #endif

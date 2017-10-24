@@ -34,6 +34,8 @@ option (BUILD_FPIC           "Static library in STATIC_ONLY will be compiled wit
 set (CMAKE_VERBOSE_MAKEFILE  OFF)
 set (CMAKE_MODULE_PATH       ${CMAKE_MODULE_PATH} "${CheMPS2_SOURCE_DIR}/CMake/")
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 if (STATIC_ONLY AND SHARED_ONLY)
     message (FATAL_ERROR "The options STATIC_ONLY=ON and SHARED_ONLY=ON are conflicting." )
 endif()

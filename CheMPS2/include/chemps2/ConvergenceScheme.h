@@ -22,8 +22,8 @@
 
 #include "Options.h"
 
-namespace CheMPS2{
-/** ConvergenceScheme class.
+namespace CheMPS2 {
+   /** ConvergenceScheme class.
     \author Sebastian Wouters <sebastianwouters@gmail.com>
     \date November 7, 2013
 
@@ -38,85 +38,108 @@ namespace CheMPS2{
     (1) f\n
     (2) the maximum discarded weight during the last sweep\n
     (3) a random number in the interval [-0.5,0.5]*/
-   class ConvergenceScheme{
+   class ConvergenceScheme {
 
       public:
+      //! Constructor
+      /** \param num_instructions the number of instructions */
+      ConvergenceScheme( const int num_instructions );
 
-         //! Constructor
-         /** \param num_instructions the number of instructions */
-         ConvergenceScheme(const int num_instructions);
+      //! Destructor
+      virtual ~ConvergenceScheme();
 
-         //! Destructor
-         virtual ~ConvergenceScheme();
+      //! Get the number of instructions
+      /** return the number of instructions */
+      int get_number() const;
 
-         //! Get the number of instructions
-         /** return the number of instructions */
-         int get_number() const;
-
-         //! Set an instruction
-         /** \param instruction the number of the instruction
+      //! Set an instruction
+      /** \param instruction the number of the instruction
              \param D the number of renormalized states for that instruction
              \param energy_conv the energy convergence threshold for that instruction
              \param max_sweeps the max. number of sweeps for that instruction
              \param noise_prefactor the noise prefactor for that instruction
              \param davidson_rtol the Davidson residual tolerance for that instruction */
-         void set_instruction(const int instruction, const int D, const double energy_conv, const int max_sweeps, const double noise_prefactor, const double davidson_rtol);
-         
-         //! Set an instruction
-         /** \param instruction the number of the instruction
+      void set_instruction( const int instruction, const int D, const double energy_conv, const int max_sweeps, const double noise_prefactor, const double davidson_rtol );
+
+      //! Set an instruction
+      /** \param instruction the number of the instruction
+             \param D the number of renormalized states for that instruction
+             \param energy_conv the energy convergence threshold for that instruction
+             \param max_sweeps the max. number of sweeps for that instruction
+             \param max_time the max. time to use this scheme to
+             \param noise_prefactor the noise prefactor for that instruction
+             \param davidson_rtol the Davidson residual tolerance for that instruction */
+      void set_instruction( const int instruction, const int D, const double time_step, const double max_time, const double energy_conv, const int max_sweeps, const double noise_prefactor );
+
+      //! Set an instruction
+      /** \param instruction the number of the instruction
              \param D the number of renormalized states for that instruction
              \param energy_conv the energy convergence threshold for that instruction
              \param max_sweeps the max. number of sweeps for that instruction
              \param noise_prefactor the noise prefactor for that instruction */
-         void setInstruction(const int instruction, const int D, const double energy_conv, const int max_sweeps, const double noise_prefactor){
-            set_instruction( instruction, D, energy_conv, max_sweeps, noise_prefactor, CheMPS2::DAVIDSON_DMRG_RTOL );
-         }
+      void setInstruction( const int instruction, const int D, const double energy_conv, const int max_sweeps, const double noise_prefactor ) {
+         set_instruction( instruction, D, energy_conv, max_sweeps, noise_prefactor, CheMPS2::DAVIDSON_DMRG_RTOL );
+      }
 
-         //! Get the number of renormalized states for a particular instruction
-         /** \param instruction the number of the instruction
+      //! Get the number of renormalized states for a particular instruction
+      /** \param instruction the number of the instruction
              \return the number of renormalized states for this instruction */
-         int get_D(const int instruction) const;
+      int get_D( const int instruction ) const;
 
-         //! Get the energy convergence threshold for a particular instruction
-         /** \param instruction the number of the instruction
+      //! Get the maximum time to use this scheme to
+      /** \param instruction the number of the instruction
+             \return the maximum time for this instruction */
+      double get_time_step( const int instruction ) const;
+
+      //! Get the maximum time to use this scheme to
+      /** \param instruction the number of the instruction
+             \return the maximum time for this instruction */
+      double get_max_time( const int instruction ) const;
+
+      //! Get the energy convergence threshold for a particular instruction
+      /** \param instruction the number of the instruction
              \return the energy convergence threshold for this instruction */
-         double get_energy_conv(const int instruction) const;
+      double get_energy_conv( const int instruction ) const;
 
-         //! Get the maximum number of sweeps for a particular instruction
-         /** \param instruction the number of the instruction
+      //! Get the maximum number of sweeps for a particular instruction
+      /** \param instruction the number of the instruction
              \return the maximum number of sweeps for this instruction */
-         int get_max_sweeps(const int instruction) const;
+      int get_max_sweeps( const int instruction ) const;
 
-         //! Get the noise prefactor for a particular instruction
-         /** \param instruction the number of the instruction
+      //! Get the noise prefactor for a particular instruction
+      /** \param instruction the number of the instruction
              \return the noise prefactor for this instruction */
-         double get_noise_prefactor(const int instruction) const;
+      double get_noise_prefactor( const int instruction ) const;
 
-         //! Get the Davidson residual tolerance for a particular instruction
-         /** \param instruction the number of the instruction
+      //! Get the Davidson residual tolerance for a particular instruction
+      /** \param instruction the number of the instruction
              \return the Davidson residual tolerance for this instruction */
-         double get_dvdson_rtol(const int instruction) const;
+      double get_dvdson_rtol( const int instruction ) const;
 
       private:
+      //The number of instructions
+      int num_instructions;
 
-         //The number of instructions
-         int num_instructions;
+      //Number of renormalized states
+      int * num_D;
 
-         //Number of renormalized states
-         int * num_D;
+      //Energy convergence thresholds
+      double * energy_convergence;
 
-         //Energy convergence thresholds
-         double * energy_convergence;
+      //Maximum number of sweeps per instruction
+      int * num_max_sweeps;
 
-         //Maximum number of sweeps per instruction
-         int * num_max_sweeps;
+      //Maximum number of sweeps per instruction
+      double * time_steps;
 
-         //The noise prefactor for each instruction
-         double * noise_prefac;
+      //Maximum number of sweeps per instruction
+      double * max_times;
 
-         //The Davidson residual tolerance for each instruction
-         double * dvdson_rtol;
+      //The noise prefactor for each instruction
+      double * noise_prefac;
 
+      //The Davidson residual tolerance for each instruction
+      double * dvdson_rtol;
    };
 }
 
