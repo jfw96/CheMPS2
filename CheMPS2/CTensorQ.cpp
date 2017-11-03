@@ -64,7 +64,7 @@ void CheMPS2::CTensorQ::AddTermSimpleRight( CTensorT * denTup, CTensorT * denTdo
       char cotrans = 'C';
       char notrans = 'N';
 
-      if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
+      if ( dimLU > 0 && dimLD > 0 && dimRU > 0 && dimRD > 0 ) {
          if ( previous == NULL ) {
             assert( dimLU == dimLD );
 
@@ -119,7 +119,7 @@ void CheMPS2::CTensorQ::AddTermSimpleLeft( CTensorT * denTup, CTensorT * denTdow
       char cotrans = 'C';
       char notrans = 'N';
 
-      if ( ( dimRU > 0 ) && ( dimRD > 0 ) ) {
+      if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
          if ( previous == NULL ) {
             assert( dimRU == dimRD );
 
@@ -193,7 +193,7 @@ void CheMPS2::CTensorQ::AddTermsLRight( CTensorL ** Ltensors, CTensorLT ** Ltens
 
          int dimLU = bk_up->gCurrentDim( index - 1, NLU, TwoSLU, ILU );
          int dimLD = bk_down->gCurrentDim( index - 1, NLD, TwoSLD, ILD );
-         if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
+         if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
             int dimLUxLD = dimLU * dimLD;
             for ( int cnt = 0; cnt < dimLUxLD; cnt++ ) {
                workmem[ cnt ] = 0.0;
@@ -235,7 +235,7 @@ void CheMPS2::CTensorQ::AddTermsLRight( CTensorL ** Ltensors, CTensorLT ** Ltens
 
          dimLU = bk_up->gCurrentDim( index - 1, NLU, TwoSLU, ILU );
          dimLD = bk_down->gCurrentDim( index - 1, NLD, TwoSLD, ILD );
-         if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
+         if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
             int dimLUxLD = dimLU * dimLD;
             for ( int cnt = 0; cnt < dimLUxLD; cnt++ ) {
                workmem[ cnt ] = 0.0;
@@ -276,7 +276,7 @@ void CheMPS2::CTensorQ::AddTermsLRight( CTensorL ** Ltensors, CTensorLT ** Ltens
                if ( ( TwoSLD >= 0 ) && ( TwoSLU >= 0 ) && ( abs( TwoSLD - TwoSLU ) < 2 ) ) {
                   dimLU = bk_up->gCurrentDim( index - 1, NLU, TwoSLU, ILU );
                   dimLD = bk_down->gCurrentDim( index - 1, NLD, TwoSLD, ILD );
-                  if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
+                  if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
                      int fase        = ( ( ( ( TwoSRU + TwoSLD ) / 2 ) % 2 ) != 0 ) ? -1 : 1;
                      dcomplex factor = fase * sqrt( ( TwoSLD + 1 ) * ( TwoSRU + 1.0 ) ) * Wigner::wigner6j( TwoSRU, TwoSRD, 1, TwoSLD, TwoSLU, 1 );
 
@@ -354,7 +354,7 @@ void CheMPS2::CTensorQ::AddTermsLLeft( CTensorL ** Ltensors, CTensorLT ** Ltenso
 
          int dimRU = bk_up->gCurrentDim( index + 1, NRU, TwoSRU, IRU );
          int dimRD = bk_down->gCurrentDim( index + 1, NRD, TwoSRD, IRD );
-         if ( ( dimRU > 0 ) && ( dimRD > 0 ) ) {
+         if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
             int dimRUxRD = dimRU * dimRD;
             for ( int cnt = 0; cnt < dimRUxRD; cnt++ ) {
                workmem[ cnt ] = 0.0;
@@ -395,7 +395,7 @@ void CheMPS2::CTensorQ::AddTermsLLeft( CTensorL ** Ltensors, CTensorLT ** Ltenso
 
          dimRU = bk_up->gCurrentDim( index + 1, NRU, TwoSRU, IRU );
          dimRD = bk_down->gCurrentDim( index + 1, NRD, TwoSRD, IRD );
-         if ( ( dimRU > 0 ) && ( dimRD > 0 ) ) {
+         if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
             int dimRUxRD = dimRU * dimRD;
             for ( int cnt = 0; cnt < dimRUxRD; cnt++ ) {
                workmem[ cnt ] = 0.0;
@@ -514,7 +514,7 @@ void CheMPS2::CTensorQ::AddTermsABRight( CTensorOperator * denA, CTensorOperator
       for ( int TwoSLU = TwoSRU - 1; TwoSLU <= TwoSRU + 1; TwoSLU += 2 ) {
          int dimLU = bk_up->gCurrentDim( index - 1, NLU, TwoSLU, ILU );
          int dimLD = bk_down->gCurrentDim( index - 1, NLD, TwoSLD, ILD );
-         if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
+         if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
             int fase         = ( ( ( ( TwoSLU + TwoSRD + 2 ) / 2 ) % 2 ) != 0 ) ? -1 : 1;
             dcomplex factorB = fase * sqrt( 3.0 * ( TwoSRU + 1 ) ) * Wigner::wigner6j( 1, 2, 1, TwoSRD, TwoSRU, TwoSLU );
 
@@ -562,7 +562,7 @@ void CheMPS2::CTensorQ::AddTermsABRight( CTensorOperator * denA, CTensorOperator
       for ( TwoSLD = TwoSRD - 1; TwoSLD <= TwoSRD + 1; TwoSLD += 2 ) {
          int dimLU = bk_up->gCurrentDim( index - 1, NLU, TwoSLU, ILU );
          int dimLD = bk_down->gCurrentDim( index - 1, NLD, TwoSLD, ILD );
-         if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
+         if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
             int fase         = ( ( ( ( TwoSRU + TwoSRD + 1 ) / 2 ) % 2 ) != 0 ) ? -1 : 1;
             dcomplex factorB = fase * sqrt( 3.0 * ( TwoSLD + 1 ) ) * Wigner::wigner6j( 1, 2, 1, TwoSRU, TwoSRD, TwoSLD );
 
@@ -631,7 +631,7 @@ void CheMPS2::CTensorQ::AddTermsABLeft( CTensorOperator * denA, CTensorOperator 
       for ( int TwoSRD = TwoSLD - 1; TwoSRD <= TwoSLD + 1; TwoSRD += 2 ) {
          int dimRU = bk_up->gCurrentDim( index + 1, NRU, TwoSRU, IRU );
          int dimRD = bk_down->gCurrentDim( index + 1, NRD, TwoSRD, IRD );
-         if ( ( dimRU > 0 ) && ( dimRD > 0 ) ) {
+         if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
             int fase = ( ( ( ( TwoSRD + TwoSLU + 2 ) / 2 ) % 2 ) != 0 ) ? -1 : 1;
             const dcomplex factorB =
                 fase * sqrt( 3.0 / ( TwoSLD + 1.0 ) ) * ( TwoSRD + 1 ) *
@@ -685,7 +685,7 @@ void CheMPS2::CTensorQ::AddTermsABLeft( CTensorOperator * denA, CTensorOperator 
       for ( TwoSRU = TwoSLU - 1; TwoSRU <= TwoSLU + 1; TwoSRU += 2 ) {
          int dimRU = bk_up->gCurrentDim( index + 1, NRU, TwoSRU, IRU );
          int dimRD = bk_down->gCurrentDim( index + 1, NRD, TwoSRD, IRD );
-         if ( ( dimRU > 0 ) && ( dimRD > 0 ) ) {
+         if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
             int fase         = ( ( ( ( TwoSLU + TwoSLD + 1 ) / 2 ) % 2 ) != 0 ) ? -1 : 1;
             dcomplex factorB = fase * sqrt( 3.0 * ( TwoSRU + 1 ) ) *
                                Wigner::wigner6j( 1, 1, 2, TwoSRU, TwoSLD, TwoSLU );
@@ -764,7 +764,7 @@ void CheMPS2::CTensorQ::AddTermsCDRight( CTensorOperator * denC, CTensorOperator
       for ( int TwoSLD = TwoSRD - 1; TwoSLD <= TwoSRD + 1; TwoSLD += 2 ) {
          int dimLU = bk_up->gCurrentDim( index - 1, NLU, TwoSLU, ILU );
          int dimLD = bk_down->gCurrentDim( index - 1, NLD, TwoSLD, ILD );
-         if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
+         if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
             int dimLUxLD = dimLU * dimLD;
 
             // first set to D
@@ -807,7 +807,7 @@ void CheMPS2::CTensorQ::AddTermsCDRight( CTensorOperator * denC, CTensorOperator
          int dimLU = bk_up->gCurrentDim( index - 1, NLU, TwoSLU, ILU );
          int dimLD = bk_down->gCurrentDim( index - 1, NLD, TwoSLD, ILD );
 
-         if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
+         if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
             int dimLUxLD = dimLU * dimLD;
 
             // first set to D
@@ -871,7 +871,7 @@ void CheMPS2::CTensorQ::AddTermsCDLeft( CTensorOperator * denC, CTensorOperator 
       for ( int TwoSRU = TwoSLU - 1; TwoSRU <= TwoSLU + 1; TwoSRU += 2 ) {
          int dimRU = bk_up->gCurrentDim( index + 1, NRU, TwoSRU, IRU );
          int dimRD = bk_down->gCurrentDim( index + 1, NRD, TwoSRD, IRD );
-         if ( ( dimRU > 0 ) && ( dimRD > 0 ) ) {
+         if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
             int dimRUxRD = dimRU * dimRD;
 
             // first set to D
@@ -915,7 +915,7 @@ void CheMPS2::CTensorQ::AddTermsCDLeft( CTensorOperator * denC, CTensorOperator 
       for ( TwoSRD = TwoSLD - 1; TwoSRD <= TwoSLD + 1; TwoSRD += 2 ) {
          int dimRU = bk_up->gCurrentDim( index + 1, NRU, TwoSRU, IRU );
          int dimRD = bk_down->gCurrentDim( index + 1, NRD, TwoSRD, IRD );
-         if ( ( dimRU > 0 ) && ( dimRD > 0 ) ) {
+         if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
             int dimRUxRD = dimRU * dimRD;
 
             // first set to D

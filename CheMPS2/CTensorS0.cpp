@@ -72,7 +72,7 @@ void CheMPS2::CTensorS0::makenewRight( const int ikappa, CTensorT * denTup, CTen
    char cotrans = 'C';
    char notrans = 'N';
 
-   if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
+   if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
       if ( previous == NULL ) {
          assert( dimLU == dimLD );
          dcomplex * BlockTup   = denTup->gStorage( NL, TwoSL, IL, NRU, TwoSRU, IRU );
@@ -119,7 +119,7 @@ void CheMPS2::CTensorS0::makenewLeft( const int ikappa, CTensorT * denTup, CTens
    char cotrans = 'C';
    char notrans = 'N';
 
-   if ( ( dimRU > 0 ) && ( dimRD > 0 ) ) {
+   if ( dimRU > 0 && dimRD > 0 && dimLU > 0 && dimLD > 0 ) {
       if ( previous == NULL ) {
          assert( dimRU == dimRD );
 
@@ -162,66 +162,68 @@ void CheMPS2::CTensorS0::makenewRight( const int ikappa, CTensorL * denL, CTenso
    char cotrans = 'C';
    char notrans = 'N';
 
-   for ( int geval = 0; geval < 4; geval++ ) {
-      int NLU, TwoSLU, ILU, NLD, TwoSLD, ILD;
-      switch ( geval ) {
-         case 0:
-            NLU    = NRU;
-            TwoSLU = TwoSRU;
-            ILU    = IRU;
-            NLD    = NRU + 1;
-            TwoSLD = TwoSRU - 1;
-            ILD    = Irreps::directProd( ILU, denL->get_irrep() );
-            break;
-         case 1:
-            NLU    = NRU;
-            TwoSLU = TwoSRU;
-            ILU    = IRU;
-            NLD    = NRU + 1;
-            TwoSLD = TwoSRU + 1;
-            ILD    = Irreps::directProd( ILU, denL->get_irrep() );
-            break;
-         case 2:
-            NLU    = NRU - 1;
-            TwoSLU = TwoSRU - 1;
-            ILU    = Irreps::directProd( IRU, bk_up->gIrrep( index - 1 ) );
-            NLD    = NRU;
-            TwoSLD = TwoSRU;
-            ILD    = IRD;
-            break;
-         case 3:
-            NLU    = NRU - 1;
-            TwoSLU = TwoSRU + 1;
-            ILU    = Irreps::directProd( IRU, bk_up->gIrrep( index - 1 ) );
-            NLD    = NRU;
-            TwoSLD = TwoSRU;
-            ILD    = IRD;
-            break;
-      }
-
-      int dimLU = bk_up->gCurrentDim( index - 1, NLU, TwoSLU, ILU );
-      int dimLD = bk_down->gCurrentDim( index - 1, NLD, TwoSLD, ILD );
-      if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
-         dcomplex * BlockTup   = denTup->gStorage( NLU, TwoSLU, ILU, NRU, TwoSRU, IRU );
-         dcomplex * BlockTdown = denTdown->gStorage( NLU + 1, TwoSLD, ILD, NRD, TwoSRD, IRD );
-         dcomplex * BlockL     = denL->gStorage( NLU, TwoSLU, ILU, NLD, TwoSLD, ILD );
-
-         // factor * Tup^T * L -> mem
-         dcomplex alpha;
-         if ( geval <= 1 ) {
-            int fase = ( ( ( ( TwoSRU - TwoSLD + 1 ) / 2 ) % 2 ) != 0 ) ? -1 : 1;
-            alpha    = fase * sqrt( 0.5 * ( TwoSLD + 1.0 ) / ( TwoSRU + 1.0 ) );
-         } else {
-            alpha = -sqrt( 0.5 );
+   if ( dimRU > 0 && dimRD > 0 ) {
+      for ( int geval = 0; geval < 4; geval++ ) {
+         int NLU, TwoSLU, ILU, NLD, TwoSLD, ILD;
+         switch ( geval ) {
+            case 0:
+               NLU    = NRU;
+               TwoSLU = TwoSRU;
+               ILU    = IRU;
+               NLD    = NRU + 1;
+               TwoSLD = TwoSRU - 1;
+               ILD    = Irreps::directProd( ILU, denL->get_irrep() );
+               break;
+            case 1:
+               NLU    = NRU;
+               TwoSLU = TwoSRU;
+               ILU    = IRU;
+               NLD    = NRU + 1;
+               TwoSLD = TwoSRU + 1;
+               ILD    = Irreps::directProd( ILU, denL->get_irrep() );
+               break;
+            case 2:
+               NLU    = NRU - 1;
+               TwoSLU = TwoSRU - 1;
+               ILU    = Irreps::directProd( IRU, bk_up->gIrrep( index - 1 ) );
+               NLD    = NRU;
+               TwoSLD = TwoSRU;
+               ILD    = IRD;
+               break;
+            case 3:
+               NLU    = NRU - 1;
+               TwoSLU = TwoSRU + 1;
+               ILU    = Irreps::directProd( IRU, bk_up->gIrrep( index - 1 ) );
+               NLD    = NRU;
+               TwoSLD = TwoSRU;
+               ILD    = IRD;
+               break;
          }
 
-         dcomplex beta = 0.0; // set
-         zgemm_( &cotrans, &notrans, &dimRU, &dimLD, &dimLU, &alpha, BlockTup, &dimLU, BlockL, &dimLU, &beta, workmem, &dimRU );
+         int dimLU = bk_up->gCurrentDim( index - 1, NLU, TwoSLU, ILU );
+         int dimLD = bk_down->gCurrentDim( index - 1, NLD, TwoSLD, ILD );
+         if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
+            dcomplex * BlockTup   = denTup->gStorage( NLU, TwoSLU, ILU, NRU, TwoSRU, IRU );
+            dcomplex * BlockTdown = denTdown->gStorage( NLU + 1, TwoSLD, ILD, NRD, TwoSRD, IRD );
+            dcomplex * BlockL     = denL->gStorage( NLU, TwoSLU, ILU, NLD, TwoSLD, ILD );
 
-         // mem * Tdown -> storage
-         alpha = 1.0;
-         beta  = 1.0; // add
-         zgemm_( &notrans, &notrans, &dimRU, &dimRD, &dimLD, &alpha, workmem, &dimRU, BlockTdown, &dimLD, &beta, storage + kappa2index[ ikappa ], &dimRU );
+            // factor * Tup^T * L -> mem
+            dcomplex alpha;
+            if ( geval <= 1 ) {
+               int fase = ( ( ( ( TwoSRU - TwoSLD + 1 ) / 2 ) % 2 ) != 0 ) ? -1 : 1;
+               alpha    = fase * sqrt( 0.5 * ( TwoSLD + 1.0 ) / ( TwoSRU + 1.0 ) );
+            } else {
+               alpha = -sqrt( 0.5 );
+            }
+
+            dcomplex beta = 0.0; // set
+            zgemm_( &cotrans, &notrans, &dimRU, &dimLD, &dimLU, &alpha, BlockTup, &dimLU, BlockL, &dimLU, &beta, workmem, &dimRU );
+
+            // mem * Tdown -> storage
+            alpha = 1.0;
+            beta  = 1.0; // add
+            zgemm_( &notrans, &notrans, &dimRU, &dimRD, &dimLD, &alpha, workmem, &dimRU, BlockTdown, &dimLD, &beta, storage + kappa2index[ ikappa ], &dimRU );
+         }
       }
    }
 }
@@ -241,64 +243,66 @@ void CheMPS2::CTensorS0::makenewLeft( const int ikappa, CTensorL * denL, CTensor
    char cotrans = 'C';
    char notrans = 'N';
 
-   for ( int geval = 0; geval < 4; geval++ ) {
-      int NRU, TwoSRU, IRU, NRD, TwoSRD, IRD;
-      switch ( geval ) {
-         case 0:
-            NRU    = NLU + 1;
-            TwoSRU = TwoSLU - 1;
-            IRU    = Irreps::directProd( ILU, bk_up->gIrrep( index ) );
-            NRD    = NLU + 2;
-            TwoSRD = TwoSLU;
-            IRD    = ILD;
-            break;
-         case 1:
-            NRU    = NLU + 1;
-            TwoSRU = TwoSLU + 1;
-            IRU    = Irreps::directProd( ILU, bk_up->gIrrep( index ) );
-            NRD    = NLU + 2;
-            TwoSRD = TwoSLU;
-            IRD    = ILD;
-            break;
-         case 2:
-            NRU    = NLU + 2;
-            TwoSRU = TwoSLU;
-            IRU    = ILU;
-            NRD    = NLU + 3;
-            TwoSRD = TwoSLU - 1;
-            IRD    = Irreps::directProd( ILU, denL->get_irrep() );
-            break;
-         case 3:
-            NRU    = NLU + 2;
-            TwoSRU = TwoSLU;
-            IRU    = ILU;
-            NRD    = NLU + 3;
-            TwoSRD = TwoSLU + 1;
-            IRD    = Irreps::directProd( ILU, denL->get_irrep() );
-            break;
-      }
-      int dimRU = bk_up->gCurrentDim( index + 1, NRU, TwoSRU, IRU );
-      int dimRD = bk_down->gCurrentDim( index + 1, NRD, TwoSRD, IRD );
-      if ( ( dimRU > 0 ) && ( dimRD > 0 ) ) {
-         dcomplex * BlockTup   = denTup->gStorage( NLU, TwoSLU, ILU, NRU, TwoSRU, IRU );
-         dcomplex * BlockTdown = denTdown->gStorage( NLD, TwoSLD, ILD, NRD, TwoSRD, IRD );
-         dcomplex * BlockL     = denL->gStorage( NRU, TwoSRU, IRU, NRD, TwoSRD, IRD );
-
-         // factor * Tup * L -> mem
-         dcomplex alpha = 1.0;
-         if ( geval <= 1 ) {
-            int fase = ( ( ( ( TwoSLU - TwoSRU + 1 ) / 2 ) % 2 ) != 0 ) ? -1 : 1;
-            alpha    = fase * sqrt( 0.5 * ( TwoSRU + 1.0 ) / ( TwoSLU + 1.0 ) );
-         } else {
-            alpha = -sqrt( 0.5 ) * ( TwoSRD + 1.0 ) / ( TwoSLU + 1.0 );
+   if ( dimLU > 0 && dimLD > 0 ) {
+      for ( int geval = 0; geval < 4; geval++ ) {
+         int NRU, TwoSRU, IRU, NRD, TwoSRD, IRD;
+         switch ( geval ) {
+            case 0:
+               NRU    = NLU + 1;
+               TwoSRU = TwoSLU - 1;
+               IRU    = Irreps::directProd( ILU, bk_up->gIrrep( index ) );
+               NRD    = NLU + 2;
+               TwoSRD = TwoSLU;
+               IRD    = ILD;
+               break;
+            case 1:
+               NRU    = NLU + 1;
+               TwoSRU = TwoSLU + 1;
+               IRU    = Irreps::directProd( ILU, bk_up->gIrrep( index ) );
+               NRD    = NLU + 2;
+               TwoSRD = TwoSLU;
+               IRD    = ILD;
+               break;
+            case 2:
+               NRU    = NLU + 2;
+               TwoSRU = TwoSLU;
+               IRU    = ILU;
+               NRD    = NLU + 3;
+               TwoSRD = TwoSLU - 1;
+               IRD    = Irreps::directProd( ILU, denL->get_irrep() );
+               break;
+            case 3:
+               NRU    = NLU + 2;
+               TwoSRU = TwoSLU;
+               IRU    = ILU;
+               NRD    = NLU + 3;
+               TwoSRD = TwoSLU + 1;
+               IRD    = Irreps::directProd( ILU, denL->get_irrep() );
+               break;
          }
-         dcomplex beta = 0.0; // set
-         zgemm_( &notrans, &notrans, &dimLU, &dimRD, &dimRU, &alpha, BlockTup, &dimLU, BlockL, &dimRU, &beta, workmem, &dimLU );
+         int dimRU = bk_up->gCurrentDim( index + 1, NRU, TwoSRU, IRU );
+         int dimRD = bk_down->gCurrentDim( index + 1, NRD, TwoSRD, IRD );
+         if ( ( dimRU > 0 ) && ( dimRD > 0 ) ) {
+            dcomplex * BlockTup   = denTup->gStorage( NLU, TwoSLU, ILU, NRU, TwoSRU, IRU );
+            dcomplex * BlockTdown = denTdown->gStorage( NLD, TwoSLD, ILD, NRD, TwoSRD, IRD );
+            dcomplex * BlockL     = denL->gStorage( NRU, TwoSRU, IRU, NRD, TwoSRD, IRD );
 
-         // mem * Tdown^T -> storage
-         alpha = 1.0;
-         beta  = 1.0; // add
-         zgemm_( &notrans, &cotrans, &dimLU, &dimLD, &dimRD, &alpha, workmem, &dimLU, BlockTdown, &dimLD, &beta, storage + kappa2index[ ikappa ], &dimLU );
+            // factor * Tup * L -> mem
+            dcomplex alpha = 1.0;
+            if ( geval <= 1 ) {
+               int fase = ( ( ( ( TwoSLU - TwoSRU + 1 ) / 2 ) % 2 ) != 0 ) ? -1 : 1;
+               alpha    = fase * sqrt( 0.5 * ( TwoSRU + 1.0 ) / ( TwoSLU + 1.0 ) );
+            } else {
+               alpha = -sqrt( 0.5 ) * ( TwoSRD + 1.0 ) / ( TwoSLU + 1.0 );
+            }
+            dcomplex beta = 0.0; // set
+            zgemm_( &notrans, &notrans, &dimLU, &dimRD, &dimRU, &alpha, BlockTup, &dimLU, BlockL, &dimRU, &beta, workmem, &dimLU );
+
+            // mem * Tdown^T -> storage
+            alpha = 1.0;
+            beta  = 1.0; // add
+            zgemm_( &notrans, &cotrans, &dimLU, &dimLD, &dimRD, &alpha, workmem, &dimLU, BlockTdown, &dimLD, &beta, storage + kappa2index[ ikappa ], &dimLU );
+         }
       }
    }
 }

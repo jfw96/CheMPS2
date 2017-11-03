@@ -54,54 +54,57 @@ void CheMPS2::CTensorL::create_right( const int ikappa, CTensorT * mps_tensor_up
    char cotrans = 'C';
    char notrans = 'N';
 
-   for ( int geval = 0; geval < 2; geval++ ) {
-      int NL, TwoSL, IL;
-      switch ( geval ) {
-      case 0:
-         NL    = NRU;
-         TwoSL = TwoSRU;
-         IL    = IRU;
-         break;
-      case 1:
-         NL    = NRU - 1;
-         TwoSL = TwoSRD;
-         IL    = IRD;
-         break;
-      }
+   if ( dimRU > 0 && dimRD > 0 ) {
 
-      int dimLU = bk_up->gCurrentDim( index - 1, NL, TwoSL, IL );
-      int dimLD = bk_down->gCurrentDim( index - 1, NL, TwoSL, IL );
-
-      if ( previous == NULL ) {
-         assert( dimLU == dimLD );
-         if ( dimLU > 0 ) {
-            dcomplex * Tup   = mps_tensor_up->gStorage( NL, TwoSL, IL, NRU, TwoSRU, IRU );
-            dcomplex * Tdown = mps_tensor_down->gStorage( NL, TwoSL, IL, NRD, TwoSRD, IRD );
-
-            dcomplex alpha = 1.0;
-            if ( geval == 1 ) {
-               alpha = Special::phase( TwoSRD - TwoSRU + 1 ) * sqrt( ( TwoSRU + 1.0 ) / ( TwoSRD + 1 ) );
-            }
-            dcomplex add = 1.0;
-
-            zgemm_( &cotrans, &notrans, &dimRU, &dimRD, &dimLU, &alpha, Tup, &dimLU,
-                    Tdown, &dimLU, &add, storage + kappa2index[ ikappa ], &dimRU );
+      for ( int geval = 0; geval < 2; geval++ ) {
+         int NL, TwoSL, IL;
+         switch ( geval ) {
+            case 0:
+               NL    = NRU;
+               TwoSL = TwoSRU;
+               IL    = IRU;
+               break;
+            case 1:
+               NL    = NRU - 1;
+               TwoSL = TwoSRD;
+               IL    = IRD;
+               break;
          }
-      } else {
-         if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
-            dcomplex * Tup   = mps_tensor_up->gStorage( NL, TwoSL, IL, NRU, TwoSRU, IRU );
-            dcomplex * Tdown = mps_tensor_down->gStorage( NL, TwoSL, IL, NRD, TwoSRD, IRD );
-            dcomplex * Opart = previous->gStorage( NL, TwoSL, IL, NL, TwoSL, IL );
 
-            dcomplex alpha = 1.0;
-            if ( geval == 1 ) {
-               alpha = Special::phase( TwoSRD - TwoSRU + 1 ) * sqrt( ( TwoSRU + 1.0 ) / ( TwoSRD + 1 ) );
+         int dimLU = bk_up->gCurrentDim( index - 1, NL, TwoSL, IL );
+         int dimLD = bk_down->gCurrentDim( index - 1, NL, TwoSL, IL );
+
+         if ( previous == NULL ) {
+            assert( dimLU == dimLD );
+            if ( dimLU > 0 ) {
+               dcomplex * Tup   = mps_tensor_up->gStorage( NL, TwoSL, IL, NRU, TwoSRU, IRU );
+               dcomplex * Tdown = mps_tensor_down->gStorage( NL, TwoSL, IL, NRD, TwoSRD, IRD );
+
+               dcomplex alpha = 1.0;
+               if ( geval == 1 ) {
+                  alpha = Special::phase( TwoSRD - TwoSRU + 1 ) * sqrt( ( TwoSRU + 1.0 ) / ( TwoSRD + 1 ) );
+               }
+               dcomplex add = 1.0;
+
+               zgemm_( &cotrans, &notrans, &dimRU, &dimRD, &dimLU, &alpha, Tup, &dimLU,
+                       Tdown, &dimLU, &add, storage + kappa2index[ ikappa ], &dimRU );
             }
-            dcomplex set = 0.0;
-            zgemm_( &cotrans, &notrans, &dimRU, &dimLD, &dimLU, &alpha, Tup, &dimLU, Opart, &dimLU, &set, workmem, &dimRU );
+         } else {
+            if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
+               dcomplex * Tup   = mps_tensor_up->gStorage( NL, TwoSL, IL, NRU, TwoSRU, IRU );
+               dcomplex * Tdown = mps_tensor_down->gStorage( NL, TwoSL, IL, NRD, TwoSRD, IRD );
+               dcomplex * Opart = previous->gStorage( NL, TwoSL, IL, NL, TwoSL, IL );
 
-            dcomplex one = 1.0;
-            zgemm_( &notrans, &notrans, &dimRU, &dimRD, &dimLD, &one, workmem, &dimRU, Tdown, &dimLD, &one, storage + kappa2index[ ikappa ], &dimRU );
+               dcomplex alpha = 1.0;
+               if ( geval == 1 ) {
+                  alpha = Special::phase( TwoSRD - TwoSRU + 1 ) * sqrt( ( TwoSRU + 1.0 ) / ( TwoSRD + 1 ) );
+               }
+               dcomplex set = 0.0;
+               zgemm_( &cotrans, &notrans, &dimRU, &dimLD, &dimLU, &alpha, Tup, &dimLU, Opart, &dimLU, &set, workmem, &dimRU );
+
+               dcomplex one = 1.0;
+               zgemm_( &notrans, &notrans, &dimRU, &dimRD, &dimLD, &one, workmem, &dimRU, Tdown, &dimLD, &one, storage + kappa2index[ ikappa ], &dimRU );
+            }
          }
       }
    }
@@ -121,52 +124,55 @@ void CheMPS2::CTensorL::create_left( const int ikappa, CTensorT * mps_tensor_up,
    char cotrans = 'C';
    char notrans = 'N';
 
-   for ( int geval = 0; geval < 2; geval++ ) {
-      int NR, TwoSR, IR;
-      switch ( geval ) {
-      case 0:
-         NR    = NLD;
-         TwoSR = TwoSLD;
-         IR    = ILD;
-         break;
-      case 1:
-         NR    = NLU + 2;
-         TwoSR = TwoSLU;
-         IR    = ILU;
-         break;
-      }
+   if ( dimLU > 0 && dimLD > 0 ) {
 
-      int dimRU = bk_up->gCurrentDim( index + 1, NR, TwoSR, IR );
-      int dimRD = bk_down->gCurrentDim( index + 1, NR, TwoSR, IR );
-
-      if ( previous == NULL ) {
-         assert( dimRU == dimRD );
-         if ( dimRU > 0 ) {
-            dcomplex * Tup   = mps_tensor_up->gStorage( NLU, TwoSLU, ILU, NR, TwoSR, IR );
-            dcomplex * Tdown = mps_tensor_down->gStorage( NLD, TwoSLD, ILD, NR, TwoSR, IR );
-
-            dcomplex alpha = 1.0;
-            if ( geval == 1 ) {
-               alpha = Special::phase( TwoSLU - TwoSLD + 1 ) * sqrt( ( TwoSLU + 1.0 ) / ( TwoSLD + 1 ) );
-            }
-            dcomplex add = 1.0;
-            zgemm_( &notrans, &cotrans, &dimLU, &dimLD, &dimRU, &alpha, Tup, &dimLU, Tdown, &dimLD, &add, storage + kappa2index[ ikappa ], &dimLU );
+      for ( int geval = 0; geval < 2; geval++ ) {
+         int NR, TwoSR, IR;
+         switch ( geval ) {
+            case 0:
+               NR    = NLD;
+               TwoSR = TwoSLD;
+               IR    = ILD;
+               break;
+            case 1:
+               NR    = NLU + 2;
+               TwoSR = TwoSLU;
+               IR    = ILU;
+               break;
          }
-      } else {
-         if ( ( dimRU > 0 ) && ( dimRD > 0 ) ) {
-            dcomplex * Tup   = mps_tensor_up->gStorage( NLU, TwoSLU, ILU, NR, TwoSR, IR );
-            dcomplex * Tdown = mps_tensor_down->gStorage( NLD, TwoSLD, ILD, NR, TwoSR, IR );
-            dcomplex * Opart = previous->gStorage( NR, TwoSR, IR, NR, TwoSR, IR );
 
-            dcomplex alpha = 1.0;
-            if ( geval == 1 ) {
-               alpha = Special::phase( TwoSLU - TwoSLD + 1 ) * sqrt( ( TwoSLU + 1.0 ) / ( TwoSLD + 1 ) );
+         int dimRU = bk_up->gCurrentDim( index + 1, NR, TwoSR, IR );
+         int dimRD = bk_down->gCurrentDim( index + 1, NR, TwoSR, IR );
+
+         if ( previous == NULL ) {
+            assert( dimRU == dimRD );
+            if ( dimRU > 0 ) {
+               dcomplex * Tup   = mps_tensor_up->gStorage( NLU, TwoSLU, ILU, NR, TwoSR, IR );
+               dcomplex * Tdown = mps_tensor_down->gStorage( NLD, TwoSLD, ILD, NR, TwoSR, IR );
+
+               dcomplex alpha = 1.0;
+               if ( geval == 1 ) {
+                  alpha = Special::phase( TwoSLU - TwoSLD + 1 ) * sqrt( ( TwoSLU + 1.0 ) / ( TwoSLD + 1 ) );
+               }
+               dcomplex add = 1.0;
+               zgemm_( &notrans, &cotrans, &dimLU, &dimLD, &dimRU, &alpha, Tup, &dimLU, Tdown, &dimLD, &add, storage + kappa2index[ ikappa ], &dimLU );
             }
-            dcomplex set = 0.0;
-            zgemm_( &notrans, &notrans, &dimLU, &dimRD, &dimRU, &alpha, Tup, &dimLU, Opart, &dimRU, &set, workmem, &dimLU );
+         } else {
+            if ( ( dimRU > 0 ) && ( dimRD > 0 ) ) {
+               dcomplex * Tup   = mps_tensor_up->gStorage( NLU, TwoSLU, ILU, NR, TwoSR, IR );
+               dcomplex * Tdown = mps_tensor_down->gStorage( NLD, TwoSLD, ILD, NR, TwoSR, IR );
+               dcomplex * Opart = previous->gStorage( NR, TwoSR, IR, NR, TwoSR, IR );
 
-            dcomplex one = 1.0;
-            zgemm_( &notrans, &cotrans, &dimLU, &dimLD, &dimRD, &one, workmem, &dimLU, Tdown, &dimLD, &one, storage + kappa2index[ ikappa ], &dimLU );
+               dcomplex alpha = 1.0;
+               if ( geval == 1 ) {
+                  alpha = Special::phase( TwoSLU - TwoSLD + 1 ) * sqrt( ( TwoSLU + 1.0 ) / ( TwoSLD + 1 ) );
+               }
+               dcomplex set = 0.0;
+               zgemm_( &notrans, &notrans, &dimLU, &dimRD, &dimRU, &alpha, Tup, &dimLU, Opart, &dimRU, &set, workmem, &dimLU );
+
+               dcomplex one = 1.0;
+               zgemm_( &notrans, &cotrans, &dimLU, &dimLD, &dimRD, &one, workmem, &dimLU, Tdown, &dimLD, &one, storage + kappa2index[ ikappa ], &dimLU );
+            }
          }
       }
    }

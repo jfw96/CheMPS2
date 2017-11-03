@@ -352,7 +352,7 @@ void CheMPS2::CSobject::Add( dcomplex alpha, CSobject * to_add ) {
 }
 
 double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int virtualdimensionD,
-                                 const bool movingright, const bool change ) {
+                                 const double cut_off, const bool movingright, const bool change ) {
    // Get the number of central sectors
    int nCenterSectors = 0;
    for ( int NM = denBK->gNmin( index + 1 ); NM <= denBK->gNmax( index + 1 ); NM++ ) {
@@ -543,28 +543,35 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
          totalDimSVD += NewDims[ iCenter ];
       }
 
+      // Copy them all in 1 array
+      double * values = new double[ totalDimSVD ];
+      totalDimSVD     = 0;
+      int inc         = 1;
+      for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
+         if ( NewDims[ iCenter ] > 0 ) {
+            dcopy_( NewDims + iCenter, Lambdas[ iCenter ], &inc, values + totalDimSVD, &inc );
+            totalDimSVD += NewDims[ iCenter ];
+         }
+      }
+
+      // Sort them in decreasing order
+      char ID = 'D';
+      int info;
+      dlasrt_( &ID, &totalDimSVD, values, &info ); // Quicksort
+
+      int maxD = 0;
+      while ( maxD < totalDimSVD && maxD < virtualdimensionD && cut_off < values[ maxD ] ) {
+         maxD++;
+      }
+
+      // int maxD = virtualdimensionD;
       // If larger then the required virtualdimensionD, new virtual dimensions
       // will be set in NewDims.
-      if ( totalDimSVD > virtualdimensionD ) {
-         // Copy them all in 1 array
-         double * values = new double[ totalDimSVD ];
-         totalDimSVD     = 0;
-         int inc         = 1;
-         for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
-            if ( NewDims[ iCenter ] > 0 ) {
-               dcopy_( NewDims + iCenter, Lambdas[ iCenter ], &inc, values + totalDimSVD, &inc );
-               totalDimSVD += NewDims[ iCenter ];
-            }
-         }
-
-         // Sort them in decreasing order
-         char ID = 'D';
-         int info;
-         dlasrt_( &ID, &totalDimSVD, values, &info ); // Quicksort
+      if ( totalDimSVD > maxD ) {
 
          // The D+1'th value becomes the lower bound Schmidt value. Every value
          // smaller than or equal to the D+1'th value is thrown out (hence Dactual // <= Ddesired).
-         const double lowerBound = values[ virtualdimensionD ];
+         const double lowerBound = values[ maxD ];
          for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
             for ( int cnt = 0; cnt < NewDims[ iCenter ]; cnt++ ) {
                if ( Lambdas[ iCenter ][ cnt ] <= lowerBound ) {

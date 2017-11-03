@@ -189,92 +189,94 @@ void CheMPS2::CTensorOperator::update_moving_right( const int ikappa, CTensorOpe
 
    int dimRD = bk_down->gCurrentDim( index, NRD, TwoSRD, IRD );
 
-   for ( int geval = 0; geval < 6; geval++ ) {
-      int NLU, NLD, TwoSLU, TwoSLD, ILU, ILD;
-      switch ( geval ) {
-      case 0: // MPS tensor sector (I,J,N) = (0,0,0)
-         TwoSLU = TwoSRU;
-         TwoSLD = TwoSRD;
-         NLU    = NRU;
-         NLD    = NRD;
-         ILU    = IRU;
-         ILD    = IRD;
-         break;
-      case 1: // MPS tensor sector (I,J,N) = (0,0,2)
-         TwoSLU = TwoSRU;
-         TwoSLD = TwoSRD;
-         NLU    = NRU - 2;
-         NLD    = NRD - 2;
-         ILU    = IRU;
-         ILD    = IRD;
-         break;
-      case 2: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
-         TwoSLU = TwoSRU - 1;
-         TwoSLD = TwoSRD - 1;
-         NLU    = NRU - 1;
-         NLD    = NRD - 1;
-         ILU    = Irreps::directProd( IRU, bk_up->gIrrep( index - 1 ) );
-         ILD    = Irreps::directProd( IRD, bk_up->gIrrep( index - 1 ) );
-         break;
-      case 3: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
-         TwoSLU = TwoSRU - 1;
-         TwoSLD = TwoSRD + 1;
-         NLU    = NRU - 1;
-         NLD    = NRD - 1;
-         ILU    = Irreps::directProd( IRU, bk_up->gIrrep( index - 1 ) );
-         ILD    = Irreps::directProd( IRD, bk_up->gIrrep( index - 1 ) );
-         break;
-      case 4: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
-         TwoSLU = TwoSRU + 1;
-         TwoSLD = TwoSRD - 1;
-         NLU    = NRU - 1;
-         NLD    = NRD - 1;
-         ILU    = Irreps::directProd( IRU, bk_up->gIrrep( index - 1 ) );
-         ILD    = Irreps::directProd( IRD, bk_up->gIrrep( index - 1 ) );
-         break;
-      case 5: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
-         TwoSLU = TwoSRU + 1;
-         TwoSLD = TwoSRD + 1;
-         NLU    = NRU - 1;
-         NLD    = NRD - 1;
-         ILU    = Irreps::directProd( IRU, bk_up->gIrrep( index - 1 ) );
-         ILD    = Irreps::directProd( IRD, bk_up->gIrrep( index - 1 ) );
-         break;
-      }
+   if ( dimRU > 0 && dimRD > 0 ) {
+      for ( int geval = 0; geval < 6; geval++ ) {
+         int NLU, NLD, TwoSLU, TwoSLD, ILU, ILD;
+         switch ( geval ) {
+            case 0: // MPS tensor sector (I,J,N) = (0,0,0)
+               TwoSLU = TwoSRU;
+               TwoSLD = TwoSRD;
+               NLU    = NRU;
+               NLD    = NRD;
+               ILU    = IRU;
+               ILD    = IRD;
+               break;
+            case 1: // MPS tensor sector (I,J,N) = (0,0,2)
+               TwoSLU = TwoSRU;
+               TwoSLD = TwoSRD;
+               NLU    = NRU - 2;
+               NLD    = NRD - 2;
+               ILU    = IRU;
+               ILD    = IRD;
+               break;
+            case 2: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
+               TwoSLU = TwoSRU - 1;
+               TwoSLD = TwoSRD - 1;
+               NLU    = NRU - 1;
+               NLD    = NRD - 1;
+               ILU    = Irreps::directProd( IRU, bk_up->gIrrep( index - 1 ) );
+               ILD    = Irreps::directProd( IRD, bk_up->gIrrep( index - 1 ) );
+               break;
+            case 3: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
+               TwoSLU = TwoSRU - 1;
+               TwoSLD = TwoSRD + 1;
+               NLU    = NRU - 1;
+               NLD    = NRD - 1;
+               ILU    = Irreps::directProd( IRU, bk_up->gIrrep( index - 1 ) );
+               ILD    = Irreps::directProd( IRD, bk_up->gIrrep( index - 1 ) );
+               break;
+            case 4: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
+               TwoSLU = TwoSRU + 1;
+               TwoSLD = TwoSRD - 1;
+               NLU    = NRU - 1;
+               NLD    = NRD - 1;
+               ILU    = Irreps::directProd( IRU, bk_up->gIrrep( index - 1 ) );
+               ILD    = Irreps::directProd( IRD, bk_up->gIrrep( index - 1 ) );
+               break;
+            case 5: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
+               TwoSLU = TwoSRU + 1;
+               TwoSLD = TwoSRD + 1;
+               NLU    = NRU - 1;
+               NLD    = NRD - 1;
+               ILU    = Irreps::directProd( IRU, bk_up->gIrrep( index - 1 ) );
+               ILD    = Irreps::directProd( IRD, bk_up->gIrrep( index - 1 ) );
+               break;
+         }
 
-      if ( abs( TwoSLU - TwoSLD ) <= two_j ) {
-         int dimLU = bk_up->gCurrentDim( index - 1, NLU, TwoSLU, ILU );
-         int dimLD = bk_down->gCurrentDim( index - 1, NLD, TwoSLD, ILD );
+         if ( abs( TwoSLU - TwoSLD ) <= two_j ) {
+            int dimLU = bk_up->gCurrentDim( index - 1, NLU, TwoSLU, ILU );
+            int dimLD = bk_down->gCurrentDim( index - 1, NLD, TwoSLD, ILD );
 
-         if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
-            dcomplex * block_up   = den_up->gStorage( NLU, TwoSLU, ILU, NRU, TwoSRU, IRU );
-            dcomplex * block_down = den_down->gStorage( NLD, TwoSLD, ILD, NRD, TwoSRD, IRD );
-            dcomplex * left_block = previous->gStorage( NLU, TwoSLU, ILU, NLD, TwoSLD, ILD );
+            if ( ( dimLU > 0 ) && ( dimLD > 0 ) ) {
+               dcomplex * block_up   = den_up->gStorage( NLU, TwoSLU, ILU, NRU, TwoSRU, IRU );
+               dcomplex * block_down = den_down->gStorage( NLD, TwoSLD, ILD, NRD, TwoSRD, IRD );
+               dcomplex * left_block = previous->gStorage( NLU, TwoSLU, ILU, NLD, TwoSLD, ILD );
 
-            // Prefactor
-            dcomplex alpha = 1.0;
-            if ( geval >= 2 ) {
-               if ( two_j == 0 ) {
-                  alpha = ( ( jw_phase ) ? -1.0 : 1.0 );
-               } else {
-                  if ( prime_last ) {
-                     alpha = Special::phase( TwoSRU + TwoSLD + two_j + ( ( jw_phase ) ? 3 : 1 ) ) *
-                             sqrt( ( TwoSLD + 1.0 ) * ( TwoSRU + 1.0 ) ) * Wigner::wigner6j( TwoSLU, TwoSLD, two_j, TwoSRD, TwoSRU, 1 );
+               // Prefactor
+               dcomplex alpha = 1.0;
+               if ( geval >= 2 ) {
+                  if ( two_j == 0 ) {
+                     alpha = ( ( jw_phase ) ? -1.0 : 1.0 );
                   } else {
-                     alpha = Special::phase( TwoSRD + TwoSLU + two_j + ( ( jw_phase ) ? 3 : 1 ) ) *
-                             sqrt( ( TwoSLU + 1.0 ) * ( TwoSRD + 1.0 ) ) * Wigner::wigner6j( TwoSLD, TwoSLU, two_j, TwoSRU, TwoSRD, 1 );
+                     if ( prime_last ) {
+                        alpha = Special::phase( TwoSRU + TwoSLD + two_j + ( ( jw_phase ) ? 3 : 1 ) ) *
+                                sqrt( ( TwoSLD + 1.0 ) * ( TwoSRU + 1.0 ) ) * Wigner::wigner6j( TwoSLU, TwoSLD, two_j, TwoSRD, TwoSRU, 1 );
+                     } else {
+                        alpha = Special::phase( TwoSRD + TwoSLU + two_j + ( ( jw_phase ) ? 3 : 1 ) ) *
+                                sqrt( ( TwoSLU + 1.0 ) * ( TwoSRD + 1.0 ) ) * Wigner::wigner6j( TwoSLD, TwoSLU, two_j, TwoSRU, TwoSRD, 1 );
+                     }
                   }
                }
+
+               char cotrans  = 'C';
+               char notrans  = 'N';
+               dcomplex beta = 0.0; // set
+               zgemm_( &cotrans, &notrans, &dimRU, &dimLD, &dimLU, &alpha, block_up, &dimLU, left_block, &dimLU, &beta, workmem, &dimRU );
+
+               alpha = 1.0;
+               beta  = 1.0; // add
+               zgemm_( &notrans, &notrans, &dimRU, &dimRD, &dimLD, &alpha, workmem, &dimRU, block_down, &dimLD, &beta, storage + kappa2index[ ikappa ], &dimRU );
             }
-
-            char cotrans  = 'C';
-            char notrans  = 'N';
-            dcomplex beta = 0.0; // set
-            zgemm_( &cotrans, &notrans, &dimRU, &dimLD, &dimLU, &alpha, block_up, &dimLU, left_block, &dimLU, &beta, workmem, &dimRU );
-
-            alpha = 1.0;
-            beta  = 1.0; // add
-            zgemm_( &notrans, &notrans, &dimRU, &dimRD, &dimLD, &alpha, workmem, &dimRU, block_down, &dimLD, &beta, storage + kappa2index[ ikappa ], &dimRU );
          }
       }
    }
@@ -291,94 +293,96 @@ void CheMPS2::CTensorOperator::update_moving_left( const int ikappa, CTensorOper
    int dimLU = bk_up->gCurrentDim( index, NLU, TwoSLU, ILU );
    int dimLD = bk_down->gCurrentDim( index, NLD, TwoSLD, ILD );
 
-   for ( int geval = 0; geval < 6; geval++ ) {
-      int NRU, NRD, TwoSRU, TwoSRD, IRU, IRD;
-      switch ( geval ) {
-      case 0: // MPS tensor sector (I,J,N) = (0,0,0)
-         TwoSRU = TwoSLU;
-         TwoSRD = TwoSLD;
-         NRU    = NLU;
-         NRD    = NLD;
-         IRU    = ILU;
-         IRD    = ILD;
-         break;
-      case 1: // MPS tensor sector (I,J,N) = (0,0,2)
-         TwoSRU = TwoSLU;
-         TwoSRD = TwoSLD;
-         NRU    = NLU + 2;
-         NRD    = NLD + 2;
-         IRU    = ILU;
-         IRD    = ILD;
-         break;
-      case 2: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
-         TwoSRU = TwoSLU - 1;
-         TwoSRD = TwoSLD - 1;
-         NRU    = NLU + 1;
-         NRD    = NLD + 1;
-         IRU    = Irreps::directProd( ILU, bk_up->gIrrep( index ) );
-         IRD    = Irreps::directProd( ILD, bk_up->gIrrep( index ) );
-         break;
-      case 3: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
-         TwoSRU = TwoSLU - 1;
-         TwoSRD = TwoSLD + 1;
-         NRU    = NLU + 1;
-         NRD    = NLD + 1;
-         IRU    = Irreps::directProd( ILU, bk_up->gIrrep( index ) );
-         IRD    = Irreps::directProd( ILD, bk_up->gIrrep( index ) );
-         break;
-      case 4: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
-         TwoSRU = TwoSLU + 1;
-         TwoSRD = TwoSLD - 1;
-         NRU    = NLU + 1;
-         NRD    = NLD + 1;
-         IRU    = Irreps::directProd( ILU, bk_up->gIrrep( index ) );
-         IRD    = Irreps::directProd( ILD, bk_up->gIrrep( index ) );
-         break;
-      case 5: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
-         TwoSRU = TwoSLU + 1;
-         TwoSRD = TwoSLD + 1;
-         NRU    = NLU + 1;
-         NRD    = NLD + 1;
-         IRU    = Irreps::directProd( ILU, bk_up->gIrrep( index ) );
-         IRD    = Irreps::directProd( ILD, bk_up->gIrrep( index ) );
-         break;
-      }
+   if ( dimLU > 0 && dimLD > 0 ) {
+      for ( int geval = 0; geval < 6; geval++ ) {
+         int NRU, NRD, TwoSRU, TwoSRD, IRU, IRD;
+         switch ( geval ) {
+            case 0: // MPS tensor sector (I,J,N) = (0,0,0)
+               TwoSRU = TwoSLU;
+               TwoSRD = TwoSLD;
+               NRU    = NLU;
+               NRD    = NLD;
+               IRU    = ILU;
+               IRD    = ILD;
+               break;
+            case 1: // MPS tensor sector (I,J,N) = (0,0,2)
+               TwoSRU = TwoSLU;
+               TwoSRD = TwoSLD;
+               NRU    = NLU + 2;
+               NRD    = NLD + 2;
+               IRU    = ILU;
+               IRD    = ILD;
+               break;
+            case 2: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
+               TwoSRU = TwoSLU - 1;
+               TwoSRD = TwoSLD - 1;
+               NRU    = NLU + 1;
+               NRD    = NLD + 1;
+               IRU    = Irreps::directProd( ILU, bk_up->gIrrep( index ) );
+               IRD    = Irreps::directProd( ILD, bk_up->gIrrep( index ) );
+               break;
+            case 3: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
+               TwoSRU = TwoSLU - 1;
+               TwoSRD = TwoSLD + 1;
+               NRU    = NLU + 1;
+               NRD    = NLD + 1;
+               IRU    = Irreps::directProd( ILU, bk_up->gIrrep( index ) );
+               IRD    = Irreps::directProd( ILD, bk_up->gIrrep( index ) );
+               break;
+            case 4: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
+               TwoSRU = TwoSLU + 1;
+               TwoSRD = TwoSLD - 1;
+               NRU    = NLU + 1;
+               NRD    = NLD + 1;
+               IRU    = Irreps::directProd( ILU, bk_up->gIrrep( index ) );
+               IRD    = Irreps::directProd( ILD, bk_up->gIrrep( index ) );
+               break;
+            case 5: // MPS tensor sector (I,J,N) = (Ilocal,1/2,1)
+               TwoSRU = TwoSLU + 1;
+               TwoSRD = TwoSLD + 1;
+               NRU    = NLU + 1;
+               NRD    = NLD + 1;
+               IRU    = Irreps::directProd( ILU, bk_up->gIrrep( index ) );
+               IRD    = Irreps::directProd( ILD, bk_up->gIrrep( index ) );
+               break;
+         }
 
-      if ( abs( TwoSRU - TwoSRD ) <= two_j ) {
-         int dimRU = bk_up->gCurrentDim( index + 1, NRU, TwoSRU, IRU );
-         int dimRD = bk_down->gCurrentDim( index + 1, NRD, TwoSRD, IRD );
+         if ( abs( TwoSRU - TwoSRD ) <= two_j ) {
+            int dimRU = bk_up->gCurrentDim( index + 1, NRU, TwoSRU, IRU );
+            int dimRD = bk_down->gCurrentDim( index + 1, NRD, TwoSRD, IRD );
 
-         if ( ( dimRU > 0 ) && ( dimRD > 0 ) ) {
-            dcomplex * block_up    = den_up->gStorage( NLU, TwoSLU, ILU, NRU, TwoSRU, IRU );
-            dcomplex * block_down  = den_down->gStorage( NLD, TwoSLD, ILD, NRD, TwoSRD, IRD );
-            dcomplex * right_block = previous->gStorage( NRU, TwoSRU, IRU, NRD, TwoSRD, IRD );
+            if ( ( dimRU > 0 ) && ( dimRD > 0 ) ) {
+               dcomplex * block_up    = den_up->gStorage( NLU, TwoSLU, ILU, NRU, TwoSRU, IRU );
+               dcomplex * block_down  = den_down->gStorage( NLD, TwoSLD, ILD, NRD, TwoSRD, IRD );
+               dcomplex * right_block = previous->gStorage( NRU, TwoSRU, IRU, NRD, TwoSRD, IRD );
 
-            // Prefactor
-            dcomplex alpha = 1.0;
-            if ( geval >= 2 ) {
-               if ( two_j == 0 ) {
-                  alpha = ( ( jw_phase ) ? -1.0 : 1.0 ) * ( ( TwoSRU + 1.0 ) / ( TwoSLU + 1 ) );
-               } else {
-                  if ( prime_last ) {
-                     alpha = Special::phase( TwoSRU + TwoSLD + two_j + ( ( jw_phase ) ? 3 : 1 ) ) *
-                             ( TwoSRD + 1 ) * sqrt( ( TwoSRU + 1.0 ) / ( TwoSLD + 1 ) ) * Wigner::wigner6j( TwoSRU, TwoSRD, two_j, TwoSLD, TwoSLU, 1 );
+               // Prefactor
+               dcomplex alpha = 1.0;
+               if ( geval >= 2 ) {
+                  if ( two_j == 0 ) {
+                     alpha = ( ( jw_phase ) ? -1.0 : 1.0 ) * ( ( TwoSRU + 1.0 ) / ( TwoSLU + 1 ) );
                   } else {
-                     alpha = Special::phase( TwoSRD + TwoSLU + two_j + ( ( jw_phase ) ? 3 : 1 ) ) *
-                             ( TwoSRU + 1 ) * sqrt( ( TwoSRD + 1.0 ) / ( TwoSLU + 1 ) ) * Wigner::wigner6j( TwoSRD, TwoSRU, two_j, TwoSLU, TwoSLD, 1 );
+                     if ( prime_last ) {
+                        alpha = Special::phase( TwoSRU + TwoSLD + two_j + ( ( jw_phase ) ? 3 : 1 ) ) *
+                                ( TwoSRD + 1 ) * sqrt( ( TwoSRU + 1.0 ) / ( TwoSLD + 1 ) ) * Wigner::wigner6j( TwoSRU, TwoSRD, two_j, TwoSLD, TwoSLU, 1 );
+                     } else {
+                        alpha = Special::phase( TwoSRD + TwoSLU + two_j + ( ( jw_phase ) ? 3 : 1 ) ) *
+                                ( TwoSRU + 1 ) * sqrt( ( TwoSRD + 1.0 ) / ( TwoSLU + 1 ) ) * Wigner::wigner6j( TwoSRD, TwoSRU, two_j, TwoSLU, TwoSLD, 1 );
+                     }
                   }
                }
+
+               // prefactor * block_up * right_block --> mem
+               char cotrans  = 'C';
+               char notrans  = 'N';
+               dcomplex beta = 0.0; // set
+               zgemm_( &notrans, &notrans, &dimLU, &dimRD, &dimRU, &alpha, block_up, &dimLU, right_block, &dimRU, &beta, workmem, &dimLU );
+
+               // mem * block_down^T --> storage
+               alpha = 1.0;
+               beta  = 1.0; // add
+               zgemm_( &notrans, &cotrans, &dimLU, &dimLD, &dimRD, &alpha, workmem, &dimLU, block_down, &dimLD, &beta, storage + kappa2index[ ikappa ], &dimLU );
             }
-
-            // prefactor * block_up * right_block --> mem
-            char cotrans  = 'C';
-            char notrans  = 'N';
-            dcomplex beta = 0.0; // set
-            zgemm_( &notrans, &notrans, &dimLU, &dimRD, &dimRU, &alpha, block_up, &dimLU, right_block, &dimRU, &beta, workmem, &dimLU );
-
-            // mem * block_down^T --> storage
-            alpha = 1.0;
-            beta  = 1.0; // add
-            zgemm_( &notrans, &cotrans, &dimLU, &dimLD, &dimRD, &alpha, workmem, &dimLU, block_down, &dimLD, &beta, storage + kappa2index[ ikappa ], &dimLU );
          }
       }
    }
@@ -407,19 +411,21 @@ void CheMPS2::CTensorOperator::zaxpy_tensorCD( dcomplex alpha, CTensorOperator *
       const int dim_up   = bk_up->gCurrentDim( index, N, TwoSU, IRU );
       const int dim_down = bk_down->gCurrentDim( index, N, TwoSD, IRD );
 
-      dcomplex prefactor = alpha;
+      if ( dim_up > 0 && dim_down > 0 ) {
+         dcomplex prefactor = alpha;
 
-      if ( TwoSU != TwoSD ) {
-         prefactor *= Special::phase( TwoSU - TwoSD ) * sqrt( ( moving_right ) ? ( ( TwoSU + 1.0 ) / ( TwoSD + 1 ) )
-                                                                               : ( ( TwoSD + 1.0 ) / ( TwoSU + 1 ) ) );
-      }
+         if ( TwoSU != TwoSD ) {
+            prefactor *= Special::phase( TwoSU - TwoSD ) * sqrt( ( moving_right ) ? ( ( TwoSU + 1.0 ) / ( TwoSD + 1 ) )
+                                                                                  : ( ( TwoSD + 1.0 ) / ( TwoSU + 1 ) ) );
+         }
 
-      dcomplex * block = to_add->gStorage( N, TwoSU, IRU, N, TwoSD, IRD );
+         dcomplex * block = to_add->gStorage( N, TwoSU, IRU, N, TwoSD, IRD );
 
-      for ( int irow = 0; irow < dim_up; irow++ ) {
-         for ( int icol = 0; icol < dim_down; icol++ ) {
-            storage[ kappa2index[ ikappa ] + irow + dim_up * icol ] +=
-                prefactor * block[ irow + dim_up * icol ];
+         for ( int irow = 0; irow < dim_up; irow++ ) {
+            for ( int icol = 0; icol < dim_down; icol++ ) {
+               storage[ kappa2index[ ikappa ] + irow + dim_up * icol ] +=
+                   prefactor * block[ irow + dim_up * icol ];
+            }
          }
       }
    }
@@ -441,17 +447,19 @@ void CheMPS2::CTensorOperator::zaxpy_tensorCTDT( dcomplex alpha, CTensorOperator
       const int dim_up   = bk_up->gCurrentDim( index, N, TwoSU, IRU );
       const int dim_down = bk_down->gCurrentDim( index, N, TwoSD, IRD );
 
-      dcomplex prefactor = alpha;
+      if ( dim_up > 0 && dim_down > 0 ) {
+         dcomplex prefactor = alpha;
 
-      if ( TwoSU != TwoSD ) {
-         prefactor *= Special::phase( TwoSD - TwoSU ) * sqrt( ( moving_right ) ? ( ( TwoSD + 1.0 ) / ( TwoSU + 1 ) )
-                                                                               : ( ( TwoSU + 1.0 ) / ( TwoSD + 1 ) ) );
-      }
+         if ( TwoSU != TwoSD ) {
+            prefactor *= Special::phase( TwoSD - TwoSU ) * sqrt( ( moving_right ) ? ( ( TwoSD + 1.0 ) / ( TwoSU + 1 ) )
+                                                                                  : ( ( TwoSU + 1.0 ) / ( TwoSD + 1 ) ) );
+         }
 
-      dcomplex * block = to_add->gStorage( N, TwoSU, IRU, N, TwoSD, IRD );
-      for ( int irow = 0; irow < dim_up; irow++ ) {
-         for ( int icol = 0; icol < dim_down; icol++ ) {
-            storage[ kappa2index[ ikappa ] + irow + dim_up * icol ] += prefactor * block[ irow + dim_up * icol ];
+         dcomplex * block = to_add->gStorage( N, TwoSU, IRU, N, TwoSD, IRD );
+         for ( int irow = 0; irow < dim_up; irow++ ) {
+            for ( int icol = 0; icol < dim_down; icol++ ) {
+               storage[ kappa2index[ ikappa ] + irow + dim_up * icol ] += prefactor * block[ irow + dim_up * icol ];
+            }
          }
       }
    }
@@ -473,16 +481,18 @@ void CheMPS2::CTensorOperator::zaxpy_transpose_tensorCD( dcomplex alpha, CTensor
       const int dimU = bk_up->gCurrentDim( index, N, TwoSU, IRU );
       const int dimD = bk_down->gCurrentDim( index, N, TwoSD, IRD );
 
-      dcomplex prefactor = alpha;
-      if ( TwoSU != TwoSD ) {
-         prefactor *= Special::phase( TwoSU - TwoSD ) * sqrt( ( moving_right ) ? ( ( TwoSU + 1.0 ) / ( TwoSD + 1 ) )
-                                                                               : ( ( TwoSD + 1.0 ) / ( TwoSU + 1 ) ) );
-      }
+      if ( dimU > 0 && dimD > 0 ) {
+         dcomplex prefactor = alpha;
+         if ( TwoSU != TwoSD ) {
+            prefactor *= Special::phase( TwoSU - TwoSD ) * sqrt( ( moving_right ) ? ( ( TwoSU + 1.0 ) / ( TwoSD + 1 ) )
+                                                                                  : ( ( TwoSD + 1.0 ) / ( TwoSU + 1 ) ) );
+         }
 
-      dcomplex * block = to_add->gStorage( N, TwoSD, IRD, N, TwoSU, IRU );
-      for ( int irow = 0; irow < dimU; irow++ ) {
-         for ( int icol = 0; icol < dimD; icol++ ) {
-            storage[ kappa2index[ ikappa ] + irow + dimU * icol ] += prefactor * std::conj( block[ icol + dimD * irow ] );
+         dcomplex * block = to_add->gStorage( N, TwoSD, IRD, N, TwoSU, IRU );
+         for ( int irow = 0; irow < dimU; irow++ ) {
+            for ( int icol = 0; icol < dimD; icol++ ) {
+               storage[ kappa2index[ ikappa ] + irow + dimU * icol ] += prefactor * std::conj( block[ icol + dimD * irow ] );
+            }
          }
       }
    }
@@ -517,16 +527,18 @@ dcomplex CheMPS2::CTensorOperator::inproduct( CTensorOperator * buddy, const cha
          const int dimU = bk_up->gCurrentDim( index, N, TwoJU, IRU );
          const int dimD = bk_down->gCurrentDim( index, N, TwoJD, IRD );
 
-         dcomplex temp = 0.0;
-         for ( int row = 0; row < dimU; row++ ) {
-            for ( int col = 0; col < dimD; col++ ) {
-               temp += my_block[ row + dimU * col ] * std::conj( buddy_block[ col + dimD * row ] );
+         if ( dimU > 0 && dimD > 0 ) {
+            dcomplex temp = 0.0;
+            for ( int row = 0; row < dimU; row++ ) {
+               for ( int col = 0; col < dimD; col++ ) {
+                  temp += my_block[ row + dimU * col ] * std::conj( buddy_block[ col + dimD * row ] );
+               }
             }
-         }
 
-         const dcomplex prefactor =
-             ( ( get_2j() == 0 ) ? 1.0 : ( sqrt( ( TwoJU + 1.0 ) / ( TwoJD + 1 ) ) * Special::phase( TwoJU - TwoJD ) ) );
-         value += prefactor * temp;
+            const dcomplex prefactor =
+                ( ( get_2j() == 0 ) ? 1.0 : ( sqrt( ( TwoJU + 1.0 ) / ( TwoJD + 1 ) ) * Special::phase( TwoJU - TwoJD ) ) );
+            value += prefactor * temp;
+         }
       }
    }
 

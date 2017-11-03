@@ -82,43 +82,46 @@ void CheMPS2::CTensorO::create_right( const int ikappa, CTensorT * mps_tensor_up
    int dimRU = bk_up->gCurrentDim( index, NR, TwoSR, IR );
    int dimRD = bk_down->gCurrentDim( index, NR, TwoSR, IR );
 
-   for ( int geval = 0; geval < 4; geval++ ) {
-      int IL, TwoSL, NL;
-      switch ( geval ) {
-      case 0:
-         NL    = NR;
-         TwoSL = TwoSR;
-         IL    = IR;
-         break;
-      case 1:
-         NL    = NR - 2;
-         TwoSL = TwoSR;
-         IL    = IR;
-         break;
-      case 2:
-         NL    = NR - 1;
-         TwoSL = TwoSR - 1;
-         IL    = Irreps::directProd( IR, bk_up->gIrrep( index - 1 ) );
-         break;
-      case 3:
-         NL    = NR - 1;
-         TwoSL = TwoSR + 1;
-         IL    = Irreps::directProd( IR, bk_up->gIrrep( index - 1 ) );
-         break;
-      }
+   if ( dimRU > 0 && dimRD > 0 ) {
 
-      int dimLU = bk_up->gCurrentDim( index - 1, NL, TwoSL, IL );
-      int dimLD = bk_down->gCurrentDim( index - 1, NL, TwoSL, IL );
-      if ( ( dimLU > 0 ) && ( dimLD > 0 ) && ( dimLU == dimLD ) ) {
-         dcomplex alpha = 1.0;
-         dcomplex beta  = 1.0; // add
-         dcomplex * Tup = mps_tensor_up->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
-         dcomplex * Tdo = mps_tensor_down->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+      for ( int geval = 0; geval < 4; geval++ ) {
+         int IL, TwoSL, NL;
+         switch ( geval ) {
+            case 0:
+               NL    = NR;
+               TwoSL = TwoSR;
+               IL    = IR;
+               break;
+            case 1:
+               NL    = NR - 2;
+               TwoSL = TwoSR;
+               IL    = IR;
+               break;
+            case 2:
+               NL    = NR - 1;
+               TwoSL = TwoSR - 1;
+               IL    = Irreps::directProd( IR, bk_up->gIrrep( index - 1 ) );
+               break;
+            case 3:
+               NL    = NR - 1;
+               TwoSL = TwoSR + 1;
+               IL    = Irreps::directProd( IR, bk_up->gIrrep( index - 1 ) );
+               break;
+         }
 
-         char cotrans = 'C';
-         char notrans = 'N';
-         zgemm_( &cotrans, &notrans, &dimRU, &dimRD, &dimLU, &alpha, Tup, &dimLU,
-                 Tdo, &dimLD, &beta, storage + kappa2index[ ikappa ], &dimRU );
+         int dimLU = bk_up->gCurrentDim( index - 1, NL, TwoSL, IL );
+         int dimLD = bk_down->gCurrentDim( index - 1, NL, TwoSL, IL );
+         if ( ( dimLU > 0 ) && ( dimLD > 0 ) && ( dimLU == dimLD ) ) {
+            dcomplex alpha = 1.0;
+            dcomplex beta  = 1.0; // add
+            dcomplex * Tup = mps_tensor_up->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+            dcomplex * Tdo = mps_tensor_down->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+
+            char cotrans = 'C';
+            char notrans = 'N';
+            zgemm_( &cotrans, &notrans, &dimRU, &dimRD, &dimLU, &alpha, Tup, &dimLU,
+                    Tdo, &dimLD, &beta, storage + kappa2index[ ikappa ], &dimRU );
+         }
       }
    }
 }
@@ -131,43 +134,45 @@ void CheMPS2::CTensorO::create_left( const int ikappa, CTensorT * mps_tensor_up,
    int dimLU = bk_up->gCurrentDim( index, NL, TwoSL, IL );
    int dimLD = bk_down->gCurrentDim( index, NL, TwoSL, IL );
 
-   for ( int geval = 0; geval < 4; geval++ ) {
-      int IR, TwoSR, NR;
-      switch ( geval ) {
-      case 0:
-         NR    = NL;
-         TwoSR = TwoSL;
-         IR    = IL;
-         break;
-      case 1:
-         NR    = NL + 2;
-         TwoSR = TwoSL;
-         IR    = IL;
-         break;
-      case 2:
-         NR    = NL + 1;
-         TwoSR = TwoSL - 1;
-         IR    = Irreps::directProd( IL, bk_up->gIrrep( index ) );
-         break;
-      case 3:
-         NR    = NL + 1;
-         TwoSR = TwoSL + 1;
-         IR    = Irreps::directProd( IL, bk_up->gIrrep( index ) );
-         break;
-      }
+   if ( dimLU > 0 && dimLD > 0 ) {
+      for ( int geval = 0; geval < 4; geval++ ) {
+         int IR, TwoSR, NR;
+         switch ( geval ) {
+            case 0:
+               NR    = NL;
+               TwoSR = TwoSL;
+               IR    = IL;
+               break;
+            case 1:
+               NR    = NL + 2;
+               TwoSR = TwoSL;
+               IR    = IL;
+               break;
+            case 2:
+               NR    = NL + 1;
+               TwoSR = TwoSL - 1;
+               IR    = Irreps::directProd( IL, bk_up->gIrrep( index ) );
+               break;
+            case 3:
+               NR    = NL + 1;
+               TwoSR = TwoSL + 1;
+               IR    = Irreps::directProd( IL, bk_up->gIrrep( index ) );
+               break;
+         }
 
-      int dimRU = bk_up->gCurrentDim( index + 1, NR, TwoSR, IR );
-      int dimRD = bk_down->gCurrentDim( index + 1, NR, TwoSR, IR );
-      if ( ( dimRU > 0 ) && ( dimRD > 0 ) && ( dimRU == dimRD ) ) {
-         dcomplex * Tup = mps_tensor_up->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
-         dcomplex * Tdo = mps_tensor_down->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
-         char cotrans   = 'C';
-         char notrans   = 'N';
-         dcomplex alpha = ( ( geval > 1 ) ? ( ( TwoSR + 1.0 ) / ( TwoSL + 1 ) ) : 1.0 );
-         dcomplex beta  = 1.0; // add
+         int dimRU = bk_up->gCurrentDim( index + 1, NR, TwoSR, IR );
+         int dimRD = bk_down->gCurrentDim( index + 1, NR, TwoSR, IR );
+         if ( ( dimRU > 0 ) && ( dimRD > 0 ) && ( dimRU == dimRD ) ) {
+            dcomplex * Tup = mps_tensor_up->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+            dcomplex * Tdo = mps_tensor_down->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+            char cotrans   = 'C';
+            char notrans   = 'N';
+            dcomplex alpha = ( ( geval > 1 ) ? ( ( TwoSR + 1.0 ) / ( TwoSL + 1 ) ) : 1.0 );
+            dcomplex beta  = 1.0; // add
 
-         zgemm_( &notrans, &cotrans, &dimLU, &dimLD, &dimRU, &alpha, Tup, &dimLU,
-                 Tdo, &dimLD, &beta, storage + kappa2index[ ikappa ], &dimLU );
+            zgemm_( &notrans, &cotrans, &dimLU, &dimLD, &dimRU, &alpha, Tup, &dimLU,
+                    Tdo, &dimLD, &beta, storage + kappa2index[ ikappa ], &dimLU );
+         }
       }
    }
 }

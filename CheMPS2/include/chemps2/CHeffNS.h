@@ -70,8 +70,7 @@ namespace CheMPS2 {
       // The Problem (and hence Hamiltonian)
       const CheMPS2::Problem * Prob;
 
-      void makeHeff( dcomplex * memS, dcomplex * memP,
-                     CSobject * denS, CSobject * denP, CTensorL *** Ltensors,
+      void makeHeff( CSobject * denS, CSobject * denP, CTensorL *** Ltensors,
                      CTensorLT *** LtensorsT, CTensorOperator **** Atensors,
                      CTensorOperator **** AtensorsT, CTensorOperator **** Btensors,
                      CTensorOperator **** BtensorsT, CTensorOperator **** Ctensors,
@@ -90,97 +89,97 @@ namespace CheMPS2 {
       void addDiagram1D( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, dcomplex Helem_rechts );
 
       // The diagrams: Type 2/5
-      void addDiagram2a1spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS,
+      void addDiagram2a1spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP,
                                CTensorOperator **** ATtensors, CTensorS0T **** S0Ttensors, dcomplex * workspace );
 
-      void addDiagram2a2spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS,
+      void addDiagram2a2spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP,
                                CTensorOperator **** Atensors, CTensorS0 **** S0tensors, dcomplex * workspace );
 
-      void addDiagram2a1spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS,
+      void addDiagram2a1spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP,
                                CTensorOperator **** BTtensors, CTensorS1T **** S1Ttensors, dcomplex * workspace );
 
-      void addDiagram2a2spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS,
+      void addDiagram2a2spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP,
                                CTensorOperator **** Btensors, CTensorS1 **** S1tensors, dcomplex * workspace );
 
-      void addDiagram2a3spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS,
+      void addDiagram2a3spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP,
                                CTensorOperator **** Ctensors, CTensorOperator **** CTtensors, CTensorF0 **** F0tensors,
                                CTensorF0T **** F0Ttensors, dcomplex * workspace );
 
-      void addDiagram2a3spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS,
+      void addDiagram2a3spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP,
                                CTensorOperator **** Dtensors, CTensorOperator **** DTtensors, CTensorF1 **** F1tensors,
                                CTensorF1T **** F1Ttensors, dcomplex * workspace );
 
-      void addDiagram2b1and2b2( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS,
+      void addDiagram2b1and2b2( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP,
                                 CTensorOperator * Atensor, CTensorOperator * ATtensor );
 
-      void addDiagram2c1and2c2( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS,
+      void addDiagram2c1and2c2( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP,
                                 CTensorOperator * Atensor, CTensorOperator * ATtensor );
 
-      void addDiagram2dall( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS );
+      void addDiagram2dall( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP );
 
-      void addDiagram2e1and2e2( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS,
+      void addDiagram2e1and2e2( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP,
                                 CTensorOperator * Atensor, CTensorOperator * ATtensor );
 
-      void addDiagram2f1and2f2( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS,
+      void addDiagram2f1and2f2( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP,
                                 CTensorOperator * Atensor, CTensorOperator * ATtensor );
 
-      void addDiagram2b3spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * CTtensor );
-      void addDiagram2c3spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * CTtensor );
-      void addDiagram2e3spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * CTtensor );
-      void addDiagram2f3spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * CTtensor );
-      void addDiagram2b3spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * DTtensor );
-      void addDiagram2c3spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * DTtensor );
-      void addDiagram2e3spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * DTtensor );
-      void addDiagram2f3spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * DTtensor );
+      void addDiagram2b3spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * CTtensor );
+      void addDiagram2c3spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * CTtensor );
+      void addDiagram2e3spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * CTtensor );
+      void addDiagram2f3spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * CTtensor );
+      void addDiagram2b3spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * DTtensor );
+      void addDiagram2c3spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * DTtensor );
+      void addDiagram2e3spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * DTtensor );
+      void addDiagram2f3spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * DTtensor );
 
       //  //The diagrams: Type 3/5
-      void addDiagram3Aand3D( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorQ * Qleft, CTensorQT * QTleft, CTensorL ** Lleft, CTensorLT ** LTleft, dcomplex * temp );
-      void addDiagram3Band3I( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorQ * Qleft, CTensorQT * QTleft, CTensorL ** Lleft, CTensorLT ** LTleft, dcomplex * temp );
-      void addDiagram3C( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorQ ** Qleft, CTensorQT ** QTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
-      void addDiagram3Eand3H( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS );
-      void addDiagram3Kand3F( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorQ * Qright, CTensorQT * QTright, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
-      void addDiagram3Land3G( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorQ * Qright, CTensorQT * QTright, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
-      void addDiagram3J( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorQ ** Qright, CTensorQT ** QTright, CTensorL ** Lleft, CTensorLT ** LTleft, dcomplex * temp );
+      void addDiagram3Aand3D( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorQ * Qleft, CTensorQT * QTleft, CTensorL ** Lleft, CTensorLT ** LTleft, dcomplex * temp );
+      void addDiagram3Band3I( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorQ * Qleft, CTensorQT * QTleft, CTensorL ** Lleft, CTensorLT ** LTleft, dcomplex * temp );
+      void addDiagram3C( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorQ ** Qleft, CTensorQT ** QTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
+      void addDiagram3Eand3H( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP );
+      void addDiagram3Kand3F( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorQ * Qright, CTensorQT * QTright, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
+      void addDiagram3Land3G( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorQ * Qright, CTensorQT * QTright, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
+      void addDiagram3J( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorQ ** Qright, CTensorQT ** QTright, CTensorL ** Lleft, CTensorLT ** LTleft, dcomplex * temp );
 
       // The diagrams: Type 4/5
-      void addDiagram4A1and4A2spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * Atens, CTensorOperator * ATtens );
-      void addDiagram4A1and4A2spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * Btens, CTensorOperator * BTtens );
-      void addDiagram4A3and4A4spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * Ctens, CTensorOperator * CTtens );
-      void addDiagram4A3and4A4spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * Dtens, CTensorOperator * DTtens );
-      void addDiagram4B1and4B2spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator *** Aleft, CTensorOperator *** ATleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
-      void addDiagram4B1and4B2spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator *** Bleft, CTensorOperator *** BTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
-      void addDiagram4B3and4B4spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator *** Cleft, CTensorOperator *** CTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
-      void addDiagram4B3and4B4spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator *** Dleft, CTensorOperator *** DTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
-      void addDiagram4C1and4C2spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator *** Aleft, CTensorOperator *** ATleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
-      void addDiagram4C1and4C2spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator *** Bleft, CTensorOperator *** BTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
-      void addDiagram4C3and4C4spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator *** Cleft, CTensorOperator *** CTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
-      void addDiagram4C3and4C4spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator *** Dleft, CTensorOperator *** DTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
-      void addDiagram4D( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, dcomplex * temp );
-      void addDiagram4E( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
-      void addDiagram4F( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
-      void addDiagram4G( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
-      void addDiagram4H( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
-      void addDiagram4I( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, dcomplex * temp );
-      void addDiagram4J1and4J2spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * Aright, CTensorOperator * ATright );
-      void addDiagram4J1and4J2spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * Bright, CTensorOperator * BTright );
-      void addDiagram4J3and4J4spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * Cright, CTensorOperator * CTright );
-      void addDiagram4J3and4J4spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorOperator * Dright, CTensorOperator * DTright );
-      void addDiagram4K1and4K2spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Aright, CTensorOperator *** ATright, dcomplex * temp );
-      void addDiagram4L1and4L2spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Aright, CTensorOperator *** ATright, dcomplex * temp );
-      void addDiagram4K1and4K2spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Bright, CTensorOperator *** BTright, dcomplex * temp );
-      void addDiagram4L1and4L2spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Bright, CTensorOperator *** BTright, dcomplex * temp );
-      void addDiagram4K3and4K4spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Cright, CTensorOperator *** CTright, dcomplex * temp );
-      void addDiagram4L3and4L4spin0( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Cright, CTensorOperator *** CTright, dcomplex * temp );
-      void addDiagram4K3and4K4spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Dright, CTensorOperator *** DTright, dcomplex * temp );
-      void addDiagram4L3and4L4spin1( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Dright, CTensorOperator *** DTright, dcomplex * temp );
+      void addDiagram4A1and4A2spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * Atens, CTensorOperator * ATtens );
+      void addDiagram4A1and4A2spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * Btens, CTensorOperator * BTtens );
+      void addDiagram4A3and4A4spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * Ctens, CTensorOperator * CTtens );
+      void addDiagram4A3and4A4spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * Dtens, CTensorOperator * DTtens );
+      void addDiagram4B1and4B2spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator *** Aleft, CTensorOperator *** ATleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
+      void addDiagram4B1and4B2spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator *** Bleft, CTensorOperator *** BTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
+      void addDiagram4B3and4B4spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator *** Cleft, CTensorOperator *** CTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
+      void addDiagram4B3and4B4spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator *** Dleft, CTensorOperator *** DTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
+      void addDiagram4C1and4C2spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator *** Aleft, CTensorOperator *** ATleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
+      void addDiagram4C1and4C2spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator *** Bleft, CTensorOperator *** BTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
+      void addDiagram4C3and4C4spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator *** Cleft, CTensorOperator *** CTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
+      void addDiagram4C3and4C4spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator *** Dleft, CTensorOperator *** DTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
+      void addDiagram4D( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, dcomplex * temp );
+      void addDiagram4E( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
+      void addDiagram4F( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
+      void addDiagram4G( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp );
+      void addDiagram4H( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
+      void addDiagram4I( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, dcomplex * temp );
+      void addDiagram4J1and4J2spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * Aright, CTensorOperator * ATright );
+      void addDiagram4J1and4J2spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * Bright, CTensorOperator * BTright );
+      void addDiagram4J3and4J4spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * Cright, CTensorOperator * CTright );
+      void addDiagram4J3and4J4spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorOperator * Dright, CTensorOperator * DTright );
+      void addDiagram4K1and4K2spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Aright, CTensorOperator *** ATright, dcomplex * temp );
+      void addDiagram4L1and4L2spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Aright, CTensorOperator *** ATright, dcomplex * temp );
+      void addDiagram4K1and4K2spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Bright, CTensorOperator *** BTright, dcomplex * temp );
+      void addDiagram4L1and4L2spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Bright, CTensorOperator *** BTright, dcomplex * temp );
+      void addDiagram4K3and4K4spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Cright, CTensorOperator *** CTright, dcomplex * temp );
+      void addDiagram4L3and4L4spin0( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Cright, CTensorOperator *** CTright, dcomplex * temp );
+      void addDiagram4K3and4K4spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Dright, CTensorOperator *** DTright, dcomplex * temp );
+      void addDiagram4L3and4L4spin1( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorOperator *** Dright, CTensorOperator *** DTright, dcomplex * temp );
 
       // The diagrams: type 5/5
-      void addDiagram5A( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
-      void addDiagram5B( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
-      void addDiagram5C( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
-      void addDiagram5D( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
-      void addDiagram5E( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
-      void addDiagram5F( const int ikappa, dcomplex * memS, dcomplex * memHeff, CSobject * denS, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
+      void addDiagram5A( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
+      void addDiagram5B( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
+      void addDiagram5C( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
+      void addDiagram5D( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
+      void addDiagram5E( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
+      void addDiagram5F( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorL ** Lleft, CTensorLT ** LTleft, CTensorL ** Lright, CTensorLT ** LTright, dcomplex * temp, dcomplex * temp2 );
    };
 }
 

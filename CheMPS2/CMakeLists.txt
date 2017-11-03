@@ -112,7 +112,9 @@ if (NOT SHARED_ONLY)
     target_link_libraries (chemps2-static PRIVATE ${LIBC_INTERJECT}
                                                   tgt::lapack
                                                   tgt::hdf5)
-    set_target_properties (chemps2-static PROPERTIES OUTPUT_NAME "chemps2"
+    set_target_properties (chemps2-static PROPERTIES SOVERSION ${CheMPS2_LIB_SOVERSION}
+                                                     MACOSX_RPATH ON
+                                                     OUTPUT_NAME "chemps2"
                                                      EXPORT_NAME "chemps2")
 endif()
 

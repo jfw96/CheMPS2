@@ -69,7 +69,7 @@ namespace CheMPS2 {
              \param max_time the max. time to use this scheme to
              \param noise_prefactor the noise prefactor for that instruction
              \param davidson_rtol the Davidson residual tolerance for that instruction */
-      void set_instruction( const int instruction, const int D, const double time_step, const double max_time, const double energy_conv, const int max_sweeps, const double noise_prefactor );
+      void set_instruction( const int instruction, const int D, const double time_step, const double max_time, const double cut_off, const int max_sweeps, const double noise_prefactor );
 
       //! Set an instruction
       /** \param instruction the number of the instruction
@@ -101,6 +101,11 @@ namespace CheMPS2 {
              \return the energy convergence threshold for this instruction */
       double get_energy_conv( const int instruction ) const;
 
+      //! Get the energy convergence threshold for a particular instruction
+      /** \param instruction the number of the instruction
+          \return the energy convergence threshold for this instruction */
+      double get_cut_off( const int instruction ) const;
+
       //! Get the maximum number of sweeps for a particular instruction
       /** \param instruction the number of the instruction
              \return the maximum number of sweeps for this instruction */
@@ -125,6 +130,9 @@ namespace CheMPS2 {
 
       //Energy convergence thresholds
       double * energy_convergence;
+
+      //Energy convergence thresholds
+      double * cut_offs;
 
       //Maximum number of sweeps per instruction
       int * num_max_sweeps;

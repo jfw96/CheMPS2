@@ -968,7 +968,7 @@ void CheMPS2::TimeTaylor::doStep( const int currentInstruction ) {
 
          denPA->Add( -scheme->get_time_step( currentInstruction ), denPB );
 
-         double disc = denPA->Split( MPSDT[ site ], MPSDT[ site + 1 ], scheme->get_D( currentInstruction ), false, false );
+         double disc = denPA->Split( MPSDT[ site ], MPSDT[ site + 1 ], scheme->get_D( currentInstruction ), scheme->get_cut_off( currentInstruction ), false, true );
 
          delete heff;
          delete denPA;
@@ -998,7 +998,7 @@ void CheMPS2::TimeTaylor::doStep( const int currentInstruction ) {
 
          denPA->Add( -scheme->get_time_step( currentInstruction ), denPB );
 
-         double disc = denPA->Split( MPSDT[ site ], MPSDT[ site + 1 ], scheme->get_D( currentInstruction ), true, false );
+         double disc = denPA->Split( MPSDT[ site ], MPSDT[ site + 1 ], scheme->get_D( currentInstruction ), scheme->get_cut_off( currentInstruction ), true, true );
 
          delete heff;
          delete denPA;
@@ -1040,6 +1040,13 @@ void CheMPS2::TimeTaylor::Propagate() {
    for ( int inst = 0; inst < scheme->get_number(); inst++ ) {
 
       for ( ; t < scheme->get_max_time( inst ); t += scheme->get_time_step( inst ) ) {
+         ( *logger ) << "t = " << t << " " << Energy();
+
+         for ( int i = 0; i < L + 1; i++ ) {
+            ( *logger ) << " " << denBK->gTotDimAtBound( i );
+         }
+         ( *logger ) << "\n";
+
          deleteAllBoundaryOperators();
 
          denBKDT = new SyBookkeeper( prob, scheme->get_D( inst ) );
@@ -1066,7 +1073,6 @@ void CheMPS2::TimeTaylor::Propagate() {
 
          MPS   = MPSDT;
          denBK = denBKDT;
-         ( *logger ) << "t = " << t << " " << Energy() << '\n';
       }
    }
 }

@@ -1,6 +1,6 @@
 project (CheMPS2)
 set (CheMPS2_MMP_VERSION   "1.8.4")
-set (CheMPS2_VERSION       "${CheMPS2_MMP_VERSION}-3 (2017-06-02)")
+set (CheMPS2_VERSION       "${CheMPS2_MMP_VERSION}-4 (2017-10-23)")
 #set (CheMPS2_VERSION       "${CheMPS2_MMP_VERSION}-15 (2017-05-22)")
 set (CheMPS2_AUTHORS       "Sebastian Wouters")
 set (CheMPS2_DESCRIPTION   "A spin-adapted implementation of DMRG for ab initio quantum chemistry")
@@ -33,8 +33,6 @@ option (BUILD_FPIC           "Static library in STATIC_ONLY will be compiled wit
 
 set (CMAKE_VERBOSE_MAKEFILE  OFF)
 set (CMAKE_MODULE_PATH       ${CMAKE_MODULE_PATH} "${CheMPS2_SOURCE_DIR}/CMake/")
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (STATIC_ONLY AND SHARED_ONLY)
     message (FATAL_ERROR "The options STATIC_ONLY=ON and SHARED_ONLY=ON are conflicting." )
@@ -160,4 +158,3 @@ install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
                ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
                ${CheMPS2_SOURCE_DIR}/CMake/FindTargetHDF5.cmake
                DESTINATION ${CMAKECONFIG_INSTALL_DIR})
-

@@ -94,7 +94,7 @@ namespace CheMPS2 {
       \param change Whether or not the symmetry virtual dimensions are allowed
      to change (when false: D doesn't matter)
       \return the discarded weight if change==true ; else 0.0 */
-      double Split( CTensorT * Tleft, CTensorT * Tright, const int virtualdimensionD, const bool movingright, const bool change );
+      double Split( CTensorT * Tleft, CTensorT * Tright, const int virtualdimensionD, const double cut_off, const bool movingright, const bool change );
 
       //! Add noise to the current S-object
       /** \param NoiseLevel The noise added to the S-object is of size (-0.5 <
