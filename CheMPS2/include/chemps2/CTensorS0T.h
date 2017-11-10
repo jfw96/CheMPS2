@@ -1,6 +1,6 @@
 
-#ifndef TENSORS0T_CHEMPS2_H
-#define TENSORS0T_CHEMPS2_H
+#ifndef CTENSORS0T_CHEMPS2_H
+#define CTENSORS0T_CHEMPS2_H
 
 #include "CTensor.h"
 #include "CTensorLT.h"
@@ -52,6 +52,6 @@ namespace CheMPS2 {
       // makenew when movingleft
       void makenewLeft( const int ikappa, CTensorLT * denL, CTensorT * denTup, CTensorT * denTdown, dcomplex * workmem );
    };
-}
+} // namespace CheMPS2
 
 #endif

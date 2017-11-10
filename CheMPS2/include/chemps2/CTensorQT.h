@@ -1,6 +1,6 @@
 
-#ifndef TENSORQT_CHEMPS2_H
-#define TENSORQT_CHEMPS2_H
+#ifndef CTENSORQT_CHEMPS2_H
+#define CTENSORQT_CHEMPS2_H
 
 #include "CTensorF0.h"
 #include "CTensorF1.h"
@@ -85,6 +85,6 @@ namespace CheMPS2 {
 
       void AddTermsCDLeft( CTensorOperator * denC, CTensorOperator * denD, CTensorT * denTup, CTensorT * denTdown, dcomplex * workmem, dcomplex * workmem2 );
    };
-}
+} // namespace CheMPS2
 
 #endif

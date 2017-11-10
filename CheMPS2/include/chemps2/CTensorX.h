@@ -1,5 +1,5 @@
-#ifndef TENSORX_CHEMPS2_H
-#define TENSORX_CHEMPS2_H
+#ifndef CTENSORX_CHEMPS2_H
+#define CTENSORX_CHEMPS2_H
 
 #include "CTensor.h"
 #include "CTensorF0.h"
@@ -96,6 +96,6 @@ namespace CheMPS2 {
       void addTermDLeft( const int ikappa, CTensorT * denTup, CTensorT * denTdown,
                          CTensorOperator * denD, dcomplex * workmemLR );
    };
-}
+} // namespace CheMPS2
 
 #endif
