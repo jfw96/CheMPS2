@@ -1,6 +1,6 @@
 
-#ifndef TENSORO_CHEMPS2_H
-#define TENSORO_CHEMPS2_H
+#ifndef CTENSORO_CHEMPS2_H
+#define CTENSORO_CHEMPS2_H
 
 #include "CTensorOperator.h"
 #include "CTensorT.h"
@@ -49,6 +49,6 @@ namespace CheMPS2 {
 
       void create_left( const int ikappa, CTensorT * mps_tensor_up, CTensorT * mps_tensor_down );
    };
-}
+} // namespace CheMPS2
 
 #endif

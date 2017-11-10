@@ -18,6 +18,13 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
 
    denBK = new SyBookkeeper( prob, scheme->get_D( 0 ) );
 
+   ( *logger ) << "### Full CI dimensions are:\n";
+   ( *logger ) << "### ";
+   for ( int i = 0; i < L + 1; i++ ) {
+      ( *logger ) << denBK->gFCIDimAtBound( i ) << " ";
+   }
+   ( *logger ) << "\n";
+
    MPS         = new CTensorT *[ L ];
    Ltensors    = new CTensorL **[ L - 1 ];
    LtensorsT   = new CTensorLT **[ L - 1 ];
@@ -698,7 +705,7 @@ void CheMPS2::TimeTaylor::allocateTensors( const int index, const bool movingRig
          Dtensors[ index ][ cnt2 ]  = new CTensorOperator *[ L - 1 - index - cnt2 ];
          DtensorsT[ index ][ cnt2 ] = new CTensorOperator *[ L - 1 - index - cnt2 ];
          for ( int cnt3 = 0; cnt3 < L - 1 - index - cnt2; cnt3++ ) {
-            const int Idiff = CheMPS2::Irreps::directProd( denBKDT->gIrrep( index + 1 + cnt2 + cnt3 ),
+            const int Idiff                    = CheMPS2::Irreps::directProd( denBKDT->gIrrep( index + 1 + cnt2 + cnt3 ),
                                                            denBKDT->gIrrep( index + 1 + cnt3 ) );
             Atensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 0, 2, Idiff, movingRight, true, false, denBKDT, denBK );
             AtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 0, -2, Idiff, movingRight, false, false, denBKDT, denBK );
@@ -723,7 +730,7 @@ void CheMPS2::TimeTaylor::allocateTensors( const int index, const bool movingRig
       Qtensors[ index ]  = new CTensorQ *[ L - 1 - index ];
       QtensorsT[ index ] = new CTensorQT *[ L - 1 - index ];
       for ( int cnt2 = 0; cnt2 < L - 1 - index; cnt2++ ) {
-         Qtensors[ index ][ cnt2 ] = new CTensorQ( index + 1, denBK->gIrrep( index + 1 + cnt2 ), movingRight,
+         Qtensors[ index ][ cnt2 ]  = new CTensorQ( index + 1, denBK->gIrrep( index + 1 + cnt2 ), movingRight,
                                                    denBKDT, denBK, prob, index + 1 + cnt2 );
          QtensorsT[ index ][ cnt2 ] = new CTensorQT( index + 1, denBK->gIrrep( index + 1 + cnt2 ), movingRight,
                                                      denBKDT, denBK, prob, index + 1 + cnt2 );
@@ -767,7 +774,7 @@ void CheMPS2::TimeTaylor::allocateTensors( const int index, const bool movingRig
             S1tensorsT[ index ][ cnt2 ] = new CTensorS1T *[ L - 1 - index - cnt2 ];
          }
          for ( int cnt3 = 0; cnt3 < L - 1 - index - cnt2; cnt3++ ) {
-            const int Iprod = Irreps::directProd( denBKDT->gIrrep( index + 1 + cnt3 ),
+            const int Iprod                     = Irreps::directProd( denBKDT->gIrrep( index + 1 + cnt3 ),
                                                   denBKDT->gIrrep( index + 1 + cnt2 + cnt3 ) );
             F0tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorF0( index + 1, Iprod, movingRight, denBKDT, denBK );
             F0tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorF0T( index + 1, Iprod, movingRight, denBKDT, denBK );
@@ -836,7 +843,7 @@ void CheMPS2::TimeTaylor::allocateTensors( const int index, const bool movingRig
       Qtensors[ index ]  = new CTensorQ *[ index + 1 ];
       QtensorsT[ index ] = new CTensorQT *[ index + 1 ];
       for ( int cnt2 = 0; cnt2 < index + 1; cnt2++ ) {
-         Qtensors[ index ][ cnt2 ] = new CTensorQ( index + 1, denBK->gIrrep( index - cnt2 ), movingRight,
+         Qtensors[ index ][ cnt2 ]  = new CTensorQ( index + 1, denBK->gIrrep( index - cnt2 ), movingRight,
                                                    denBKDT, denBK, prob, index - cnt2 );
          QtensorsT[ index ][ cnt2 ] = new CTensorQT( index + 1, denBK->gIrrep( index - cnt2 ), movingRight,
                                                      denBKDT, denBK, prob, index - cnt2 );
