@@ -203,4 +203,7 @@ void CheMPS2::CHeffNS_1S::Apply( CTensorT * in, CTensorT * out,
       delete[] memLDxRU;
       delete[] memLDxRD;
    }
+
+   delete[] temp;
+   delete[] temp2;
 }

@@ -32,10 +32,6 @@ namespace CheMPS2 {
 
       void Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary = false );
 
-      dcomplex Energy( CTensorT ** mpsIn, SyBookkeeper * bkIn );
-
-      void OneBodyDensity( dcomplex * data );
-
       void fitApplyH( dcomplex factor, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut, const int nSweeps = 5, const int D = 100, const double cut_off = 1e-10 );
 
       void fitApplyH_1site( CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut, const int nSweeps );

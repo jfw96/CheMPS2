@@ -958,6 +958,7 @@ void CheMPS2::TimeTaylor::fitAddMPS( dcomplex factor,
    for ( int index = 0; index < L - 1; index++ ) {
       OtensorsA[ index ] = new CTensorO( index + 1, true, bkOut, bkA );
       OtensorsB[ index ] = new CTensorO( index + 1, true, bkOut, bkB );
+
       // Otensors
       if ( index == 0 ) {
          OtensorsA[ index ]->create( mpsOut[ index ], mpsA[ index ] );
@@ -993,6 +994,7 @@ void CheMPS2::TimeTaylor::fitAddMPS( dcomplex factor,
          delete OtensorsB[ site ];
          OtensorsA[ site ] = new CTensorO( site + 1, false, bkOut, bkA );
          OtensorsB[ site ] = new CTensorO( site + 1, false, bkOut, bkB );
+
          // Otensors
          if ( site == L - 2 ) {
             OtensorsA[ site ]->create( mpsOut[ site + 1 ], mpsA[ site + 1 ] );
@@ -1025,6 +1027,7 @@ void CheMPS2::TimeTaylor::fitAddMPS( dcomplex factor,
          delete OtensorsB[ site ];
          OtensorsA[ site ] = new CTensorO( site + 1, true, bkOut, bkA );
          OtensorsB[ site ] = new CTensorO( site + 1, true, bkOut, bkB );
+
          // Otensors
          if ( site == 0 ) {
             OtensorsA[ site ]->create( mpsOut[ site ], mpsA[ site ] );
@@ -1046,92 +1049,25 @@ void CheMPS2::TimeTaylor::fitAddMPS( dcomplex factor,
 
 void CheMPS2::TimeTaylor::doStep_rk_4( const int currentInstruction, const bool doImaginary, const double offset ) {
 
-   // const dcomplex step = doImaginary ? scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, 1.0 * -scheme->get_time_step( currentInstruction ) );
-
-   // for ( int i = 0; i < scheme->get_max_sweeps( currentInstruction ); ++i ) {
-   //    for ( int site = L - 2; site > 0; site-- ) {
-   //       CSobject * denSB = new CSobject( site, denBK );
-   //       denSB->Join( MPS[ site ], MPS[ site + 1 ] );
-
-   //       CSobject * denPB = new CSobject( site, denBKDT );
-
-   //       // CSobject * denSB = new CSobject( site, denBK );
-   //       // denSB->Join( MPS[ site ], MPS[ site + 1 ] );
-
-   //       // CSobject * denPA         = new CSobject( site, denBKDT );
-   //       // CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? Otensors[ site - 1 ] : NULL;
-   //       // CTensorO * rightOverlapA = ( site + 2 ) < L ? Otensors[ site + 1 ] : NULL;
-   //       // denPA->Join( leftOverlapA, denSB, rightOverlapA );
-
-   //       // CSobject * denPB = new CSobject( site, denBKDT );
-
-   //       // CHeffNS * heff = new CHeffNS( denBKDT, denBK, prob, offset );
-   //       // heff->Apply( denSB, denPB, Ltensors, LtensorsT, Atensors, AtensorsT,
-   //       //              Btensors, BtensorsT, Ctensors, CtensorsT, Dtensors, DtensorsT,
-   //       //              S0tensors, S0tensorsT, S1tensors, S1tensorsT, F0tensors,
-   //       //              F0tensorsT, F1tensors, F1tensorsT, Qtensors, QtensorsT,
-   //       //              Xtensors, leftOverlapA, rightOverlapA );
-
-   //       // denPA->Add( -step, denPB );
-
-   //       // double disc = denPA->Split( MPSDT[ site ], MPSDT[ site + 1 ], scheme->get_D( currentInstruction ), scheme->get_cut_off( currentInstruction ), false, true );
-
-   //       // delete heff;
-   //       // delete denPA;
-   //       // delete denPB;
-   //       // delete denSB;
-
-   //       // updateMovingLeftSafe( site );
-   //    }
-
-   //    for ( int site = 0; site < L - 2; site++ ) {
-   //       CSobject * denSB = new CSobject( site, denBK );
-   //       denSB->Join( MPS[ site ], MPS[ site + 1 ] );
-
-   //       CSobject * denPA         = new CSobject( site, denBKDT );
-   //       CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? Otensors[ site - 1 ] : NULL;
-   //       CTensorO * rightOverlapA = ( site + 2 ) < L ? Otensors[ site + 1 ] : NULL;
-   //       denPA->Join( leftOverlapA, denSB, rightOverlapA );
-
-   //       CSobject * denPB = new CSobject( site, denBKDT );
-
-   //       CHeffNS * heff = new CHeffNS( denBKDT, denBK, prob, offset );
-   //       heff->Apply( denSB, denPB, Ltensors, LtensorsT, Atensors, AtensorsT,
-   //                    Btensors, BtensorsT, Ctensors, CtensorsT, Dtensors, DtensorsT,
-   //                    S0tensors, S0tensorsT, S1tensors, S1tensorsT, F0tensors,
-   //                    F0tensorsT, F1tensors, F1tensorsT, Qtensors, QtensorsT,
-   //                    Xtensors, leftOverlapA, rightOverlapA );
-
-   //       denPA->Add( -step, denPB );
-
-   //       double disc = denPA->Split( MPSDT[ site ], MPSDT[ site + 1 ], scheme->get_D( currentInstruction ), scheme->get_cut_off( currentInstruction ), true, true );
-
-   //       delete heff;
-   //       delete denPA;
-   //       delete denPB;
-   //       delete denSB;
-
-   //       updateMovingRightSafe( site );
-   //    }
-   // }
+   abort();
 }
 
 void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
-   CheMPS2::SyBookkeeper * denHPsi = new CheMPS2::SyBookkeeper( prob, scheme->get_D( currentInstruction ) );
-   CheMPS2::CTensorT ** HPsi       = new CheMPS2::CTensorT *[ prob->gL() ];
-   for ( int index = 0; index < prob->gL(); index++ ) {
-      // HPsi[ index ] = new CheMPS2::CTensorT( mpsIn[ index ] );
-      HPsi[ index ] = new CheMPS2::CTensorT( index, denHPsi );
-      HPsi[ index ]->random();
-   }
+   // CheMPS2::SyBookkeeper * denHPsi = new CheMPS2::SyBookkeeper( prob, scheme->get_D( currentInstruction ) );
+   // CheMPS2::CTensorT ** HPsi       = new CheMPS2::CTensorT *[ prob->gL() ];
+   // for ( int index = 0; index < prob->gL(); index++ ) {
+   //    // HPsi[ index ] = new CheMPS2::CTensorT( mpsIn[ index ] );
+   //    HPsi[ index ] = new CheMPS2::CTensorT( index, denHPsi );
+   //    HPsi[ index ]->random();
+   // }
 
-   std::cout << overlap( mpsIn, HPsi ) << std::endl;
-   fitApplyH( 1.0, 0.0, mpsIn, bkIn, HPsi, denHPsi, 20, 1000, 1e-100 );
+   // std::cout << overlap( mpsIn, HPsi ) << std::endl;
+   // fitApplyH( 1.0, 0.0, mpsIn, bkIn, HPsi, denHPsi, 20, 1000, 1e-100 );
 
-   std::cout << overlap( mpsIn, HPsi ) << std::endl;
-   std::cout << std::abs( overlap( mpsIn, HPsi ) ) << std::endl;
-   std::cout << Energy( mpsIn, bkIn ) << std::endl;
+   // std::cout << overlap( mpsIn, HPsi ) << std::endl;
+   // std::cout << std::abs( overlap( mpsIn, HPsi ) ) << std::endl;
+   // std::cout << Energy( mpsIn, bkIn ) << std::endl;
    abort();
 }
 
@@ -1146,10 +1082,8 @@ void CheMPS2::TimeTaylor::doStep_euler_g( const int currentInstruction, const bo
    dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
 
    // fitApplyH( step, offset, mpsIn, bkIn, HPsi, denHPsi );
-   // fitApplyH_1site( mpsIn, bkIn, HPsi, denHPsi, 5 );
-
    fitApplyH_1site( mpsIn, bkIn, HPsi, denHPsi, 5 );
-   fitAddMPS( step, mpsIn, bkIn, HPsi, denHPsi, mpsOut, bkOut );
+   // fitAddMPS( step, mpsIn, bkIn, HPsi, denHPsi, mpsOut, bkOut );
 
    for ( int idx = 0; idx < prob->gL(); idx++ ) {
       delete HPsi[ idx ];
@@ -1253,6 +1187,11 @@ void CheMPS2::TimeTaylor::doStep_taylor_1site( const int currentInstruction, con
 }
 void CheMPS2::TimeTaylor::doStep_taylor_1( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
+   for ( int index = 0; index < L - 1; index++ ) {
+      left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
+   }
+   left_normalize( mpsOut[ L - 1 ], NULL );
+
    const dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
    for ( int cnt = 0; cnt < L - 1; cnt++ ) {
       updateMovingRightSafe( cnt, mpsOut, bkOut, mpsIn, bkIn );
@@ -1319,36 +1258,13 @@ void CheMPS2::TimeTaylor::doStep_taylor_1( const int currentInstruction, const b
    }
 }
 
-void CheMPS2::TimeTaylor::OneBodyDensity( dcomplex * data ) {
-   // deleteAllBoundaryOperators();
-   // for ( int cnt = 0; cnt < L - 1; cnt++ ) {
-   //    updateMovingRightSafe( cnt );
-   // }
-   // ( *data ) = 1;
-}
-
-dcomplex CheMPS2::TimeTaylor::Energy( CTensorT ** mpsIn, SyBookkeeper * bkIn ) {
-
-   deleteAllBoundaryOperators();
-
-   for ( int cnt = 0; cnt < L - 1; cnt++ ) {
-      updateMovingRightSafe( cnt, mpsIn, bkIn, mpsIn, bkIn );
-   }
-   CTensorX * myX = new CTensorX( L, true, bkIn, bkIn, prob );
-
-   myX->update( mpsIn[ L - 1 ], mpsIn[ L - 1 ], Otensors[ L - 2 ], Ltensors[ L - 2 ],
-                LtensorsT[ L - 2 ], Xtensors[ L - 2 ], Qtensors[ L - 2 ][ 0 ],
-                QtensorsT[ L - 2 ][ 0 ], Atensors[ L - 2 ][ 0 ][ 0 ],
-                AtensorsT[ L - 2 ][ 0 ][ 0 ], CtensorsT[ L - 2 ][ 0 ][ 0 ],
-                DtensorsT[ L - 2 ][ 0 ][ 0 ] );
-
-   dcomplex result = myX->gStorage()[ 0 ];
-   delete myX;
-   return result;
-   // return 0.0;
-}
-
 void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary ) {
+
+   SyBookkeeper * MPSBK = new SyBookkeeper( *initBK );
+   CTensorT ** MPS      = new CTensorT *[ L ];
+   for ( int index = 0; index < L; index++ ) {
+      MPS[ index ] = new CTensorT( initMPS[ index ] );
+   }
 
    double t           = 0.0;
    double firstEnergy = 0;
@@ -1372,7 +1288,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
    ( *logger ) << "\n";
    ( *logger ) << "   ";
    for ( int i = 0; i < L + 1; i++ ) {
-      ( *logger ) << std::setw( 5 ) << initBK->gFCIDimAtBound( i );
+      ( *logger ) << std::setw( 5 ) << MPSBK->gFCIDimAtBound( i );
    }
    ( *logger ) << "\n";
    ( *logger ) << "\n";
@@ -1396,7 +1312,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          ( *logger ) << "\n";
          ( *logger ) << "   ";
          for ( int i = 0; i < L + 1; i++ ) {
-            ( *logger ) << std::setw( 5 ) << initBK->gTotDimAtBound( i );
+            ( *logger ) << std::setw( 5 ) << MPSBK->gTotDimAtBound( i );
          }
          ( *logger ) << "\n";
          ( *logger ) << "\n";
@@ -1405,11 +1321,11 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          ( *logger ) << "   NSwe = " << scheme->get_max_sweeps( inst ) << "\n";
          ( *logger ) << "\n";
 
-         CTwoDM * the2DM            = new CTwoDM( initBK, prob );
-         CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, initMPS, initBK );
+         CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
+         CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
          tdmbuilder->Build2RDM( the2DM );
 
-         ( *logger ) << "   Norm      = " << norm( initMPS ) << "\n";
+         ( *logger ) << "   Norm      = " << norm( MPS ) << "\n";
          ( *logger ) << "   Energy    = " << std::real( the2DM->energy() ) << "\n";
          if ( t == 0.0 ) {
             firstEnergy = std::real( the2DM->energy() );
@@ -1451,35 +1367,40 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
 
          deleteAllBoundaryOperators();
 
-         SyBookkeeper * denBKDT = new SyBookkeeper( prob, 200 );
+         SyBookkeeper * MPSBKDT = new SyBookkeeper( prob, 200 );
          CTensorT ** MPSDT      = new CTensorT *[ L ];
          for ( int index = 0; index < L; index++ ) {
-            MPSDT[ index ] = new CTensorT( index, denBKDT );
+            MPSDT[ index ] = new CTensorT( index, MPSBKDT );
             MPSDT[ index ]->random();
          }
-         double normDT2 = norm( initMPS );
-         initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
-         doStep_taylor_1( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
-         // doStep_taylor_1site( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
-         // abort();
-         // doStep_euler_g( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
-         // doStep_rk_4( inst, doImaginary, firstEnergy );
-         // doStep_krylov( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
+
+         // doStep_taylor_1( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
+         // doStep_taylor_1site( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
+         doStep_euler_g( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
+         // // doStep_rk_4( inst, doImaginary, firstEnergy );
+         // // doStep_krylov( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
 
          for ( int site = 0; site < L; site++ ) {
-            delete initMPS[ site ];
+            delete MPS[ site ];
          }
-         delete[] initMPS;
-         delete initBK;
+         delete[] MPS;
+         delete MPSBK;
 
-         double normDT = norm( MPSDT );
-         MPSDT[ 0 ]->number_operator( 0.0, 1.0 / normDT );
+         MPS   = MPSDT;
+         MPSBK = MPSBKDT;
 
-         initMPS = MPSDT;
-         initBK  = denBKDT;
+         double normDT = norm( MPS );
+         MPS[ 0 ]->number_operator( 0.0, 1.0 / normDT );
+
          ( *logger ) << hashline;
       }
    }
+
+   for ( int site = 0; site < L; site++ ) {
+      delete MPS[ site ];
+   }
+   delete[] MPS;
+   delete MPSBK;
 }
 
 void CheMPS2::TimeTaylor::left_normalize( CTensorT * left_mps, CTensorT * right_mps ) const {
