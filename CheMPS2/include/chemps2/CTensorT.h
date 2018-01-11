@@ -21,6 +21,7 @@
 #define CTENSORT_CHEMPS2_H
 
 #include "CTensor.h"
+#include "CTensorOperator.h"
 #include "SyBookkeeper.h"
 
 #include <vector>
@@ -124,6 +125,15 @@ namespace CheMPS2 {
       //! Multiply at the right with a diagonal TensorOperator
       /** \param Mx The diagonal TensorOperator with which the current CTensorT should be multiplied at the right */
       void RightMultiply( CTensor * Mx, char * trans );
+
+      //! Join two TensorOperators with a CTensorT element
+      void Join( CTensor * left, CTensorT * buddy, CTensor * right );
+
+      //! Add CTensorT elements
+      void zaxpy( dcomplex factor, CTensorT * y );
+
+      // Copy all data to y
+      void zcopy( CTensorT * y );
 
       //! Reset the CTensorT (if virtual dimensions are changed)
       void Reset();

@@ -421,6 +421,95 @@ void CheMPS2::CTensorT::RightMultiply( CTensor * Mx, char * trans ) {
    }
 }
 
+void CheMPS2::CTensorT::Join( CTensor * left, CTensorT * buddy, CTensor * right ) {
+
+   const bool atLeft  = ( index == 0 ) ? true : false;
+   const bool atRight = ( index == denBK->gL() - 1 ) ? true : false;
+
+   const int DIM_L = std::max( denBK->gMaxDimAtBound( index ), buddy->gBK()->gMaxDimAtBound( index ) );
+   const int DIM_R = std::max( denBK->gMaxDimAtBound( index + 1 ), buddy->gBK()->gMaxDimAtBound( index + 1 ) );
+
+   char cotrans = 'C';
+   char notrans = 'N';
+
+#pragma omp parallel
+   {
+      dcomplex * temp = new dcomplex[ DIM_L * DIM_R ];
+
+#pragma omp for schedule( dynamic )
+      for ( int ikappa = 0; ikappa < nKappa; ikappa++ ) {
+         const int NL    = sectorNL[ ikappa ];
+         const int TwoSL = sectorTwoSL[ ikappa ];
+         const int IL    = sectorIL[ ikappa ];
+
+         const int NR    = sectorNR[ ikappa ];
+         const int TwoSR = sectorTwoSR[ ikappa ];
+         const int IR    = sectorIR[ ikappa ];
+
+         int dimLU = denBK->gCurrentDim( index, NL, TwoSL, IL );
+         int dimRU = denBK->gCurrentDim( index + 1, NR, TwoSR, IR );
+
+         int dimLD = buddy->gBK()->gCurrentDim( index, NL, TwoSL, IL );
+         int dimRD = buddy->gBK()->gCurrentDim( index + 1, NR, TwoSR, IR );
+
+         if ( dimLD > 0 && dimRD > 0 ) {
+            dcomplex * block_s = storage + kappa2index[ ikappa ];
+
+            if ( !atLeft && !atRight ) {
+               dcomplex * overlap_left  = left->gStorage( NL, TwoSL, IL, NL, TwoSL, IL );
+               dcomplex * block_middle  = buddy->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+               dcomplex * overlap_right = right->gStorage( NR, TwoSR, IR, NR, TwoSR, IR );
+
+               dcomplex prefactor = 1.0;
+               dcomplex add       = 0.0;
+               zgemm_( &notrans, &notrans, &dimLU, &dimRD, &dimLD, &prefactor, overlap_left,
+                       &dimLU, block_middle, &dimLD, &add, temp, &dimLU );
+
+               zgemm_( &notrans, &cotrans, &dimLU, &dimRU, &dimRD, &prefactor, temp,
+                       &dimLU, overlap_right, &dimRU, &add, block_s, &dimLU );
+            }
+            if ( !atLeft && atRight ) {
+               dcomplex * overlap_left = left->gStorage( NL, TwoSL, IL, NL, TwoSL, IL );
+               dcomplex * block_middle = buddy->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+
+               dcomplex prefactor = 1.0;
+               dcomplex add       = 0.0;
+
+               zgemm_( &notrans, &notrans, &dimLU, &dimRD, &dimLD, &prefactor, overlap_left,
+                       &dimLU, block_middle, &dimLD, &add, block_s, &dimLU );
+            }
+            if ( atLeft && !atRight ) {
+               dcomplex * block_middle  = buddy->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+               dcomplex * overlap_right = right->gStorage( NR, TwoSR, IR, NR, TwoSR, IR );
+
+               dcomplex prefactor = 1.0;
+               dcomplex add       = 0.0;
+
+               zgemm_( &notrans, &cotrans, &dimLD, &dimRU, &dimRD, &prefactor, block_middle,
+                       &dimLU, overlap_right, &dimRU, &add, block_s, &dimLD );
+            }
+         }
+      }
+      delete[] temp;
+   }
+}
+
+//! Add CTensorT elements
+void CheMPS2::CTensorT::zaxpy( dcomplex factor, CTensorT * y ) {
+   int dim = kappa2index[ nKappa ];
+   assert( dim == y->gKappa2index( y->gNKappa() ) );
+   int inc = 1;
+   zaxpy_( &dim, &factor, storage, &inc, y->gStorage(), &inc );
+}
+
+//! Add CTensorT elements
+void CheMPS2::CTensorT::zcopy( CTensorT * y ) {
+   int dim = kappa2index[ nKappa ];
+   assert( dim == y->gKappa2index( y->gNKappa() ) );
+   int inc = 1;
+   zcopy_( &dim, storage, &inc, y->gStorage(), &inc );
+}
+
 bool CheMPS2::CTensorT::CheckLeftNormal() const {
    bool isLeftNormal = true;
 

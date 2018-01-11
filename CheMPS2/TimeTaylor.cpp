@@ -1108,14 +1108,10 @@ void CheMPS2::TimeTaylor::doStep_taylor_1site( const int currentInstruction, con
    for ( int i = 0; i < scheme->get_max_sweeps( currentInstruction ); ++i ) {
       for ( int site = L - 1; site > 0; site-- ) {
 
-         char notrans      = 'N';
-         CTensorT * linear = new CTensorT( mpsIn[ site ] );
-         if ( site - 1 >= 0 ) {
-            linear->LeftMultiply( Otensors[ site - 1 ], &notrans );
-         }
-         if ( site + 1 < L ) {
-            linear->RightMultiply( Otensors[ site ], &notrans );
-         }
+         CTensorT * linear        = new CTensorT( site, bkOut );
+         CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? Otensors[ site - 1 ] : NULL;
+         CTensorO * rightOverlapA = ( site + 1 ) < L ? Otensors[ site ] : NULL;
+         linear->Join( leftOverlapA, mpsIn[ site ], rightOverlapA );
 
          CTensorT * perturb = new CTensorT( mpsOut[ site ] );
          CHeffNS_1S * heff  = new CHeffNS_1S( bkOut, bkIn, prob );
@@ -1133,11 +1129,8 @@ void CheMPS2::TimeTaylor::doStep_taylor_1site( const int currentInstruction, con
                       Xtensors, Otensors, false );
          delete heff;
 
-         int dim = mpsOut[ site ]->gKappa2index( mpsOut[ site ]->gNKappa() );
-         assert( dim == mpsIn[ site ]->gKappa2index( mpsIn[ site ]->gNKappa() ) );
-         int inc = 1;
-         zaxpy_( &dim, &step, perturb->gStorage(), &inc, linear->gStorage(), &inc );
-         zcopy_( &dim, linear->gStorage(), &inc, mpsOut[ site ]->gStorage(), &inc );
+         perturb->zaxpy( step, linear );
+         linear->zcopy( mpsOut[ site ] );
          delete perturb;
          delete linear;
 
@@ -1146,15 +1139,10 @@ void CheMPS2::TimeTaylor::doStep_taylor_1site( const int currentInstruction, con
       }
 
       for ( int site = 0; site < L - 1; site++ ) {
-         CTensorT * linear = new CTensorT( mpsIn[ site ] );
-
-         char notrans = 'N';
-         if ( site - 1 >= 0 ) {
-            linear->LeftMultiply( Otensors[ site - 1 ], &notrans );
-         }
-         if ( site + 1 < L ) {
-            linear->RightMultiply( Otensors[ site ], &notrans );
-         }
+         CTensorT * linear        = new CTensorT( site, bkOut );
+         CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? Otensors[ site - 1 ] : NULL;
+         CTensorO * rightOverlapA = ( site + 1 ) < L ? Otensors[ site ] : NULL;
+         linear->Join( leftOverlapA, mpsIn[ site ], rightOverlapA );
 
          CTensorT * perturb = new CTensorT( mpsOut[ site ] );
          CHeffNS_1S * heff  = new CHeffNS_1S( bkOut, bkIn, prob );
@@ -1172,11 +1160,8 @@ void CheMPS2::TimeTaylor::doStep_taylor_1site( const int currentInstruction, con
                       Xtensors, Otensors, true );
          delete heff;
 
-         int dim = mpsOut[ site ]->gKappa2index( mpsOut[ site ]->gNKappa() );
-         assert( dim == mpsIn[ site ]->gKappa2index( mpsIn[ site ]->gNKappa() ) );
-         int inc = 1;
-         zaxpy_( &dim, &step, perturb->gStorage(), &inc, linear->gStorage(), &inc );
-         zcopy_( &dim, linear->gStorage(), &inc, mpsOut[ site ]->gStorage(), &inc );
+         perturb->zaxpy( step, linear );
+         linear->zcopy( mpsOut[ site ] );
          delete perturb;
          delete linear;
 
@@ -1367,7 +1352,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
 
          deleteAllBoundaryOperators();
 
-         SyBookkeeper * MPSBKDT = new SyBookkeeper( prob, 200 );
+         SyBookkeeper * MPSBKDT = new SyBookkeeper( prob, scheme->get_D( inst ) );
          CTensorT ** MPSDT      = new CTensorT *[ L ];
          for ( int index = 0; index < L; index++ ) {
             MPSDT[ index ] = new CTensorT( index, MPSBKDT );
@@ -1375,10 +1360,8 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          }
 
          // doStep_taylor_1( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
-         // doStep_taylor_1site( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
-         doStep_euler_g( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
-         // // doStep_rk_4( inst, doImaginary, firstEnergy );
-         // // doStep_krylov( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
+         doStep_taylor_1site( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
+         // doStep_euler_g( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
 
          for ( int site = 0; site < L; site++ ) {
             delete MPS[ site ];
