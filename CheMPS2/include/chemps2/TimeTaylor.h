@@ -30,9 +30,21 @@ namespace CheMPS2 {
 
       ~TimeTaylor();
 
-      void Propagate();
+      void Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary = false );
 
-      double Energy();
+      dcomplex Energy( CTensorT ** mpsIn, SyBookkeeper * bkIn );
+
+      void OneBodyDensity( dcomplex * data );
+
+      void fitApplyH( dcomplex factor, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut, const int nSweeps = 5, const int D = 100, const double cut_off = 1e-10 );
+
+      void fitApplyH_1site( CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut, const int nSweeps );
+
+      void fitAddMPS( dcomplex factor,
+                      CTensorT ** mpsA, SyBookkeeper * bkA,
+                      CTensorT ** mpsB, SyBookkeeper * bkB,
+                      CTensorT ** mpsOut, SyBookkeeper * bkOut,
+                      const int nSweeps = 5, const int D = 100, const double cut_off = 1e-10 );
 
       private:
       const int L;
@@ -43,11 +55,11 @@ namespace CheMPS2 {
 
       Logger * logger;
 
-      CTensorT ** MPS;
-      CTensorT ** MPSDT;
+      // CTensorT ** MPS;
+      // CTensorT ** MPSDT;
 
-      SyBookkeeper * denBK;
-      SyBookkeeper * denBKDT;
+      // SyBookkeeper * denBK;
+      // SyBookkeeper * denBKDT;
 
       // Whether or not allocated
       int * isAllocated;
@@ -92,22 +104,29 @@ namespace CheMPS2 {
       // TensorO's
       CTensorO ** Otensors;
 
-      void updateMovingRightSafe( const int cnt );
+      void updateMovingRightSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown );
 
-      void updateMovingRight( const int index );
+      void updateMovingRight( const int index, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown );
 
-      void updateMovingLeftSafe( const int cnt );
+      void updateMovingLeftSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown );
 
-      void updateMovingLeft( const int index );
+      void updateMovingLeft( const int index, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown );
 
-      void allocateTensors( const int index, const bool movingRight );
+      void allocateTensors( const int index, const bool movingRight, SyBookkeeper * bkUp, SyBookkeeper * bkDown );
 
       void deleteAllBoundaryOperators();
 
       void deleteTensors( const int index, const bool movingRight );
 
-      void doStep( const int currentInstruction );
+      void doStep_euler_g( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
+      void doStep_taylor_1( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
+      void doStep_taylor_1site( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
+      void doStep_rk_4( const int currentInstruction, const bool doImaginary, const double offset );
+      void doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
+
+      void left_normalize( CTensorT * left_mps, CTensorT * right_mps ) const;
+      void right_normalize( CTensorT * left_mps, CTensorT * right_mps ) const;
    };
-}
+} // namespace CheMPS2
 
 #endif

@@ -24,6 +24,13 @@ namespace CheMPS2 {
      Schmidt spectrum. */
       CSobject( const int index, SyBookkeeper * denBK );
 
+      //! Constructor
+      /** \param index The first index ( S spans index & index + 1 ).
+      \param denBK Contains the virtual dimensions. Not constant as CSobject is
+     allowed to set the virtual dimensions of symmetry sectors based on the
+     Schmidt spectrum. */
+      CSobject( const CSobject * cpy );
+
       //! Destructor
       virtual ~CSobject();
 
@@ -83,7 +90,11 @@ namespace CheMPS2 {
 
       void Join( CTensorO * Oleft, CSobject * innerS, CTensorO * Oright );
 
+      void Join( CTensorO * Oleft, CTensorT * Tleft, CTensorT * Tright, CTensorO * Oright );
+
       void Add( std::complex< double > alpha, CSobject * to_add );
+
+      void Multiply( dcomplex alpha );
       //! SVD an S-object into 2 TensorT's.
       /** \param Tleft Left TensorT storage space. At output left normalized.
       \param Tright Right TensorT storage space. At output right normalized.
@@ -164,20 +175,24 @@ namespace CheMPS2 {
       /** \return the pointer to the symmetry bookkeeper */
       const CheMPS2::SyBookkeeper * gBK() const { return denBK; };
 
-      // void print() const;
+      //! Get the pointer to the symmetry bookkeeper
+      /** \return the pointer to the symmetry bookkeeper */
+      CheMPS2::SyBookkeeper * gBK_non_constant() const { return denBK; };
+
+      void Clear();
 
       private:
       //! First site index
       const int index;
+
+      //! Pointer to the symmetry BK
+      SyBookkeeper * denBK;
 
       //! The local irrep of site index
       const int Ilocal1;
 
       //! The local irrep of site index+1
       const int Ilocal2;
-
-      //! Pointer to the symmetry BK
-      SyBookkeeper * denBK;
 
       //! The number of symmetry blocks
       int nKappa;

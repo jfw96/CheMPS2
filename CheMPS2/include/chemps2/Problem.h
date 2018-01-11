@@ -48,9 +48,7 @@ namespace CheMPS2 {
              \param Nin The targeted particle number
              \param Irrepin The targeted irrep  
              \param DtIn The time step for time evoulution */
-      Problem( const Hamiltonian * Hamin, const int TwoSin, const int Nin, const int Irrepin,
-               const std::complex< double > Dtin = 0.0, const double Tin = 0.0,
-               const int InitialIn = INIT_RANDOM );
+      Problem( const Hamiltonian * Hamin, const int TwoSin, const int Nin, const int Irrepin, const int InitialIn = INIT_RANDOM );
 
       //! Destructor
       virtual ~Problem();
@@ -79,14 +77,6 @@ namespace CheMPS2 {
       //! Get the targeted irrep
       /** \return The targeted irrep */
       int gIrrep() const { return Irrep; }
-
-      //! Get the time step
-      /** \return The time step */
-      std::complex< double > gDt() const { return Dt; }
-
-      //! Get the maximum time
-      /** \return The maximum time */
-      double gT() const { return T; }
 
       //! Get the maximum time
       /** \return The maximum time */
@@ -163,12 +153,6 @@ namespace CheMPS2 {
 
       //The targeted irrep
       const int Irrep;
-
-      //The time step for time evolution
-      const std::complex< double > Dt;
-
-      // The maximum time to propagate to
-      const double T;
 
       // The type of the inital state
       const int Initial;

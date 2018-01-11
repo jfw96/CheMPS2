@@ -1,11 +1,17 @@
 
 #include "TimeTaylor.h"
 #include <assert.h>
+#include <iomanip>
 #include <iostream>
 
+#include "CDensityMatrix.h"
 #include "CHeffNS.h"
+#include "CHeffNS_1S.h"
 #include "CSobject.h"
+#include "CTwoDMBuilder.h"
+#include "Lapack.h"
 #include "Special.h"
+#include "TwoDMBuilder.h"
 
 CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn, Logger * loggerIn )
     : prob( probIn ), scheme( schemeIn ), logger( loggerIn ), L( probIn->gL() ) {
@@ -16,16 +22,6 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
    logger->TextWithDate( "Starting to run a time evolution calculation", time( NULL ) );
    ( *logger ) << hashline;
 
-   denBK = new SyBookkeeper( prob, scheme->get_D( 0 ) );
-
-   ( *logger ) << "### Full CI dimensions are:\n";
-   ( *logger ) << "### ";
-   for ( int i = 0; i < L + 1; i++ ) {
-      ( *logger ) << denBK->gFCIDimAtBound( i ) << " ";
-   }
-   ( *logger ) << "\n";
-
-   MPS         = new CTensorT *[ L ];
    Ltensors    = new CTensorL **[ L - 1 ];
    LtensorsT   = new CTensorLT **[ L - 1 ];
    F0tensors   = new CTensorF0 ***[ L - 1 ];
@@ -53,50 +49,11 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
    for ( int cnt = 0; cnt < L - 1; cnt++ ) {
       isAllocated[ cnt ] = 0;
    }
-
-   for ( int index = 0; index < L; index++ ) {
-      MPS[ index ] = new CTensorT( index, denBK );
-   }
-
-   switch ( prob->gInitial() ) {
-      case Problem::INIT_RANDOM: {
-         for ( int idx = 0; idx < L; ++idx ) {
-            MPS[ idx ]->random();
-         }
-         double mps_norm = norm( MPS );
-         MPS[ 0 ]->number_operator( 0.0, 1.0 / mps_norm );
-         break;
-      }
-      case Problem::HARTREE_FOCK_GS: {
-         for ( int idx = 0; idx < L; ++idx ) {
-            MPS[ idx ]->Clear();
-         }
-
-         const int nElec = prob->gN();
-         for ( int idx = 0; idx < L; ++idx ) {
-            for ( int ikappa = 0; ikappa < MPS[ idx ]->gNKappa(); ++ikappa ) {
-               if ( idx < ( nElec / 2.0 ) && MPS[ idx ]->gNL( ikappa ) == ( idx * 2 ) && MPS[ idx ]->gNR( ikappa ) == ( idx + 1 ) * 2 ) {
-                  dcomplex * block = MPS[ idx ]->gStorage() + MPS[ idx ]->gKappa2index( ikappa );
-                  block[ 0 ]       = 1.0;
-               } else if ( idx >= ( nElec / 2.0 ) && MPS[ idx ]->gNL( ikappa ) == nElec && MPS[ idx ]->gNR( ikappa ) == nElec ) {
-                  dcomplex * block = MPS[ idx ]->gStorage() + MPS[ idx ]->gKappa2index( ikappa );
-                  block[ 0 ]       = 1.0;
-               }
-            }
-         }
-         break;
-      }
-   }
 }
 
 CheMPS2::TimeTaylor::~TimeTaylor() {
 
    deleteAllBoundaryOperators();
-
-   for ( int site = 0; site < L; site++ ) {
-      delete MPS[ site ];
-   }
-   delete[] MPS;
 
    delete[] Ltensors;
    delete[] LtensorsT;
@@ -122,34 +79,32 @@ CheMPS2::TimeTaylor::~TimeTaylor() {
    delete[] Otensors;
    delete[] isAllocated;
 
-   delete denBK;
-
    logger->TextWithDate( "Finished to run a time evolution calculation", time( NULL ) );
    ( *logger ) << hashline;
 }
 
-void CheMPS2::TimeTaylor::updateMovingLeftSafe( const int cnt ) {
+void CheMPS2::TimeTaylor::updateMovingLeftSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown ) {
    if ( isAllocated[ cnt ] == 1 ) {
       deleteTensors( cnt, true );
       isAllocated[ cnt ] = 0;
    }
    if ( isAllocated[ cnt ] == 0 ) {
-      allocateTensors( cnt, false );
+      allocateTensors( cnt, false, bkUp, bkDown );
       isAllocated[ cnt ] = 2;
    }
-   updateMovingLeft( cnt );
+   updateMovingLeft( cnt, mpsUp, bkUp, mpsDown, bkDown );
 }
 
-void CheMPS2::TimeTaylor::updateMovingRightSafe( const int cnt ) {
+void CheMPS2::TimeTaylor::updateMovingRightSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown ) {
    if ( isAllocated[ cnt ] == 2 ) {
       deleteTensors( cnt, false );
       isAllocated[ cnt ] = 0;
    }
    if ( isAllocated[ cnt ] == 0 ) {
-      allocateTensors( cnt, true );
+      allocateTensors( cnt, true, bkUp, bkDown );
       isAllocated[ cnt ] = 1;
    }
-   updateMovingRight( cnt );
+   updateMovingRight( cnt, mpsUp, bkUp, mpsDown, bkDown );
 }
 
 void CheMPS2::TimeTaylor::deleteAllBoundaryOperators() {
@@ -164,10 +119,10 @@ void CheMPS2::TimeTaylor::deleteAllBoundaryOperators() {
    }
 }
 
-void CheMPS2::TimeTaylor::updateMovingLeft( const int index ) {
+void CheMPS2::TimeTaylor::updateMovingLeft( const int index, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown ) {
 
-   const int dimL = std::max( denBKDT->gMaxDimAtBound( index + 1 ), denBK->gMaxDimAtBound( index + 1 ) );
-   const int dimR = std::max( denBKDT->gMaxDimAtBound( index + 2 ), denBK->gMaxDimAtBound( index + 2 ) );
+   const int dimL = std::max( bkUp->gMaxDimAtBound( index + 1 ), bkDown->gMaxDimAtBound( index + 1 ) );
+   const int dimR = std::max( bkUp->gMaxDimAtBound( index + 2 ), bkDown->gMaxDimAtBound( index + 2 ) );
 
 #pragma omp parallel
    {
@@ -177,15 +132,15 @@ void CheMPS2::TimeTaylor::updateMovingLeft( const int index ) {
       for ( int cnt2 = 0; cnt2 < L - 1 - index; cnt2++ ) {
          if ( cnt2 == 0 ) {
             if ( index == L - 2 ) {
-               Ltensors[ index ][ cnt2 ]->create( MPSDT[ index + 1 ], MPS[ index + 1 ], NULL, NULL );
-               LtensorsT[ index ][ cnt2 ]->create( MPSDT[ index + 1 ], MPS[ index + 1 ], NULL, NULL );
+               Ltensors[ index ][ cnt2 ]->create( mpsUp[ index + 1 ], mpsDown[ index + 1 ], NULL, NULL );
+               LtensorsT[ index ][ cnt2 ]->create( mpsUp[ index + 1 ], mpsDown[ index + 1 ], NULL, NULL );
             } else {
-               Ltensors[ index ][ cnt2 ]->create( MPSDT[ index + 1 ], MPS[ index + 1 ], Otensors[ index + 1 ], workmem );
-               LtensorsT[ index ][ cnt2 ]->create( MPSDT[ index + 1 ], MPS[ index + 1 ], Otensors[ index + 1 ], workmem );
+               Ltensors[ index ][ cnt2 ]->create( mpsUp[ index + 1 ], mpsDown[ index + 1 ], Otensors[ index + 1 ], workmem );
+               LtensorsT[ index ][ cnt2 ]->create( mpsUp[ index + 1 ], mpsDown[ index + 1 ], Otensors[ index + 1 ], workmem );
             }
          } else {
-            Ltensors[ index ][ cnt2 ]->update( Ltensors[ index + 1 ][ cnt2 - 1 ], MPSDT[ index + 1 ], MPS[ index + 1 ], workmem );
-            LtensorsT[ index ][ cnt2 ]->update( LtensorsT[ index + 1 ][ cnt2 - 1 ], MPSDT[ index + 1 ], MPS[ index + 1 ], workmem );
+            Ltensors[ index ][ cnt2 ]->update( Ltensors[ index + 1 ][ cnt2 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+            LtensorsT[ index ][ cnt2 ]->update( LtensorsT[ index + 1 ][ cnt2 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
          }
       }
 
@@ -203,56 +158,40 @@ void CheMPS2::TimeTaylor::updateMovingLeft( const int index ) {
          if ( cnt3 == 0 ) {
             if ( cnt2 == 0 ) {
                if ( index == L - 2 ) {
-                  F0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index + 1 ], MPS[ index + 1 ], NULL, NULL );
-                  F0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index + 1 ], MPS[ index + 1 ], NULL, NULL );
-                  F1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index + 1 ], MPS[ index + 1 ], NULL, NULL );
-                  F1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index + 1 ], MPS[ index + 1 ], NULL, NULL );
-                  S0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index + 1 ], MPS[ index + 1 ], NULL, NULL );
-                  S0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index + 1 ], MPS[ index + 1 ], NULL, NULL );
+                  F0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index + 1 ], mpsDown[ index + 1 ], NULL, NULL );
+                  F0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index + 1 ], mpsDown[ index + 1 ], NULL, NULL );
+                  F1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index + 1 ], mpsDown[ index + 1 ], NULL, NULL );
+                  F1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index + 1 ], mpsDown[ index + 1 ], NULL, NULL );
+                  S0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index + 1 ], mpsDown[ index + 1 ], NULL, NULL );
+                  S0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index + 1 ], mpsDown[ index + 1 ], NULL, NULL );
                } else {
-                  F0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index + 1 ], MPS[ index + 1 ], Otensors[ index + 1 ], workmem );
-                  F0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index + 1 ], MPS[ index + 1 ], Otensors[ index + 1 ], workmem );
-                  F1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index + 1 ], MPS[ index + 1 ], Otensors[ index + 1 ], workmem );
-                  F1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index + 1 ], MPS[ index + 1 ], Otensors[ index + 1 ], workmem );
-                  S0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index + 1 ], MPS[ index + 1 ], Otensors[ index + 1 ], workmem );
-                  S0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index + 1 ], MPS[ index + 1 ], Otensors[ index + 1 ], workmem );
+                  F0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index + 1 ], mpsDown[ index + 1 ], Otensors[ index + 1 ], workmem );
+                  F0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index + 1 ], mpsDown[ index + 1 ], Otensors[ index + 1 ], workmem );
+                  F1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index + 1 ], mpsDown[ index + 1 ], Otensors[ index + 1 ], workmem );
+                  F1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index + 1 ], mpsDown[ index + 1 ], Otensors[ index + 1 ], workmem );
+                  S0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index + 1 ], mpsDown[ index + 1 ], Otensors[ index + 1 ], workmem );
+                  S0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index + 1 ], mpsDown[ index + 1 ], Otensors[ index + 1 ], workmem );
                }
             } else {
-               F0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index + 1 ][ cnt2 - 1 ], MPSDT[ index + 1 ],
-                                                            MPS[ index + 1 ], workmem );
-               F0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index + 1 ][ cnt2 - 1 ], MPSDT[ index + 1 ],
-                                                             MPS[ index + 1 ], workmem );
-               F1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index + 1 ][ cnt2 - 1 ], MPSDT[ index + 1 ],
-                                                            MPS[ index + 1 ], workmem );
-               F1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index + 1 ][ cnt2 - 1 ], MPSDT[ index + 1 ],
-                                                             MPS[ index + 1 ], workmem );
-               S0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index + 1 ][ cnt2 - 1 ], MPSDT[ index + 1 ],
-                                                            MPS[ index + 1 ], workmem );
-               S0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index + 1 ][ cnt2 - 1 ], MPSDT[ index + 1 ],
-                                                             MPS[ index + 1 ], workmem );
-               S1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index + 1 ][ cnt2 - 1 ], MPSDT[ index + 1 ],
-                                                            MPS[ index + 1 ], workmem );
-               S1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index + 1 ][ cnt2 - 1 ], MPSDT[ index + 1 ],
-                                                             MPS[ index + 1 ], workmem );
+               F0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index + 1 ][ cnt2 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+               F0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index + 1 ][ cnt2 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+               F1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index + 1 ][ cnt2 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+               F1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index + 1 ][ cnt2 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+               S0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index + 1 ][ cnt2 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+               S0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index + 1 ][ cnt2 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+               S1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index + 1 ][ cnt2 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+               S1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index + 1 ][ cnt2 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
             }
          } else {
-            F0tensors[ index ][ cnt2 ][ cnt3 ]->update( F0tensors[ index + 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index + 1 ],
-                                                        MPS[ index + 1 ], workmem );
-            F0tensorsT[ index ][ cnt2 ][ cnt3 ]->update( F0tensorsT[ index + 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index + 1 ],
-                                                         MPS[ index + 1 ], workmem );
-            F1tensors[ index ][ cnt2 ][ cnt3 ]->update( F1tensors[ index + 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index + 1 ],
-                                                        MPS[ index + 1 ], workmem );
-            F1tensorsT[ index ][ cnt2 ][ cnt3 ]->update( F1tensorsT[ index + 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index + 1 ],
-                                                         MPS[ index + 1 ], workmem );
-            S0tensors[ index ][ cnt2 ][ cnt3 ]->update( S0tensors[ index + 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index + 1 ],
-                                                        MPS[ index + 1 ], workmem );
-            S0tensorsT[ index ][ cnt2 ][ cnt3 ]->update( S0tensorsT[ index + 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index + 1 ],
-                                                         MPS[ index + 1 ], workmem );
+            F0tensors[ index ][ cnt2 ][ cnt3 ]->update( F0tensors[ index + 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+            F0tensorsT[ index ][ cnt2 ][ cnt3 ]->update( F0tensorsT[ index + 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+            F1tensors[ index ][ cnt2 ][ cnt3 ]->update( F1tensors[ index + 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+            F1tensorsT[ index ][ cnt2 ][ cnt3 ]->update( F1tensorsT[ index + 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+            S0tensors[ index ][ cnt2 ][ cnt3 ]->update( S0tensors[ index + 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+            S0tensorsT[ index ][ cnt2 ][ cnt3 ]->update( S0tensorsT[ index + 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
             if ( cnt2 > 0 ) {
-               S1tensors[ index ][ cnt2 ][ cnt3 ]->update( S1tensors[ index + 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index + 1 ],
-                                                           MPS[ index + 1 ], workmem );
-               S1tensorsT[ index ][ cnt2 ][ cnt3 ]->update( S1tensorsT[ index + 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index + 1 ],
-                                                            MPS[ index + 1 ], workmem );
+               S1tensors[ index ][ cnt2 ][ cnt3 ]->update( S1tensors[ index + 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+               S1tensorsT[ index ][ cnt2 ][ cnt3 ]->update( S1tensorsT[ index + 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
             }
          }
       }
@@ -268,14 +207,12 @@ void CheMPS2::TimeTaylor::updateMovingLeft( const int index ) {
          const int cnt3       = result[ 0 ];
          const int siteindex1 = index - cnt3 - cnt2;
          const int siteindex2 = index - cnt3;
-         const int irrep_prod = Irreps::directProd( denBK->gIrrep( siteindex1 ), denBK->gIrrep( siteindex2 ) );
+         const int irrep_prod = Irreps::directProd( bkUp->gIrrep( siteindex1 ), bkUp->gIrrep( siteindex2 ) );
          if ( index == L - 2 ) {
             Atensors[ index ][ cnt2 ][ cnt3 ]->clear();
             AtensorsT[ index ][ cnt2 ][ cnt3 ]->clear();
             if ( cnt2 > 0 ) {
                Btensors[ index ][ cnt2 ][ cnt3 ]->clear();
-            }
-            if ( cnt2 > 0 ) {
                BtensorsT[ index ][ cnt2 ][ cnt3 ]->clear();
             }
             Ctensors[ index ][ cnt2 ][ cnt3 ]->clear();
@@ -283,24 +220,16 @@ void CheMPS2::TimeTaylor::updateMovingLeft( const int index ) {
             Dtensors[ index ][ cnt2 ][ cnt3 ]->clear();
             DtensorsT[ index ][ cnt2 ][ cnt3 ]->clear();
          } else {
-            Atensors[ index ][ cnt2 ][ cnt3 ]->update( Atensors[ index + 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index + 1 ],
-                                                       MPS[ index + 1 ], workmem );
-            AtensorsT[ index ][ cnt2 ][ cnt3 ]->update( AtensorsT[ index + 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index + 1 ],
-                                                        MPS[ index + 1 ], workmem );
+            Atensors[ index ][ cnt2 ][ cnt3 ]->update( Atensors[ index + 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+            AtensorsT[ index ][ cnt2 ][ cnt3 ]->update( AtensorsT[ index + 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
             if ( cnt2 > 0 ) {
-               Btensors[ index ][ cnt2 ][ cnt3 ]->update( Btensors[ index + 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index + 1 ],
-                                                          MPS[ index + 1 ], workmem );
-               BtensorsT[ index ][ cnt2 ][ cnt3 ]->update( BtensorsT[ index + 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index + 1 ],
-                                                           MPS[ index + 1 ], workmem );
+               Btensors[ index ][ cnt2 ][ cnt3 ]->update( Btensors[ index + 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+               BtensorsT[ index ][ cnt2 ][ cnt3 ]->update( BtensorsT[ index + 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
             }
-            Ctensors[ index ][ cnt2 ][ cnt3 ]->update( Ctensors[ index + 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index + 1 ],
-                                                       MPS[ index + 1 ], workmem );
-            CtensorsT[ index ][ cnt2 ][ cnt3 ]->update( CtensorsT[ index + 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index + 1 ],
-                                                        MPS[ index + 1 ], workmem );
-            Dtensors[ index ][ cnt2 ][ cnt3 ]->update( Dtensors[ index + 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index + 1 ],
-                                                       MPS[ index + 1 ], workmem );
-            DtensorsT[ index ][ cnt2 ][ cnt3 ]->update( DtensorsT[ index + 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index + 1 ],
-                                                        MPS[ index + 1 ], workmem );
+            Ctensors[ index ][ cnt2 ][ cnt3 ]->update( Ctensors[ index + 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+            CtensorsT[ index ][ cnt2 ][ cnt3 ]->update( CtensorsT[ index + 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+            Dtensors[ index ][ cnt2 ][ cnt3 ]->update( Dtensors[ index + 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+            DtensorsT[ index ][ cnt2 ][ cnt3 ]->update( DtensorsT[ index + 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
          }
          for ( int num = 0; num < L - index - 1; num++ ) {
             if ( irrep_prod ==
@@ -309,8 +238,7 @@ void CheMPS2::TimeTaylor::updateMovingLeft( const int index ) {
                if ( ( cnt2 == 0 ) && ( num == 0 ) )
                   alpha *= 0.5;
                if ( ( cnt2 > 0 ) && ( num > 0 ) )
-                  alpha += prob->gMxElement( siteindex1, siteindex2, index + 1 + num,
-                                             index + 1 );
+                  alpha += prob->gMxElement( siteindex1, siteindex2, index + 1 + num, index + 1 );
                Atensors[ index ][ cnt2 ][ cnt3 ]->zaxpy( alpha, S0tensors[ index ][ num ][ 0 ] );
                AtensorsT[ index ][ cnt2 ][ cnt3 ]->zaxpy( alpha, S0tensorsT[ index ][ num ][ 0 ] );
 
@@ -335,7 +263,7 @@ void CheMPS2::TimeTaylor::updateMovingLeft( const int index ) {
                   Ctensors[ index ][ cnt2 ][ cnt3 ]->zaxpy_tensorCD( alpha, F0tensorsT[ index ][ num ][ 0 ] );
                   CtensorsT[ index ][ cnt2 ][ cnt3 ]->zaxpy_tensorCTDT( alpha, F0tensors[ index ][ num ][ 0 ] );
 
-                  alpha = -prob->gMxElement( siteindex1, index + 1 + num, index + 1, siteindex2 ); // Second line for Ctensors_MPS_MPSDT
+                  alpha = -prob->gMxElement( siteindex1, index + 1 + num, index + 1, siteindex2 ); // Second line for Ctensors_MPS_mpsUp
                   Dtensors[ index ][ cnt2 ][ cnt3 ]->zaxpy_tensorCD( alpha, F1tensorsT[ index ][ num ][ 0 ] );
                   DtensorsT[ index ][ cnt2 ][ cnt3 ]->zaxpy_tensorCTDT( alpha, F1tensors[ index ][ num ][ 0 ] );
                }
@@ -349,28 +277,20 @@ void CheMPS2::TimeTaylor::updateMovingLeft( const int index ) {
          if ( index == L - 2 ) {
             Qtensors[ index ][ cnt2 ]->clear();
             QtensorsT[ index ][ cnt2 ]->clear();
-            Qtensors[ index ][ cnt2 ]->AddTermSimple( MPSDT[ index + 1 ], MPS[ index + 1 ], NULL, NULL );
-            QtensorsT[ index ][ cnt2 ]->AddTermSimple( MPSDT[ index + 1 ], MPS[ index + 1 ], NULL, NULL );
+            Qtensors[ index ][ cnt2 ]->AddTermSimple( mpsUp[ index + 1 ], mpsDown[ index + 1 ], NULL, NULL );
+            QtensorsT[ index ][ cnt2 ]->AddTermSimple( mpsUp[ index + 1 ], mpsDown[ index + 1 ], NULL, NULL );
          } else {
             dcomplex * workmemBIS = new dcomplex[ dimR * dimR ];
-            Qtensors[ index ][ cnt2 ]->update( Qtensors[ index + 1 ][ cnt2 + 1 ], MPSDT[ index + 1 ],
-                                               MPS[ index + 1 ], workmem );
-            QtensorsT[ index ][ cnt2 ]->update( QtensorsT[ index + 1 ][ cnt2 + 1 ], MPSDT[ index + 1 ],
-                                                MPS[ index + 1 ], workmem );
-            Qtensors[ index ][ cnt2 ]->AddTermSimple( MPSDT[ index + 1 ], MPS[ index + 1 ], Otensors[ index + 1 ], workmem );
-            QtensorsT[ index ][ cnt2 ]->AddTermSimple( MPSDT[ index + 1 ], MPS[ index + 1 ], Otensors[ index + 1 ], workmem );
-            Qtensors[ index ][ cnt2 ]->AddTermsL( Ltensors[ index + 1 ], LtensorsT[ index + 1 ], MPSDT[ index + 1 ],
-                                                  MPS[ index + 1 ], workmemBIS, workmem );
-            QtensorsT[ index ][ cnt2 ]->AddTermsL( Ltensors[ index + 1 ], LtensorsT[ index + 1 ], MPSDT[ index + 1 ],
-                                                   MPS[ index + 1 ], workmemBIS, workmem );
-            Qtensors[ index ][ cnt2 ]->AddTermsAB( Atensors[ index + 1 ][ cnt2 + 1 ][ 0 ], Btensors[ index + 1 ][ cnt2 + 1 ][ 0 ],
-                                                   MPSDT[ index + 1 ], MPS[ index + 1 ], workmemBIS, workmem );
-            QtensorsT[ index ][ cnt2 ]->AddTermsAB( AtensorsT[ index + 1 ][ cnt2 + 1 ][ 0 ], BtensorsT[ index + 1 ][ cnt2 + 1 ][ 0 ],
-                                                    MPSDT[ index + 1 ], MPS[ index + 1 ], workmemBIS, workmem );
-            Qtensors[ index ][ cnt2 ]->AddTermsCD( Ctensors[ index + 1 ][ cnt2 + 1 ][ 0 ], Dtensors[ index + 1 ][ cnt2 + 1 ][ 0 ],
-                                                   MPSDT[ index + 1 ], MPS[ index + 1 ], workmemBIS, workmem );
-            QtensorsT[ index ][ cnt2 ]->AddTermsCD( CtensorsT[ index + 1 ][ cnt2 + 1 ][ 0 ], DtensorsT[ index + 1 ][ cnt2 + 1 ][ 0 ],
-                                                    MPSDT[ index + 1 ], MPS[ index + 1 ], workmemBIS, workmem );
+            Qtensors[ index ][ cnt2 ]->update( Qtensors[ index + 1 ][ cnt2 + 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+            QtensorsT[ index ][ cnt2 ]->update( QtensorsT[ index + 1 ][ cnt2 + 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmem );
+            Qtensors[ index ][ cnt2 ]->AddTermSimple( mpsUp[ index + 1 ], mpsDown[ index + 1 ], Otensors[ index + 1 ], workmem );
+            QtensorsT[ index ][ cnt2 ]->AddTermSimple( mpsUp[ index + 1 ], mpsDown[ index + 1 ], Otensors[ index + 1 ], workmem );
+            Qtensors[ index ][ cnt2 ]->AddTermsL( Ltensors[ index + 1 ], LtensorsT[ index + 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmemBIS, workmem );
+            QtensorsT[ index ][ cnt2 ]->AddTermsL( Ltensors[ index + 1 ], LtensorsT[ index + 1 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmemBIS, workmem );
+            Qtensors[ index ][ cnt2 ]->AddTermsAB( Atensors[ index + 1 ][ cnt2 + 1 ][ 0 ], Btensors[ index + 1 ][ cnt2 + 1 ][ 0 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmemBIS, workmem );
+            QtensorsT[ index ][ cnt2 ]->AddTermsAB( AtensorsT[ index + 1 ][ cnt2 + 1 ][ 0 ], BtensorsT[ index + 1 ][ cnt2 + 1 ][ 0 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmemBIS, workmem );
+            Qtensors[ index ][ cnt2 ]->AddTermsCD( Ctensors[ index + 1 ][ cnt2 + 1 ][ 0 ], Dtensors[ index + 1 ][ cnt2 + 1 ][ 0 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmemBIS, workmem );
+            QtensorsT[ index ][ cnt2 ]->AddTermsCD( CtensorsT[ index + 1 ][ cnt2 + 1 ][ 0 ], DtensorsT[ index + 1 ][ cnt2 + 1 ][ 0 ], mpsUp[ index + 1 ], mpsDown[ index + 1 ], workmemBIS, workmem );
             delete[] workmemBIS;
          }
       }
@@ -379,9 +299,9 @@ void CheMPS2::TimeTaylor::updateMovingLeft( const int index ) {
    }
    // Xtensors
    if ( index == L - 2 ) {
-      Xtensors[ index ]->update( MPSDT[ index + 1 ], MPS[ index + 1 ] );
+      Xtensors[ index ]->update( mpsUp[ index + 1 ], mpsDown[ index + 1 ] );
    } else {
-      Xtensors[ index ]->update( MPSDT[ index + 1 ], MPS[ index + 1 ], Otensors[ index + 1 ],
+      Xtensors[ index ]->update( mpsUp[ index + 1 ], mpsDown[ index + 1 ], Otensors[ index + 1 ],
                                  Ltensors[ index + 1 ], LtensorsT[ index + 1 ], Xtensors[ index + 1 ],
                                  Qtensors[ index + 1 ][ 0 ], QtensorsT[ index + 1 ][ 0 ],
                                  Atensors[ index + 1 ][ 0 ][ 0 ], AtensorsT[ index + 1 ][ 0 ][ 0 ],
@@ -390,16 +310,16 @@ void CheMPS2::TimeTaylor::updateMovingLeft( const int index ) {
 
    // Otensors
    if ( index == L - 2 ) {
-      Otensors[ index ]->create( MPSDT[ index + 1 ], MPS[ index + 1 ] );
+      Otensors[ index ]->create( mpsUp[ index + 1 ], mpsDown[ index + 1 ] );
    } else {
-      Otensors[ index ]->update_ownmem( MPSDT[ index + 1 ], MPS[ index + 1 ], Otensors[ index + 1 ] );
+      Otensors[ index ]->update_ownmem( mpsUp[ index + 1 ], mpsDown[ index + 1 ], Otensors[ index + 1 ] );
    }
 }
 
-void CheMPS2::TimeTaylor::updateMovingRight( const int index ) {
+void CheMPS2::TimeTaylor::updateMovingRight( const int index, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown ) {
 
-   const int dimL = std::max( denBKDT->gMaxDimAtBound( index ), denBK->gMaxDimAtBound( index ) );
-   const int dimR = std::max( denBKDT->gMaxDimAtBound( index + 1 ), denBK->gMaxDimAtBound( index + 1 ) );
+   const int dimL = std::max( bkUp->gMaxDimAtBound( index ), bkDown->gMaxDimAtBound( index ) );
+   const int dimR = std::max( bkUp->gMaxDimAtBound( index + 1 ), bkDown->gMaxDimAtBound( index + 1 ) );
 
 #pragma omp parallel
    {
@@ -410,15 +330,15 @@ void CheMPS2::TimeTaylor::updateMovingRight( const int index ) {
       for ( int cnt2 = 0; cnt2 < index + 1; cnt2++ ) {
          if ( cnt2 == 0 ) {
             if ( index == 0 ) {
-               Ltensors[ index ][ cnt2 ]->create( MPSDT[ index ], MPS[ index ], NULL, NULL );
-               LtensorsT[ index ][ cnt2 ]->create( MPSDT[ index ], MPS[ index ], NULL, NULL );
+               Ltensors[ index ][ cnt2 ]->create( mpsUp[ index ], mpsDown[ index ], NULL, NULL );
+               LtensorsT[ index ][ cnt2 ]->create( mpsUp[ index ], mpsDown[ index ], NULL, NULL );
             } else {
-               Ltensors[ index ][ cnt2 ]->create( MPSDT[ index ], MPS[ index ], Otensors[ index - 1 ], workmem );
-               LtensorsT[ index ][ cnt2 ]->create( MPSDT[ index ], MPS[ index ], Otensors[ index - 1 ], workmem );
+               Ltensors[ index ][ cnt2 ]->create( mpsUp[ index ], mpsDown[ index ], Otensors[ index - 1 ], workmem );
+               LtensorsT[ index ][ cnt2 ]->create( mpsUp[ index ], mpsDown[ index ], Otensors[ index - 1 ], workmem );
             }
          } else {
-            Ltensors[ index ][ cnt2 ]->update( Ltensors[ index - 1 ][ cnt2 - 1 ], MPSDT[ index ], MPS[ index ], workmem );
-            LtensorsT[ index ][ cnt2 ]->update( LtensorsT[ index - 1 ][ cnt2 - 1 ], MPSDT[ index ], MPS[ index ], workmem );
+            Ltensors[ index ][ cnt2 ]->update( Ltensors[ index - 1 ][ cnt2 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+            LtensorsT[ index ][ cnt2 ]->update( LtensorsT[ index - 1 ][ cnt2 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
          }
       }
 
@@ -437,49 +357,41 @@ void CheMPS2::TimeTaylor::updateMovingRight( const int index ) {
             // cnt3 == 0 ]
             if ( cnt2 == 0 ) {
                if ( index == 0 ) {
-                  F0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index ], MPS[ index ], NULL, NULL );
-                  F1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index ], MPS[ index ], NULL, NULL );
-                  S0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index ], MPS[ index ], NULL, NULL );
-                  F0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index ], MPS[ index ], NULL, NULL );
-                  F1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index ], MPS[ index ], NULL, NULL );
-                  S0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index ], MPS[ index ], NULL, NULL );
+                  F0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index ], mpsDown[ index ], NULL, NULL );
+                  F1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index ], mpsDown[ index ], NULL, NULL );
+                  S0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index ], mpsDown[ index ], NULL, NULL );
+                  F0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index ], mpsDown[ index ], NULL, NULL );
+                  F1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index ], mpsDown[ index ], NULL, NULL );
+                  S0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index ], mpsDown[ index ], NULL, NULL );
                } else {
-                  F0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index ], MPS[ index ], Otensors[ index - 1 ], workmem );
-                  F1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index ], MPS[ index ], Otensors[ index - 1 ], workmem );
-                  S0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index ], MPS[ index ], Otensors[ index - 1 ], workmem );
-                  F0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index ], MPS[ index ], Otensors[ index - 1 ], workmem );
-                  F1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index ], MPS[ index ], Otensors[ index - 1 ], workmem );
-                  S0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( MPSDT[ index ], MPS[ index ], Otensors[ index - 1 ], workmem );
+                  F0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index ], mpsDown[ index ], Otensors[ index - 1 ], workmem );
+                  F1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index ], mpsDown[ index ], Otensors[ index - 1 ], workmem );
+                  S0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index ], mpsDown[ index ], Otensors[ index - 1 ], workmem );
+                  F0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index ], mpsDown[ index ], Otensors[ index - 1 ], workmem );
+                  F1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index ], mpsDown[ index ], Otensors[ index - 1 ], workmem );
+                  S0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( mpsUp[ index ], mpsDown[ index ], Otensors[ index - 1 ], workmem );
                }
                // // S1[ index ][ 0 ][ cnt3 ] doesn't exist
             } else {
-               F0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index - 1 ][ cnt2 - 1 ], MPSDT[ index ], MPS[ index ], workmem );
-               F1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index - 1 ][ cnt2 - 1 ], MPSDT[ index ], MPS[ index ], workmem );
-               S0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index - 1 ][ cnt2 - 1 ], MPSDT[ index ], MPS[ index ], workmem );
-               S1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index - 1 ][ cnt2 - 1 ], MPSDT[ index ], MPS[ index ], workmem );
-               F0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index - 1 ][ cnt2 - 1 ], MPSDT[ index ], MPS[ index ], workmem );
-               F1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index - 1 ][ cnt2 - 1 ], MPSDT[ index ], MPS[ index ], workmem );
-               S0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index - 1 ][ cnt2 - 1 ], MPSDT[ index ], MPS[ index ], workmem );
-               S1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index - 1 ][ cnt2 - 1 ], MPSDT[ index ], MPS[ index ], workmem );
+               F0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index - 1 ][ cnt2 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+               F1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index - 1 ][ cnt2 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+               S0tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index - 1 ][ cnt2 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+               S1tensors[ index ][ cnt2 ][ cnt3 ]->makenew( Ltensors[ index - 1 ][ cnt2 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+               F0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index - 1 ][ cnt2 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+               F1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index - 1 ][ cnt2 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+               S0tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index - 1 ][ cnt2 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+               S1tensorsT[ index ][ cnt2 ][ cnt3 ]->makenew( LtensorsT[ index - 1 ][ cnt2 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
             }
          } else {
-            F0tensors[ index ][ cnt2 ][ cnt3 ]->update( F0tensors[ index - 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index ],
-                                                        MPS[ index ], workmem );
-            F1tensors[ index ][ cnt2 ][ cnt3 ]->update( F1tensors[ index - 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index ],
-                                                        MPS[ index ], workmem );
-            S0tensors[ index ][ cnt2 ][ cnt3 ]->update( S0tensors[ index - 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index ],
-                                                        MPS[ index ], workmem );
-            F0tensorsT[ index ][ cnt2 ][ cnt3 ]->update( F0tensorsT[ index - 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index ],
-                                                         MPS[ index ], workmem );
-            F1tensorsT[ index ][ cnt2 ][ cnt3 ]->update( F1tensorsT[ index - 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index ],
-                                                         MPS[ index ], workmem );
-            S0tensorsT[ index ][ cnt2 ][ cnt3 ]->update( S0tensorsT[ index - 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index ],
-                                                         MPS[ index ], workmem );
+            F0tensors[ index ][ cnt2 ][ cnt3 ]->update( F0tensors[ index - 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+            F1tensors[ index ][ cnt2 ][ cnt3 ]->update( F1tensors[ index - 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+            S0tensors[ index ][ cnt2 ][ cnt3 ]->update( S0tensors[ index - 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+            F0tensorsT[ index ][ cnt2 ][ cnt3 ]->update( F0tensorsT[ index - 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+            F1tensorsT[ index ][ cnt2 ][ cnt3 ]->update( F1tensorsT[ index - 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+            S0tensorsT[ index ][ cnt2 ][ cnt3 ]->update( S0tensorsT[ index - 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
             if ( cnt2 > 0 ) {
-               S1tensors[ index ][ cnt2 ][ cnt3 ]->update( S1tensors[ index - 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index ],
-                                                           MPS[ index ], workmem );
-               S1tensorsT[ index ][ cnt2 ][ cnt3 ]->update( S1tensorsT[ index - 1 ][ cnt2 ][ cnt3 - 1 ], MPSDT[ index ],
-                                                            MPS[ index ], workmem );
+               S1tensors[ index ][ cnt2 ][ cnt3 ]->update( S1tensors[ index - 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+               S1tensorsT[ index ][ cnt2 ][ cnt3 ]->update( S1tensorsT[ index - 1 ][ cnt2 ][ cnt3 - 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
             }
          }
       }
@@ -495,7 +407,7 @@ void CheMPS2::TimeTaylor::updateMovingRight( const int index ) {
          const int cnt3       = result[ 0 ];
          const int siteindex1 = index + 1 + cnt3;
          const int siteindex2 = index + 1 + cnt2 + cnt3;
-         const int irrep_prod = CheMPS2::Irreps::directProd( denBK->gIrrep( siteindex1 ), denBK->gIrrep( siteindex2 ) );
+         const int irrep_prod = CheMPS2::Irreps::directProd( bkUp->gIrrep( siteindex1 ), bkUp->gIrrep( siteindex2 ) );
          if ( index == 0 ) {
             Atensors[ index ][ cnt2 ][ cnt3 ]->clear();
             AtensorsT[ index ][ cnt2 ][ cnt3 ]->clear();
@@ -508,30 +420,20 @@ void CheMPS2::TimeTaylor::updateMovingRight( const int index ) {
             Dtensors[ index ][ cnt2 ][ cnt3 ]->clear();
             DtensorsT[ index ][ cnt2 ][ cnt3 ]->clear();
          } else {
-            Atensors[ index ][ cnt2 ][ cnt3 ]->update( Atensors[ index - 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index ], MPS[ index ], workmem );
-            AtensorsT[ index ][ cnt2 ][ cnt3 ]->update( AtensorsT[ index - 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index ],
-                                                        MPS[ index ], workmem );
+            Atensors[ index ][ cnt2 ][ cnt3 ]->update( Atensors[ index - 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+            AtensorsT[ index ][ cnt2 ][ cnt3 ]->update( AtensorsT[ index - 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
             if ( cnt2 > 0 ) {
-               Btensors[ index ][ cnt2 ][ cnt3 ]->update( Btensors[ index - 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index ],
-                                                          MPS[ index ], workmem );
+               Btensors[ index ][ cnt2 ][ cnt3 ]->update( Btensors[ index - 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+               BtensorsT[ index ][ cnt2 ][ cnt3 ]->update( BtensorsT[ index - 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
             }
-            if ( cnt2 > 0 ) {
-               BtensorsT[ index ][ cnt2 ][ cnt3 ]->update( BtensorsT[ index - 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index ],
-                                                           MPS[ index ], workmem );
-            }
-            Ctensors[ index ][ cnt2 ][ cnt3 ]->update( Ctensors[ index - 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index ],
-                                                       MPS[ index ], workmem );
-            CtensorsT[ index ][ cnt2 ][ cnt3 ]->update( CtensorsT[ index - 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index ],
-                                                        MPS[ index ], workmem );
-            Dtensors[ index ][ cnt2 ][ cnt3 ]->update( Dtensors[ index - 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index ],
-                                                       MPS[ index ], workmem );
-            DtensorsT[ index ][ cnt2 ][ cnt3 ]->update( DtensorsT[ index - 1 ][ cnt2 ][ cnt3 + 1 ], MPSDT[ index ],
-                                                        MPS[ index ], workmem );
+            Ctensors[ index ][ cnt2 ][ cnt3 ]->update( Ctensors[ index - 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+            CtensorsT[ index ][ cnt2 ][ cnt3 ]->update( CtensorsT[ index - 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+            Dtensors[ index ][ cnt2 ][ cnt3 ]->update( Dtensors[ index - 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+            DtensorsT[ index ][ cnt2 ][ cnt3 ]->update( DtensorsT[ index - 1 ][ cnt2 ][ cnt3 + 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
          }
 
          for ( int num = 0; num < index + 1; num++ ) {
-            if ( irrep_prod ==
-                 S0tensorsT[ index ][ num ][ 0 ]->get_irrep() ) { // Then the matrix elements are not 0 due to symm.
+            if ( irrep_prod == S0tensorsT[ index ][ num ][ 0 ]->get_irrep() ) { // Then the matrix elements are not 0 due to symm.
                double alpha = prob->gMxElement( index - num, index, siteindex1, siteindex2 );
                if ( ( cnt2 == 0 ) && ( num == 0 ) ) {
                   alpha *= 0.5;
@@ -573,33 +475,27 @@ void CheMPS2::TimeTaylor::updateMovingRight( const int index ) {
          }
       }
 
-// QQtensors_MPSDT_MPS : certain processes own certain QQtensors_MPSDT_MPS ---
+// QQtensors_mpsUp_MPS : certain processes own certain QQtensors_mpsUp_MPS ---
 // You don't want to locally parallellize when sending and receiving buffers!
 #pragma omp for schedule( static ) nowait
       for ( int cnt2 = 0; cnt2 < L - 1 - index; cnt2++ ) {
          if ( index == 0 ) {
             Qtensors[ index ][ cnt2 ]->clear();
             QtensorsT[ index ][ cnt2 ]->clear();
-            Qtensors[ index ][ cnt2 ]->AddTermSimple( MPSDT[ index ], MPS[ index ], NULL, NULL );
-            QtensorsT[ index ][ cnt2 ]->AddTermSimple( MPSDT[ index ], MPS[ index ], NULL, NULL );
+            Qtensors[ index ][ cnt2 ]->AddTermSimple( mpsUp[ index ], mpsDown[ index ], NULL, NULL );
+            QtensorsT[ index ][ cnt2 ]->AddTermSimple( mpsUp[ index ], mpsDown[ index ], NULL, NULL );
          } else {
             dcomplex * workmemBIS = new dcomplex[ dimL * dimL ];
-            Qtensors[ index ][ cnt2 ]->update( Qtensors[ index - 1 ][ cnt2 + 1 ], MPSDT[ index ], MPS[ index ], workmem );
-            QtensorsT[ index ][ cnt2 ]->update( QtensorsT[ index - 1 ][ cnt2 + 1 ], MPSDT[ index ], MPS[ index ], workmem );
-            Qtensors[ index ][ cnt2 ]->AddTermSimple( MPSDT[ index ], MPS[ index ], Otensors[ index - 1 ], workmem );
-            QtensorsT[ index ][ cnt2 ]->AddTermSimple( MPSDT[ index ], MPS[ index ], Otensors[ index - 1 ], workmem );
-            Qtensors[ index ][ cnt2 ]->AddTermsL( Ltensors[ index - 1 ], LtensorsT[ index - 1 ], MPSDT[ index ],
-                                                  MPS[ index ], workmemBIS, workmem );
-            QtensorsT[ index ][ cnt2 ]->AddTermsL( Ltensors[ index - 1 ], LtensorsT[ index - 1 ], MPSDT[ index ],
-                                                   MPS[ index ], workmemBIS, workmem );
-            Qtensors[ index ][ cnt2 ]->AddTermsAB( Atensors[ index - 1 ][ cnt2 + 1 ][ 0 ], Btensors[ index - 1 ][ cnt2 + 1 ][ 0 ],
-                                                   MPSDT[ index ], MPS[ index ], workmemBIS, workmem );
-            QtensorsT[ index ][ cnt2 ]->AddTermsAB( AtensorsT[ index - 1 ][ cnt2 + 1 ][ 0 ], BtensorsT[ index - 1 ][ cnt2 + 1 ][ 0 ],
-                                                    MPSDT[ index ], MPS[ index ], workmemBIS, workmem );
-            Qtensors[ index ][ cnt2 ]->AddTermsCD( Ctensors[ index - 1 ][ cnt2 + 1 ][ 0 ], Dtensors[ index - 1 ][ cnt2 + 1 ][ 0 ],
-                                                   MPSDT[ index ], MPS[ index ], workmemBIS, workmem );
-            QtensorsT[ index ][ cnt2 ]->AddTermsCD( CtensorsT[ index - 1 ][ cnt2 + 1 ][ 0 ], DtensorsT[ index - 1 ][ cnt2 + 1 ][ 0 ],
-                                                    MPSDT[ index ], MPS[ index ], workmemBIS, workmem );
+            Qtensors[ index ][ cnt2 ]->update( Qtensors[ index - 1 ][ cnt2 + 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+            QtensorsT[ index ][ cnt2 ]->update( QtensorsT[ index - 1 ][ cnt2 + 1 ], mpsUp[ index ], mpsDown[ index ], workmem );
+            Qtensors[ index ][ cnt2 ]->AddTermSimple( mpsUp[ index ], mpsDown[ index ], Otensors[ index - 1 ], workmem );
+            QtensorsT[ index ][ cnt2 ]->AddTermSimple( mpsUp[ index ], mpsDown[ index ], Otensors[ index - 1 ], workmem );
+            Qtensors[ index ][ cnt2 ]->AddTermsL( Ltensors[ index - 1 ], LtensorsT[ index - 1 ], mpsUp[ index ], mpsDown[ index ], workmemBIS, workmem );
+            QtensorsT[ index ][ cnt2 ]->AddTermsL( Ltensors[ index - 1 ], LtensorsT[ index - 1 ], mpsUp[ index ], mpsDown[ index ], workmemBIS, workmem );
+            Qtensors[ index ][ cnt2 ]->AddTermsAB( Atensors[ index - 1 ][ cnt2 + 1 ][ 0 ], Btensors[ index - 1 ][ cnt2 + 1 ][ 0 ], mpsUp[ index ], mpsDown[ index ], workmemBIS, workmem );
+            QtensorsT[ index ][ cnt2 ]->AddTermsAB( AtensorsT[ index - 1 ][ cnt2 + 1 ][ 0 ], BtensorsT[ index - 1 ][ cnt2 + 1 ][ 0 ], mpsUp[ index ], mpsDown[ index ], workmemBIS, workmem );
+            Qtensors[ index ][ cnt2 ]->AddTermsCD( Ctensors[ index - 1 ][ cnt2 + 1 ][ 0 ], Dtensors[ index - 1 ][ cnt2 + 1 ][ 0 ], mpsUp[ index ], mpsDown[ index ], workmemBIS, workmem );
+            QtensorsT[ index ][ cnt2 ]->AddTermsCD( CtensorsT[ index - 1 ][ cnt2 + 1 ][ 0 ], DtensorsT[ index - 1 ][ cnt2 + 1 ][ 0 ], mpsUp[ index ], mpsDown[ index ], workmemBIS, workmem );
             delete[] workmemBIS;
          }
       }
@@ -609,9 +505,9 @@ void CheMPS2::TimeTaylor::updateMovingRight( const int index ) {
 
    // Xtensors
    if ( index == 0 ) {
-      Xtensors[ index ]->update( MPSDT[ index ], MPS[ index ] );
+      Xtensors[ index ]->update( mpsUp[ index ], mpsDown[ index ] );
    } else {
-      Xtensors[ index ]->update( MPSDT[ index ], MPS[ index ], Otensors[ index - 1 ], Ltensors[ index - 1 ],
+      Xtensors[ index ]->update( mpsUp[ index ], mpsDown[ index ], Otensors[ index - 1 ], Ltensors[ index - 1 ],
                                  LtensorsT[ index - 1 ], Xtensors[ index - 1 ], Qtensors[ index - 1 ][ 0 ],
                                  QtensorsT[ index - 1 ][ 0 ], Atensors[ index - 1 ][ 0 ][ 0 ],
                                  AtensorsT[ index - 1 ][ 0 ][ 0 ], CtensorsT[ index - 1 ][ 0 ][ 0 ],
@@ -620,21 +516,21 @@ void CheMPS2::TimeTaylor::updateMovingRight( const int index ) {
 
    // Otensors
    if ( index == 0 ) {
-      Otensors[ index ]->create( MPSDT[ index ], MPS[ index ] );
+      Otensors[ index ]->create( mpsUp[ index ], mpsDown[ index ] );
    } else {
-      Otensors[ index ]->update_ownmem( MPSDT[ index ], MPS[ index ], Otensors[ index - 1 ] );
+      Otensors[ index ]->update_ownmem( mpsUp[ index ], mpsDown[ index ], Otensors[ index - 1 ] );
    }
 }
 
-void CheMPS2::TimeTaylor::allocateTensors( const int index, const bool movingRight ) {
+void CheMPS2::TimeTaylor::allocateTensors( const int index, const bool movingRight, SyBookkeeper * bkUp, SyBookkeeper * bkDown ) {
 
    if ( movingRight ) {
       // Ltensors
       Ltensors[ index ]  = new CTensorL *[ index + 1 ];
       LtensorsT[ index ] = new CTensorLT *[ index + 1 ];
       for ( int cnt2 = 0; cnt2 < index + 1; cnt2++ ) {
-         Ltensors[ index ][ cnt2 ]  = new CTensorL( index + 1, denBK->gIrrep( index - cnt2 ), movingRight, denBKDT, denBK );
-         LtensorsT[ index ][ cnt2 ] = new CTensorLT( index + 1, denBK->gIrrep( index - cnt2 ), movingRight, denBKDT, denBK );
+         Ltensors[ index ][ cnt2 ]  = new CTensorL( index + 1, bkUp->gIrrep( index - cnt2 ), movingRight, bkUp, bkDown );
+         LtensorsT[ index ][ cnt2 ] = new CTensorLT( index + 1, bkUp->gIrrep( index - cnt2 ), movingRight, bkUp, bkDown );
       }
 
       // Two-operator tensors : certain processes own certain two-operator tensors
@@ -662,19 +558,17 @@ void CheMPS2::TimeTaylor::allocateTensors( const int index, const bool movingRig
             S1tensorsT[ index ][ cnt2 ] = new CTensorS1T *[ index - cnt2 + 1 ];
          }
          for ( int cnt3 = 0; cnt3 < index - cnt2 + 1; cnt3++ ) {
-            const int Iprod =
-                CheMPS2::Irreps::directProd( denBKDT->gIrrep( index - cnt2 - cnt3 ), denBKDT->gIrrep( index - cnt3 ) );
-            F0tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorF0( index + 1, Iprod, movingRight, denBKDT, denBK );
-            F0tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorF0T( index + 1, Iprod, movingRight, denBKDT, denBK );
-            F1tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorF1( index + 1, Iprod, movingRight, denBKDT, denBK );
-            F1tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorF1T( index + 1, Iprod, movingRight, denBKDT, denBK );
-            S0tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorS0( index + 1, Iprod, movingRight, denBKDT, denBK );
-            S0tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorS0T( index + 1, Iprod, movingRight, denBKDT, denBK );
+            const int Iprod = CheMPS2::Irreps::directProd( bkUp->gIrrep( index - cnt2 - cnt3 ), bkUp->gIrrep( index - cnt3 ) );
+
+            F0tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorF0( index + 1, Iprod, movingRight, bkUp, bkDown );
+            F0tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorF0T( index + 1, Iprod, movingRight, bkUp, bkDown );
+            F1tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorF1( index + 1, Iprod, movingRight, bkUp, bkDown );
+            F1tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorF1T( index + 1, Iprod, movingRight, bkUp, bkDown );
+            S0tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorS0( index + 1, Iprod, movingRight, bkUp, bkDown );
+            S0tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorS0T( index + 1, Iprod, movingRight, bkUp, bkDown );
             if ( cnt2 > 0 ) {
-               S1tensors[ index ][ cnt2 ][ cnt3 ] = new CTensorS1( index + 1, Iprod, movingRight, denBKDT, denBK );
-            }
-            if ( cnt2 > 0 ) {
-               S1tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorS1T( index + 1, Iprod, movingRight, denBKDT, denBK );
+               S1tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorS1( index + 1, Iprod, movingRight, bkUp, bkDown );
+               S1tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorS1T( index + 1, Iprod, movingRight, bkUp, bkDown );
             }
          }
       }
@@ -695,9 +589,7 @@ void CheMPS2::TimeTaylor::allocateTensors( const int index, const bool movingRig
          Atensors[ index ][ cnt2 ]  = new CTensorOperator *[ L - 1 - index - cnt2 ];
          AtensorsT[ index ][ cnt2 ] = new CTensorOperator *[ L - 1 - index - cnt2 ];
          if ( cnt2 > 0 ) {
-            Btensors[ index ][ cnt2 ] = new CTensorOperator *[ L - 1 - index - cnt2 ];
-         }
-         if ( cnt2 > 0 ) {
+            Btensors[ index ][ cnt2 ]  = new CTensorOperator *[ L - 1 - index - cnt2 ];
             BtensorsT[ index ][ cnt2 ] = new CTensorOperator *[ L - 1 - index - cnt2 ];
          }
          Ctensors[ index ][ cnt2 ]  = new CTensorOperator *[ L - 1 - index - cnt2 ];
@@ -705,23 +597,18 @@ void CheMPS2::TimeTaylor::allocateTensors( const int index, const bool movingRig
          Dtensors[ index ][ cnt2 ]  = new CTensorOperator *[ L - 1 - index - cnt2 ];
          DtensorsT[ index ][ cnt2 ] = new CTensorOperator *[ L - 1 - index - cnt2 ];
          for ( int cnt3 = 0; cnt3 < L - 1 - index - cnt2; cnt3++ ) {
-            const int Idiff                    = CheMPS2::Irreps::directProd( denBKDT->gIrrep( index + 1 + cnt2 + cnt3 ),
-                                                           denBKDT->gIrrep( index + 1 + cnt3 ) );
-            Atensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 0, 2, Idiff, movingRight, true, false, denBKDT, denBK );
-            AtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 0, -2, Idiff, movingRight, false, false, denBKDT, denBK );
+            const int Idiff = CheMPS2::Irreps::directProd( bkUp->gIrrep( index + 1 + cnt2 + cnt3 ), bkUp->gIrrep( index + 1 + cnt3 ) );
+
+            Atensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 0, 2, Idiff, movingRight, true, false, bkUp, bkDown );
+            AtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 0, -2, Idiff, movingRight, false, false, bkUp, bkDown );
             if ( cnt2 > 0 ) {
-               Btensors[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 2, 2, Idiff, movingRight, true, false, denBKDT, denBK );
+               Btensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 2, 2, Idiff, movingRight, true, false, bkUp, bkDown );
+               BtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 2, -2, Idiff, movingRight, false, false, bkUp, bkDown );
             }
-            if ( cnt2 > 0 ) {
-               BtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 2, -2, Idiff, movingRight,
-                                                                         false, false, denBKDT, denBK );
-            }
-            Ctensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 0, 0, Idiff, movingRight, true, false, denBKDT, denBK );
-            CtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 0, 0, Idiff, movingRight, false, false, denBKDT, denBK );
-            Dtensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 2, 0, Idiff, movingRight,
-                                                                     movingRight, false, denBKDT, denBK );
-            DtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 2, 0, Idiff, movingRight,
-                                                                      !movingRight, false, denBKDT, denBK );
+            Ctensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 0, 0, Idiff, movingRight, true, false, bkUp, bkDown );
+            CtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 0, 0, Idiff, movingRight, false, false, bkUp, bkDown );
+            Dtensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 2, 0, Idiff, movingRight, movingRight, false, bkUp, bkDown );
+            DtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 2, 0, Idiff, movingRight, !movingRight, false, bkUp, bkDown );
          }
       }
 
@@ -730,23 +617,21 @@ void CheMPS2::TimeTaylor::allocateTensors( const int index, const bool movingRig
       Qtensors[ index ]  = new CTensorQ *[ L - 1 - index ];
       QtensorsT[ index ] = new CTensorQT *[ L - 1 - index ];
       for ( int cnt2 = 0; cnt2 < L - 1 - index; cnt2++ ) {
-         Qtensors[ index ][ cnt2 ]  = new CTensorQ( index + 1, denBK->gIrrep( index + 1 + cnt2 ), movingRight,
-                                                   denBKDT, denBK, prob, index + 1 + cnt2 );
-         QtensorsT[ index ][ cnt2 ] = new CTensorQT( index + 1, denBK->gIrrep( index + 1 + cnt2 ), movingRight,
-                                                     denBKDT, denBK, prob, index + 1 + cnt2 );
+         Qtensors[ index ][ cnt2 ]  = new CTensorQ( index + 1, bkUp->gIrrep( index + 1 + cnt2 ), movingRight, bkUp, bkDown, prob, index + 1 + cnt2 );
+         QtensorsT[ index ][ cnt2 ] = new CTensorQT( index + 1, bkUp->gIrrep( index + 1 + cnt2 ), movingRight, bkUp, bkDown, prob, index + 1 + cnt2 );
       }
 
       // Xtensors : a certain process owns the Xtensors
-      Xtensors[ index ] = new CTensorX( index + 1, movingRight, denBKDT, denBK, prob );
+      Xtensors[ index ] = new CTensorX( index + 1, movingRight, bkUp, bkDown, prob );
 
       // Otensors :
-      Otensors[ index ] = new CTensorO( index + 1, movingRight, denBKDT, denBK );
+      Otensors[ index ] = new CTensorO( index + 1, movingRight, bkUp, bkDown );
    } else {
       Ltensors[ index ]  = new CTensorL *[ L - 1 - index ];
       LtensorsT[ index ] = new CTensorLT *[ L - 1 - index ];
       for ( int cnt2 = 0; cnt2 < L - 1 - index; cnt2++ ) {
-         Ltensors[ index ][ cnt2 ]  = new CTensorL( index + 1, denBK->gIrrep( index + 1 + cnt2 ), movingRight, denBKDT, denBK );
-         LtensorsT[ index ][ cnt2 ] = new CTensorLT( index + 1, denBK->gIrrep( index + 1 + cnt2 ), movingRight, denBKDT, denBK );
+         Ltensors[ index ][ cnt2 ]  = new CTensorL( index + 1, bkUp->gIrrep( index + 1 + cnt2 ), movingRight, bkUp, bkDown );
+         LtensorsT[ index ][ cnt2 ] = new CTensorLT( index + 1, bkUp->gIrrep( index + 1 + cnt2 ), movingRight, bkUp, bkDown );
       }
 
       // Two-operator tensors : certain processes own certain two-operator tensors
@@ -768,25 +653,21 @@ void CheMPS2::TimeTaylor::allocateTensors( const int index, const bool movingRig
          S0tensors[ index ][ cnt2 ]  = new CTensorS0 *[ L - 1 - index - cnt2 ];
          S0tensorsT[ index ][ cnt2 ] = new CTensorS0T *[ L - 1 - index - cnt2 ];
          if ( cnt2 > 0 ) {
-            S1tensors[ index ][ cnt2 ] = new CTensorS1 *[ L - 1 - index - cnt2 ];
-         }
-         if ( cnt2 > 0 ) {
+            S1tensors[ index ][ cnt2 ]  = new CTensorS1 *[ L - 1 - index - cnt2 ];
             S1tensorsT[ index ][ cnt2 ] = new CTensorS1T *[ L - 1 - index - cnt2 ];
          }
          for ( int cnt3 = 0; cnt3 < L - 1 - index - cnt2; cnt3++ ) {
-            const int Iprod                     = Irreps::directProd( denBKDT->gIrrep( index + 1 + cnt3 ),
-                                                  denBKDT->gIrrep( index + 1 + cnt2 + cnt3 ) );
-            F0tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorF0( index + 1, Iprod, movingRight, denBKDT, denBK );
-            F0tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorF0T( index + 1, Iprod, movingRight, denBKDT, denBK );
-            F1tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorF1( index + 1, Iprod, movingRight, denBKDT, denBK );
-            F1tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorF1T( index + 1, Iprod, movingRight, denBKDT, denBK );
-            S0tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorS0( index + 1, Iprod, movingRight, denBKDT, denBK );
-            S0tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorS0T( index + 1, Iprod, movingRight, denBKDT, denBK );
+            const int Iprod = Irreps::directProd( bkUp->gIrrep( index + 1 + cnt3 ), bkUp->gIrrep( index + 1 + cnt2 + cnt3 ) );
+
+            F0tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorF0( index + 1, Iprod, movingRight, bkUp, bkDown );
+            F0tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorF0T( index + 1, Iprod, movingRight, bkUp, bkDown );
+            F1tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorF1( index + 1, Iprod, movingRight, bkUp, bkDown );
+            F1tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorF1T( index + 1, Iprod, movingRight, bkUp, bkDown );
+            S0tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorS0( index + 1, Iprod, movingRight, bkUp, bkDown );
+            S0tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorS0T( index + 1, Iprod, movingRight, bkUp, bkDown );
             if ( cnt2 > 0 ) {
-               S1tensors[ index ][ cnt2 ][ cnt3 ] = new CTensorS1( index + 1, Iprod, movingRight, denBKDT, denBK );
-            }
-            if ( cnt2 > 0 ) {
-               S1tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorS1T( index + 1, Iprod, movingRight, denBKDT, denBK );
+               S1tensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorS1( index + 1, Iprod, movingRight, bkUp, bkDown );
+               S1tensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorS1T( index + 1, Iprod, movingRight, bkUp, bkDown );
             }
          }
       }
@@ -807,9 +688,7 @@ void CheMPS2::TimeTaylor::allocateTensors( const int index, const bool movingRig
          Atensors[ index ][ cnt2 ]  = new CTensorOperator *[ index + 1 - cnt2 ];
          AtensorsT[ index ][ cnt2 ] = new CTensorOperator *[ index + 1 - cnt2 ];
          if ( cnt2 > 0 ) {
-            Btensors[ index ][ cnt2 ] = new CTensorOperator *[ index + 1 - cnt2 ];
-         }
-         if ( cnt2 > 0 ) {
+            Btensors[ index ][ cnt2 ]  = new CTensorOperator *[ index + 1 - cnt2 ];
             BtensorsT[ index ][ cnt2 ] = new CTensorOperator *[ index + 1 - cnt2 ];
          }
          Ctensors[ index ][ cnt2 ]  = new CTensorOperator *[ index + 1 - cnt2 ];
@@ -817,23 +696,18 @@ void CheMPS2::TimeTaylor::allocateTensors( const int index, const bool movingRig
          Dtensors[ index ][ cnt2 ]  = new CTensorOperator *[ index + 1 - cnt2 ];
          DtensorsT[ index ][ cnt2 ] = new CTensorOperator *[ index + 1 - cnt2 ];
          for ( int cnt3 = 0; cnt3 < index + 1 - cnt2; cnt3++ ) {
-            const int Idiff = CheMPS2::Irreps::directProd(
-                denBK->gIrrep( index - cnt2 - cnt3 ), denBK->gIrrep( index - cnt3 ) );
-            Atensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 0, 2, Idiff, movingRight, true, false, denBKDT, denBK );
-            AtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 0, -2, Idiff, movingRight, false, false, denBKDT, denBK );
+            const int Idiff = CheMPS2::Irreps::directProd( bkUp->gIrrep( index - cnt2 - cnt3 ), bkUp->gIrrep( index - cnt3 ) );
+
+            Atensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 0, 2, Idiff, movingRight, true, false, bkUp, bkDown );
+            AtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 0, -2, Idiff, movingRight, false, false, bkUp, bkDown );
             if ( cnt2 > 0 ) {
-               Btensors[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 2, 2, Idiff, movingRight, true, false, denBKDT, denBK );
+               Btensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 2, 2, Idiff, movingRight, true, false, bkUp, bkDown );
+               BtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 2, -2, Idiff, movingRight, false, false, bkUp, bkDown );
             }
-            if ( cnt2 > 0 ) {
-               BtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 2, -2, Idiff, movingRight, false,
-                                                                         false, denBKDT, denBK );
-            }
-            Ctensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 0, 0, Idiff, movingRight, true, false, denBKDT, denBK );
-            CtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 0, 0, Idiff, movingRight, false, false, denBKDT, denBK );
-            Dtensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 2, 0, Idiff, movingRight, movingRight,
-                                                                     false, denBKDT, denBK );
-            DtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 2, 0, Idiff, movingRight,
-                                                                      !movingRight, false, denBKDT, denBK );
+            Ctensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 0, 0, Idiff, movingRight, true, false, bkUp, bkDown );
+            CtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 0, 0, Idiff, movingRight, false, false, bkUp, bkDown );
+            Dtensors[ index ][ cnt2 ][ cnt3 ]  = new CTensorOperator( index + 1, 2, 0, Idiff, movingRight, movingRight, false, bkUp, bkDown );
+            DtensorsT[ index ][ cnt2 ][ cnt3 ] = new CTensorOperator( index + 1, 2, 0, Idiff, movingRight, !movingRight, false, bkUp, bkDown );
          }
       }
 
@@ -843,17 +717,15 @@ void CheMPS2::TimeTaylor::allocateTensors( const int index, const bool movingRig
       Qtensors[ index ]  = new CTensorQ *[ index + 1 ];
       QtensorsT[ index ] = new CTensorQT *[ index + 1 ];
       for ( int cnt2 = 0; cnt2 < index + 1; cnt2++ ) {
-         Qtensors[ index ][ cnt2 ]  = new CTensorQ( index + 1, denBK->gIrrep( index - cnt2 ), movingRight,
-                                                   denBKDT, denBK, prob, index - cnt2 );
-         QtensorsT[ index ][ cnt2 ] = new CTensorQT( index + 1, denBK->gIrrep( index - cnt2 ), movingRight,
-                                                     denBKDT, denBK, prob, index - cnt2 );
+         Qtensors[ index ][ cnt2 ]  = new CTensorQ( index + 1, bkUp->gIrrep( index - cnt2 ), movingRight, bkUp, bkDown, prob, index - cnt2 );
+         QtensorsT[ index ][ cnt2 ] = new CTensorQT( index + 1, bkUp->gIrrep( index - cnt2 ), movingRight, bkUp, bkDown, prob, index - cnt2 );
       }
 
       // Xtensors : a certain process owns the Xtensors
-      Xtensors[ index ] = new CTensorX( index + 1, movingRight, denBKDT, denBK, prob );
+      Xtensors[ index ] = new CTensorX( index + 1, movingRight, bkUp, bkDown, prob );
 
       // Otensors :
-      Otensors[ index ] = new CTensorO( index + 1, movingRight, denBKDT, denBK );
+      Otensors[ index ] = new CTensorO( index + 1, movingRight, bkUp, bkDown );
    }
 }
 
@@ -952,84 +824,652 @@ void CheMPS2::TimeTaylor::deleteTensors( const int index, const bool movingRight
    delete Otensors[ index ];
 }
 
-void CheMPS2::TimeTaylor::doStep( const int currentInstruction ) {
+void CheMPS2::TimeTaylor::fitApplyH_1site( CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut, const int nSweeps ) {
 
-   for ( int i = 0; i < scheme->get_max_sweeps( currentInstruction ); ++i ) {
+   for ( int index = 0; index < L - 1; index++ ) {
+      left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
+   }
+   left_normalize( mpsOut[ L - 1 ], NULL );
+
+   for ( int cnt = 0; cnt < L - 1; cnt++ ) {
+      updateMovingRightSafe( cnt, mpsOut, bkOut, mpsIn, bkIn );
+   }
+
+   for ( int i = 0; i < nSweeps; ++i ) {
+      for ( int site = L - 1; site > 0; site-- ) {
+
+         CHeffNS_1S * heff = new CHeffNS_1S( bkOut, bkIn, prob );
+         heff->Apply( mpsIn[ site ], mpsOut[ site ],
+                      Ltensors, LtensorsT,
+                      Atensors, AtensorsT,
+                      Btensors, BtensorsT,
+                      Ctensors, CtensorsT,
+                      Dtensors, DtensorsT,
+                      S0tensors, S0tensorsT,
+                      S1tensors, S1tensorsT,
+                      F0tensors, F0tensorsT,
+                      F1tensors, F1tensorsT,
+                      Qtensors, QtensorsT,
+                      Xtensors, Otensors, false );
+         delete heff;
+         //    std::cout << *mpsOut[ site ] << std::endl;
+         right_normalize( mpsOut[ site - 1 ], mpsOut[ site ] );
+         updateMovingLeftSafe( site - 1, mpsOut, bkOut, mpsIn, bkIn );
+         std::cout << i << " " << site << " " << overlap( mpsIn, mpsOut ) << std::endl;
+      }
+
+      for ( int site = 0; site < L - 1; site++ ) {
+
+         CHeffNS_1S * heff = new CHeffNS_1S( bkOut, bkIn, prob );
+         heff->Apply( mpsIn[ site ], mpsOut[ site ],
+                      Ltensors, LtensorsT,
+                      Atensors, AtensorsT,
+                      Btensors, BtensorsT,
+                      Ctensors, CtensorsT,
+                      Dtensors, DtensorsT,
+                      S0tensors, S0tensorsT,
+                      S1tensors, S1tensorsT,
+                      F0tensors, F0tensorsT,
+                      F1tensors, F1tensorsT,
+                      Qtensors, QtensorsT,
+                      Xtensors, Otensors, true );
+         delete heff;
+
+         left_normalize( mpsOut[ site ], mpsOut[ site + 1 ] );
+         updateMovingRightSafe( site, mpsOut, bkOut, mpsIn, bkIn );
+         std::cout << i << " " << site << " " << overlap( mpsIn, mpsOut ) << std::endl;
+      }
+      std::cout << i << " " << overlap( mpsIn, mpsOut ) << std::endl;
+   }
+
+   // for ( int index = L - 1; index > 0; index-- ) {
+   //    right_normalize( mpsOut[ index - 1 ], mpsOut[ index ] );
+   //    // right_normalize( mpsIn[ index - 1 ], mpsIn[ index ] );
+   // }
+   // right_normalize( NULL, mpsOut[ 0 ] );
+   // // right_normalize( NULL, mpsIn[ 0 ] );
+
+   // for ( int cnt = L - 1; cnt > 0; cnt-- ) {
+   //    updateMovingLeftSafe( cnt - 1, mpsOut, bkOut, mpsIn, bkIn );
+   // }
+
+   // CTensorX * first = new CTensorX( 0, false, bkOut, bkIn, prob );
+   // first->update( mpsOut[ 0 ], mpsIn[ 0 ], Otensors[ 0 ],
+   //                Ltensors[ 0 ], LtensorsT[ 0 ], Xtensors[ 0 ],
+   //                Qtensors[ 0 ][ 0 ], QtensorsT[ 0 ][ 0 ],
+   //                Atensors[ 0 ][ 0 ][ 0 ], AtensorsT[ 0 ][ 0 ][ 0 ],
+   //                CtensorsT[ 0 ][ 0 ][ 0 ], DtensorsT[ 0 ][ 0 ][ 0 ] );
+   // std::cout << "first->inproduct( Xtensors[ 0 ], 'N' )" << std::endl;
+   // std::cout << *first << std::endl;
+
+   // // for ( int i = 0; i < nSweeps; ++i ) {
+   // //    for ( int site = 0; site < L - 1; site++ ) {
+
+   // //       CHeffNS_1S * heff = new CHeffNS_1S( bkOut, bkIn, prob );
+   // //       heff->Apply( mpsIn[ site ], mpsOut[ site ],
+   // //                    Ltensors, LtensorsT,
+   // //                    Atensors, AtensorsT,
+   // //                    Btensors, BtensorsT,
+   // //                    Ctensors, CtensorsT,
+   // //                    Dtensors, DtensorsT,
+   // //                    S0tensors, S0tensorsT,
+   // //                    S1tensors, S1tensorsT,
+   // //                    F0tensors, F0tensorsT,
+   // //                    F1tensors, F1tensorsT,
+   // //                    Qtensors, QtensorsT,
+   // //                    Xtensors, Otensors, true );
+
+   // //       delete heff;
+   // //       left_normalize( mpsOut[ site ], mpsOut[ site + 1 ] );
+   // //       left_normalize( mpsIn[ site ], mpsIn[ site + 1 ] );
+   // //       updateMovingRightSafe( site, mpsOut, bkOut, mpsIn, bkIn );
+   // //       std::cout << i << " " << site << " " << overlap( mpsIn, mpsOut ) << " " << overlap( mpsOut, mpsOut ) << std::endl;
+   // //    }
+
+   // //    for ( int site = L - 1; site > 0; site-- ) {
+
+   // //       CHeffNS_1S * heff = new CHeffNS_1S( bkOut, bkIn, prob );
+
+   // //       heff->Apply( mpsIn[ site ], mpsOut[ site ],
+   // //                    Ltensors, LtensorsT,
+   // //                    Atensors, AtensorsT,
+   // //                    Btensors, BtensorsT,
+   // //                    Ctensors, CtensorsT,
+   // //                    Dtensors, DtensorsT,
+   // //                    S0tensors, S0tensorsT,
+   // //                    S1tensors, S1tensorsT,
+   // //                    F0tensors, F0tensorsT,
+   // //                    F1tensors, F1tensorsT,
+   // //                    Qtensors, QtensorsT,
+   // //                    Xtensors, Otensors, false );
+   // //       delete heff;
+
+   // //       std::cout << i << " " << site << " " << overlap( mpsIn, mpsOut ) << " " << overlap( mpsOut, mpsOut ) << std::endl;
+   // //       right_normalize( mpsOut[ site - 1 ], mpsOut[ site ] );
+   // //       right_normalize( mpsIn[ site - 1 ], mpsIn[ site ] );
+   // //       updateMovingLeftSafe( site - 1, mpsOut, bkOut, mpsIn, bkIn );
+   // //    }
+   // //    // std::cout << i << " " << overlap( mpsIn, mpsOut ) << std::endl;
+   // // }
+}
+
+void CheMPS2::TimeTaylor::fitApplyH( dcomplex factor, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut, const int nSweeps, const int D, const double cut_off ) {
+
+   for ( int index = 0; index < L - 1; index++ ) {
+      left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
+   }
+   left_normalize( mpsOut[ L - 1 ], NULL );
+
+   for ( int cnt = 0; cnt < L - 1; cnt++ ) {
+      updateMovingRightSafe( cnt, mpsOut, bkOut, mpsIn, bkIn );
+   }
+   for ( int i = 0; i < nSweeps; ++i ) {
       for ( int site = L - 2; site > 0; site-- ) {
-         CSobject * denSB = new CSobject( site, denBK );
-         denSB->Join( MPS[ site ], MPS[ site + 1 ] );
 
-         CSobject * denPA         = new CSobject( site, denBKDT );
          CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? Otensors[ site - 1 ] : NULL;
          CTensorO * rightOverlapA = ( site + 2 ) < L ? Otensors[ site + 1 ] : NULL;
-         denPA->Join( leftOverlapA, denSB, rightOverlapA );
 
-         CSobject * denPB = new CSobject( site, denBKDT );
+         CSobject * denSB = new CSobject( site, bkIn );
+         denSB->Join( mpsIn[ site ], mpsIn[ site + 1 ] );
 
-         CHeffNS * heff = new CHeffNS( denBKDT, denBK, prob );
+         CSobject * denPB = new CSobject( site, bkOut );
+
+         CHeffNS * heff = new CHeffNS( bkOut, bkIn, prob, offset );
          heff->Apply( denSB, denPB, Ltensors, LtensorsT, Atensors, AtensorsT,
                       Btensors, BtensorsT, Ctensors, CtensorsT, Dtensors, DtensorsT,
                       S0tensors, S0tensorsT, S1tensors, S1tensorsT, F0tensors,
                       F0tensorsT, F1tensors, F1tensorsT, Qtensors, QtensorsT,
                       Xtensors, leftOverlapA, rightOverlapA );
 
-         denPA->Add( -scheme->get_time_step( currentInstruction ), denPB );
-
-         double disc = denPA->Split( MPSDT[ site ], MPSDT[ site + 1 ], scheme->get_D( currentInstruction ), scheme->get_cut_off( currentInstruction ), false, true );
-
+         double disc = denPB->Split( mpsOut[ site ], mpsOut[ site + 1 ], D, cut_off, false, false );
+         std::cout << i << " " << site << " " << overlap( mpsIn, mpsOut ) << " " << overlap( mpsOut, mpsOut ) << std::endl;
          delete heff;
-         delete denPA;
          delete denPB;
          delete denSB;
 
-         updateMovingLeftSafe( site );
+         updateMovingLeftSafe( site, mpsOut, bkOut, mpsIn, bkIn );
       }
 
       for ( int site = 0; site < L - 2; site++ ) {
-         CSobject * denSB = new CSobject( site, denBK );
-         denSB->Join( MPS[ site ], MPS[ site + 1 ] );
-
-         CSobject * denPA         = new CSobject( site, denBKDT );
          CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? Otensors[ site - 1 ] : NULL;
          CTensorO * rightOverlapA = ( site + 2 ) < L ? Otensors[ site + 1 ] : NULL;
-         denPA->Join( leftOverlapA, denSB, rightOverlapA );
 
-         CSobject * denPB = new CSobject( site, denBKDT );
+         CSobject * denSB = new CSobject( site, bkIn );
+         denSB->Join( mpsIn[ site ], mpsIn[ site + 1 ] );
 
-         CHeffNS * heff = new CHeffNS( denBKDT, denBK, prob );
+         CSobject * denPB = new CSobject( site, bkOut );
+
+         CHeffNS * heff = new CHeffNS( bkOut, bkIn, prob, offset );
          heff->Apply( denSB, denPB, Ltensors, LtensorsT, Atensors, AtensorsT,
                       Btensors, BtensorsT, Ctensors, CtensorsT, Dtensors, DtensorsT,
                       S0tensors, S0tensorsT, S1tensors, S1tensorsT, F0tensors,
                       F0tensorsT, F1tensors, F1tensorsT, Qtensors, QtensorsT,
                       Xtensors, leftOverlapA, rightOverlapA );
 
-         denPA->Add( -scheme->get_time_step( currentInstruction ), denPB );
+         double disc = denPB->Split( mpsOut[ site ], mpsOut[ site + 1 ], D, cut_off, true, false );
+         std::cout << i << " " << site << " " << overlap( mpsIn, mpsOut ) << std::endl;
+         delete heff;
+         delete denPB;
+         delete denSB;
 
-         double disc = denPA->Split( MPSDT[ site ], MPSDT[ site + 1 ], scheme->get_D( currentInstruction ), scheme->get_cut_off( currentInstruction ), true, true );
+         updateMovingRightSafe( site, mpsOut, bkOut, mpsIn, bkIn );
+      }
+      std::cout << i << " " << overlap( mpsIn, mpsOut ) << std::endl;
+   }
+}
+
+void CheMPS2::TimeTaylor::fitAddMPS( dcomplex factor,
+                                     CTensorT ** mpsA, SyBookkeeper * bkA,
+                                     CTensorT ** mpsB, SyBookkeeper * bkB,
+                                     CTensorT ** mpsOut, SyBookkeeper * bkOut,
+                                     const int nSweeps, const int D, const double cut_off ) {
+   CTensorO ** OtensorsA = new CTensorO *[ L - 1 ];
+   CTensorO ** OtensorsB = new CTensorO *[ L - 1 ];
+
+   for ( int index = 0; index < L - 1; index++ ) {
+      OtensorsA[ index ] = new CTensorO( index + 1, true, bkOut, bkA );
+      OtensorsB[ index ] = new CTensorO( index + 1, true, bkOut, bkB );
+      // Otensors
+      if ( index == 0 ) {
+         OtensorsA[ index ]->create( mpsOut[ index ], mpsA[ index ] );
+         OtensorsB[ index ]->create( mpsOut[ index ], mpsB[ index ] );
+      } else {
+         OtensorsA[ index ]->update_ownmem( mpsOut[ index ], mpsA[ index ], OtensorsA[ index - 1 ] );
+         OtensorsB[ index ]->update_ownmem( mpsOut[ index ], mpsB[ index ], OtensorsB[ index - 1 ] );
+      }
+   }
+
+   for ( int i = 0; i < nSweeps; ++i ) {
+      for ( int site = L - 2; site > 0; site-- ) {
+
+         CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? OtensorsA[ site - 1 ] : NULL;
+         CTensorO * leftOverlapB  = ( site - 1 ) >= 0 ? OtensorsB[ site - 1 ] : NULL;
+         CTensorO * rightOverlapA = ( site + 2 ) < L ? OtensorsA[ site + 1 ] : NULL;
+         CTensorO * rightOverlapB = ( site + 2 ) < L ? OtensorsB[ site + 1 ] : NULL;
+
+         CSobject * denSA = new CSobject( site, bkOut );
+         denSA->Join( leftOverlapA, mpsA[ site ], mpsA[ site + 1 ], rightOverlapA );
+
+         CSobject * denSB = new CSobject( site, bkOut );
+         denSA->Join( leftOverlapB, mpsB[ site ], mpsB[ site + 1 ], rightOverlapB );
+
+         denSA->Add( factor, denSB );
+
+         double disc = denSA->Split( mpsOut[ site ], mpsOut[ site + 1 ], D, cut_off, false, true );
+
+         delete denSA;
+         delete denSB;
+
+         delete OtensorsA[ site ];
+         delete OtensorsB[ site ];
+         OtensorsA[ site ] = new CTensorO( site + 1, false, bkOut, bkA );
+         OtensorsB[ site ] = new CTensorO( site + 1, false, bkOut, bkB );
+         // Otensors
+         if ( site == L - 2 ) {
+            OtensorsA[ site ]->create( mpsOut[ site + 1 ], mpsA[ site + 1 ] );
+            OtensorsB[ site ]->create( mpsOut[ site + 1 ], mpsB[ site + 1 ] );
+         } else {
+            OtensorsA[ site ]->update_ownmem( mpsOut[ site + 1 ], mpsA[ site + 1 ], OtensorsA[ site + 1 ] );
+            OtensorsB[ site ]->update_ownmem( mpsOut[ site + 1 ], mpsB[ site + 1 ], OtensorsB[ site + 1 ] );
+         }
+      }
+
+      for ( int site = 0; site < L - 2; site++ ) {
+         CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? OtensorsA[ site - 1 ] : NULL;
+         CTensorO * leftOverlapB  = ( site - 1 ) >= 0 ? OtensorsB[ site - 1 ] : NULL;
+         CTensorO * rightOverlapA = ( site + 2 ) < L ? OtensorsA[ site + 1 ] : NULL;
+         CTensorO * rightOverlapB = ( site + 2 ) < L ? OtensorsB[ site + 1 ] : NULL;
+
+         CSobject * denSA = new CSobject( site, bkOut );
+         denSA->Join( leftOverlapA, mpsA[ site ], mpsA[ site + 1 ], rightOverlapB );
+
+         CSobject * denSB = new CSobject( site, bkOut );
+         denSB->Join( leftOverlapB, mpsB[ site ], mpsB[ site + 1 ], rightOverlapB );
+
+         denSA->Add( factor, denSB );
+         double disc = denSA->Split( mpsOut[ site ], mpsOut[ site + 1 ], D, cut_off, true, true );
+
+         delete denSA;
+         delete denSB;
+
+         delete OtensorsA[ site ];
+         delete OtensorsB[ site ];
+         OtensorsA[ site ] = new CTensorO( site + 1, true, bkOut, bkA );
+         OtensorsB[ site ] = new CTensorO( site + 1, true, bkOut, bkB );
+         // Otensors
+         if ( site == 0 ) {
+            OtensorsA[ site ]->create( mpsOut[ site ], mpsA[ site ] );
+            OtensorsB[ site ]->create( mpsOut[ site ], mpsB[ site ] );
+         } else {
+            OtensorsA[ site ]->update_ownmem( mpsOut[ site ], mpsA[ site ], OtensorsA[ site - 1 ] );
+            OtensorsB[ site ]->update_ownmem( mpsOut[ site ], mpsB[ site ], OtensorsB[ site - 1 ] );
+         }
+      }
+   }
+
+   for ( int index = 0; index < L - 1; index++ ) {
+      delete OtensorsA[ index ];
+      delete OtensorsB[ index ];
+   }
+   delete[] OtensorsA;
+   delete[] OtensorsB;
+}
+
+void CheMPS2::TimeTaylor::doStep_rk_4( const int currentInstruction, const bool doImaginary, const double offset ) {
+
+   // const dcomplex step = doImaginary ? scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, 1.0 * -scheme->get_time_step( currentInstruction ) );
+
+   // for ( int i = 0; i < scheme->get_max_sweeps( currentInstruction ); ++i ) {
+   //    for ( int site = L - 2; site > 0; site-- ) {
+   //       CSobject * denSB = new CSobject( site, denBK );
+   //       denSB->Join( MPS[ site ], MPS[ site + 1 ] );
+
+   //       CSobject * denPB = new CSobject( site, denBKDT );
+
+   //       // CSobject * denSB = new CSobject( site, denBK );
+   //       // denSB->Join( MPS[ site ], MPS[ site + 1 ] );
+
+   //       // CSobject * denPA         = new CSobject( site, denBKDT );
+   //       // CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? Otensors[ site - 1 ] : NULL;
+   //       // CTensorO * rightOverlapA = ( site + 2 ) < L ? Otensors[ site + 1 ] : NULL;
+   //       // denPA->Join( leftOverlapA, denSB, rightOverlapA );
+
+   //       // CSobject * denPB = new CSobject( site, denBKDT );
+
+   //       // CHeffNS * heff = new CHeffNS( denBKDT, denBK, prob, offset );
+   //       // heff->Apply( denSB, denPB, Ltensors, LtensorsT, Atensors, AtensorsT,
+   //       //              Btensors, BtensorsT, Ctensors, CtensorsT, Dtensors, DtensorsT,
+   //       //              S0tensors, S0tensorsT, S1tensors, S1tensorsT, F0tensors,
+   //       //              F0tensorsT, F1tensors, F1tensorsT, Qtensors, QtensorsT,
+   //       //              Xtensors, leftOverlapA, rightOverlapA );
+
+   //       // denPA->Add( -step, denPB );
+
+   //       // double disc = denPA->Split( MPSDT[ site ], MPSDT[ site + 1 ], scheme->get_D( currentInstruction ), scheme->get_cut_off( currentInstruction ), false, true );
+
+   //       // delete heff;
+   //       // delete denPA;
+   //       // delete denPB;
+   //       // delete denSB;
+
+   //       // updateMovingLeftSafe( site );
+   //    }
+
+   //    for ( int site = 0; site < L - 2; site++ ) {
+   //       CSobject * denSB = new CSobject( site, denBK );
+   //       denSB->Join( MPS[ site ], MPS[ site + 1 ] );
+
+   //       CSobject * denPA         = new CSobject( site, denBKDT );
+   //       CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? Otensors[ site - 1 ] : NULL;
+   //       CTensorO * rightOverlapA = ( site + 2 ) < L ? Otensors[ site + 1 ] : NULL;
+   //       denPA->Join( leftOverlapA, denSB, rightOverlapA );
+
+   //       CSobject * denPB = new CSobject( site, denBKDT );
+
+   //       CHeffNS * heff = new CHeffNS( denBKDT, denBK, prob, offset );
+   //       heff->Apply( denSB, denPB, Ltensors, LtensorsT, Atensors, AtensorsT,
+   //                    Btensors, BtensorsT, Ctensors, CtensorsT, Dtensors, DtensorsT,
+   //                    S0tensors, S0tensorsT, S1tensors, S1tensorsT, F0tensors,
+   //                    F0tensorsT, F1tensors, F1tensorsT, Qtensors, QtensorsT,
+   //                    Xtensors, leftOverlapA, rightOverlapA );
+
+   //       denPA->Add( -step, denPB );
+
+   //       double disc = denPA->Split( MPSDT[ site ], MPSDT[ site + 1 ], scheme->get_D( currentInstruction ), scheme->get_cut_off( currentInstruction ), true, true );
+
+   //       delete heff;
+   //       delete denPA;
+   //       delete denPB;
+   //       delete denSB;
+
+   //       updateMovingRightSafe( site );
+   //    }
+   // }
+}
+
+void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+
+   CheMPS2::SyBookkeeper * denHPsi = new CheMPS2::SyBookkeeper( prob, scheme->get_D( currentInstruction ) );
+   CheMPS2::CTensorT ** HPsi       = new CheMPS2::CTensorT *[ prob->gL() ];
+   for ( int index = 0; index < prob->gL(); index++ ) {
+      // HPsi[ index ] = new CheMPS2::CTensorT( mpsIn[ index ] );
+      HPsi[ index ] = new CheMPS2::CTensorT( index, denHPsi );
+      HPsi[ index ]->random();
+   }
+
+   std::cout << overlap( mpsIn, HPsi ) << std::endl;
+   fitApplyH( 1.0, 0.0, mpsIn, bkIn, HPsi, denHPsi, 20, 1000, 1e-100 );
+
+   std::cout << overlap( mpsIn, HPsi ) << std::endl;
+   std::cout << std::abs( overlap( mpsIn, HPsi ) ) << std::endl;
+   std::cout << Energy( mpsIn, bkIn ) << std::endl;
+   abort();
+}
+
+void CheMPS2::TimeTaylor::doStep_euler_g( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+
+   CheMPS2::SyBookkeeper * denHPsi = new CheMPS2::SyBookkeeper( prob, scheme->get_D( currentInstruction ) );
+   CheMPS2::CTensorT ** HPsi       = new CheMPS2::CTensorT *[ prob->gL() ];
+   for ( int index = 0; index < prob->gL(); index++ ) {
+      HPsi[ index ] = new CheMPS2::CTensorT( index, denHPsi );
+      HPsi[ index ]->random();
+   }
+   const dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
+
+   fitApplyH( step, offset, mpsIn, bkIn, HPsi, denHPsi );
+   fitAddMPS( 1.0, mpsIn, bkIn, HPsi, denHPsi, mpsOut, bkOut );
+
+   for ( int idx = 0; idx < prob->gL(); idx++ ) {
+      delete HPsi[ idx ];
+   }
+   delete[] HPsi;
+   delete denHPsi;
+}
+
+void CheMPS2::TimeTaylor::doStep_taylor_1site( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+
+   dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
+
+   for ( int index = 0; index < L - 1; index++ ) {
+      left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
+   }
+   left_normalize( mpsOut[ L - 1 ], NULL );
+
+   for ( int cnt = 0; cnt < L - 1; cnt++ ) {
+      updateMovingRightSafe( cnt, mpsOut, bkOut, mpsIn, bkIn );
+   }
+
+   for ( int i = 0; i < scheme->get_max_sweeps( currentInstruction ); ++i ) {
+      for ( int site = L - 1; site > 0; site-- ) {
+
+         char notrans      = 'N';
+         CTensorT * linear = new CTensorT( mpsIn[ site ] );
+         if ( site - 1 >= 0 ) {
+            linear->LeftMultiply( Otensors[ site - 1 ], &notrans );
+         }
+         if ( site + 1 < L ) {
+            linear->RightMultiply( Otensors[ site ], &notrans );
+         }
+
+         CTensorT * perturb = new CTensorT( mpsOut[ site ] );
+         CHeffNS_1S * heff  = new CHeffNS_1S( bkOut, bkIn, prob );
+         heff->Apply( mpsIn[ site ], perturb,
+                      Ltensors, LtensorsT,
+                      Atensors, AtensorsT,
+                      Btensors, BtensorsT,
+                      Ctensors, CtensorsT,
+                      Dtensors, DtensorsT,
+                      S0tensors, S0tensorsT,
+                      S1tensors, S1tensorsT,
+                      F0tensors, F0tensorsT,
+                      F1tensors, F1tensorsT,
+                      Qtensors, QtensorsT,
+                      Xtensors, Otensors, false );
+         delete heff;
+
+         int dim = mpsOut[ site ]->gKappa2index( mpsOut[ site ]->gNKappa() );
+         assert( dim == mpsIn[ site ]->gKappa2index( mpsIn[ site ]->gNKappa() ) );
+         int inc = 1;
+         zaxpy_( &dim, &step, perturb->gStorage(), &inc, linear->gStorage(), &inc );
+         zcopy_( &dim, linear->gStorage(), &inc, mpsOut[ site ]->gStorage(), &inc );
+         delete perturb;
+         delete linear;
+
+         right_normalize( mpsOut[ site - 1 ], mpsOut[ site ] );
+         updateMovingLeftSafe( site - 1, mpsOut, bkOut, mpsIn, bkIn );
+      }
+
+      for ( int site = 0; site < L - 1; site++ ) {
+         CTensorT * linear = new CTensorT( mpsIn[ site ] );
+
+         char notrans = 'N';
+         if ( site - 1 >= 0 ) {
+            linear->LeftMultiply( Otensors[ site - 1 ], &notrans );
+         }
+         if ( site + 1 < L ) {
+            linear->RightMultiply( Otensors[ site ], &notrans );
+         }
+
+         CTensorT * perturb = new CTensorT( mpsOut[ site ] );
+         CHeffNS_1S * heff  = new CHeffNS_1S( bkOut, bkIn, prob );
+         heff->Apply( mpsIn[ site ], perturb,
+                      Ltensors, LtensorsT,
+                      Atensors, AtensorsT,
+                      Btensors, BtensorsT,
+                      Ctensors, CtensorsT,
+                      Dtensors, DtensorsT,
+                      S0tensors, S0tensorsT,
+                      S1tensors, S1tensorsT,
+                      F0tensors, F0tensorsT,
+                      F1tensors, F1tensorsT,
+                      Qtensors, QtensorsT,
+                      Xtensors, Otensors, true );
+         delete heff;
+
+         int dim = mpsOut[ site ]->gKappa2index( mpsOut[ site ]->gNKappa() );
+         assert( dim == mpsIn[ site ]->gKappa2index( mpsIn[ site ]->gNKappa() ) );
+         int inc = 1;
+         zaxpy_( &dim, &step, perturb->gStorage(), &inc, linear->gStorage(), &inc );
+         zcopy_( &dim, linear->gStorage(), &inc, mpsOut[ site ]->gStorage(), &inc );
+         delete perturb;
+         delete linear;
+
+         left_normalize( mpsOut[ site ], mpsOut[ site + 1 ] );
+         updateMovingRightSafe( site, mpsOut, bkOut, mpsIn, bkIn );
+         // std::cout << i << " " << site << " " << overlap( mpsIn, mpsOut ) << std::endl;
+      }
+
+      // for ( int cnt = 0; cnt < L - 1; cnt++ ) {
+      //    updateMovingRightSafe( cnt, mpsOut, bkOut, mpsIn, bkIn );
+      // }
+
+      // for ( int i = 0; i < scheme->get_max_sweeps( currentInstruction ); ++i ) {
+      //    for ( int site = L - 2; site > 0; site-- ) {
+      //       CSobject * denSB = new CSobject( site, bkIn );
+      //       denSB->Join( mpsIn[ site ], mpsIn[ site + 1 ] );
+
+      //       CSobject * denPA         = new CSobject( site, bkOut );
+      //       CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? Otensors[ site - 1 ] : NULL;
+      //       CTensorO * rightOverlapA = ( site + 2 ) < L ? Otensors[ site + 1 ] : NULL;
+      //       denPA->Join( leftOverlapA, denSB, rightOverlapA );
+
+      //       CSobject * denPB = new CSobject( site, bkOut );
+
+      //       CHeffNS * heff = new CHeffNS( bkOut, bkIn, prob, offset );
+      //       heff->Apply( denSB, denPB, Ltensors, LtensorsT, Atensors, AtensorsT,
+      //                    Btensors, BtensorsT, Ctensors, CtensorsT, Dtensors, DtensorsT,
+      //                    S0tensors, S0tensorsT, S1tensors, S1tensorsT, F0tensors,
+      //                    F0tensorsT, F1tensors, F1tensorsT, Qtensors, QtensorsT,
+      //                    Xtensors, leftOverlapA, rightOverlapA );
+
+      //       denPA->Add( step, denPB );
+      //       double disc = denPA->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( currentInstruction ), scheme->get_cut_off( currentInstruction ), false, true );
+
+      //       delete heff;
+      //       delete denPA;
+      //       delete denPB;
+      //       delete denSB;
+
+      //       updateMovingLeftSafe( site, mpsOut, bkOut, mpsIn, bkIn );
+      //    }
+
+      //    for ( int site = 0; site < L - 2; site++ ) {
+      //       CSobject * denSB = new CSobject( site, bkIn );
+      //       denSB->Join( mpsIn[ site ], mpsIn[ site + 1 ] );
+
+      //       CSobject * denPA         = new CSobject( site, bkOut );
+      //       CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? Otensors[ site - 1 ] : NULL;
+      //       CTensorO * rightOverlapA = ( site + 2 ) < L ? Otensors[ site + 1 ] : NULL;
+      //       denPA->Join( leftOverlapA, denSB, rightOverlapA );
+
+      //       CSobject * denPB = new CSobject( site, bkOut );
+
+      //       CHeffNS * heff = new CHeffNS( bkOut, bkIn, prob, offset );
+      //       heff->Apply( denSB, denPB, Ltensors, LtensorsT, Atensors, AtensorsT,
+      //                    Btensors, BtensorsT, Ctensors, CtensorsT, Dtensors, DtensorsT,
+      //                    S0tensors, S0tensorsT, S1tensors, S1tensorsT, F0tensors,
+      //                    F0tensorsT, F1tensors, F1tensorsT, Qtensors, QtensorsT,
+      //                    Xtensors, leftOverlapA, rightOverlapA );
+
+      //       denPA->Add( step, denPB );
+      //       double disc = denPA->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( currentInstruction ), scheme->get_cut_off( currentInstruction ), true, true );
+
+      //       delete heff;
+      //       delete denPA;
+      //       delete denPB;
+      //       delete denSB;
+
+      //       updateMovingRightSafe( site, mpsOut, bkOut, mpsIn, bkIn );
+      //    }
+      // }
+   }
+}
+void CheMPS2::TimeTaylor::doStep_taylor_1( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+
+   const dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
+   for ( int cnt = 0; cnt < L - 1; cnt++ ) {
+      updateMovingRightSafe( cnt, mpsOut, bkOut, mpsIn, bkIn );
+   }
+
+   for ( int i = 0; i < scheme->get_max_sweeps( currentInstruction ); ++i ) {
+      for ( int site = L - 2; site > 0; site-- ) {
+         CSobject * denSB = new CSobject( site, bkIn );
+         denSB->Join( mpsIn[ site ], mpsIn[ site + 1 ] );
+
+         CSobject * denPA         = new CSobject( site, bkOut );
+         CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? Otensors[ site - 1 ] : NULL;
+         CTensorO * rightOverlapA = ( site + 2 ) < L ? Otensors[ site + 1 ] : NULL;
+         denPA->Join( leftOverlapA, denSB, rightOverlapA );
+
+         CSobject * denPB = new CSobject( site, bkOut );
+
+         CHeffNS * heff = new CHeffNS( bkOut, bkIn, prob, offset );
+         heff->Apply( denSB, denPB, Ltensors, LtensorsT, Atensors, AtensorsT,
+                      Btensors, BtensorsT, Ctensors, CtensorsT, Dtensors, DtensorsT,
+                      S0tensors, S0tensorsT, S1tensors, S1tensorsT, F0tensors,
+                      F0tensorsT, F1tensors, F1tensorsT, Qtensors, QtensorsT,
+                      Xtensors, leftOverlapA, rightOverlapA );
+
+         denPA->Add( step, denPB );
+         double disc = denPA->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( currentInstruction ), scheme->get_cut_off( currentInstruction ), false, true );
 
          delete heff;
          delete denPA;
          delete denPB;
          delete denSB;
 
-         updateMovingRightSafe( site );
+         updateMovingLeftSafe( site, mpsOut, bkOut, mpsIn, bkIn );
+      }
+
+      for ( int site = 0; site < L - 2; site++ ) {
+         CSobject * denSB = new CSobject( site, bkIn );
+         denSB->Join( mpsIn[ site ], mpsIn[ site + 1 ] );
+
+         CSobject * denPA         = new CSobject( site, bkOut );
+         CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? Otensors[ site - 1 ] : NULL;
+         CTensorO * rightOverlapA = ( site + 2 ) < L ? Otensors[ site + 1 ] : NULL;
+         denPA->Join( leftOverlapA, denSB, rightOverlapA );
+
+         CSobject * denPB = new CSobject( site, bkOut );
+
+         CHeffNS * heff = new CHeffNS( bkOut, bkIn, prob, offset );
+         heff->Apply( denSB, denPB, Ltensors, LtensorsT, Atensors, AtensorsT,
+                      Btensors, BtensorsT, Ctensors, CtensorsT, Dtensors, DtensorsT,
+                      S0tensors, S0tensorsT, S1tensors, S1tensorsT, F0tensors,
+                      F0tensorsT, F1tensors, F1tensorsT, Qtensors, QtensorsT,
+                      Xtensors, leftOverlapA, rightOverlapA );
+
+         denPA->Add( step, denPB );
+         double disc = denPA->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( currentInstruction ), scheme->get_cut_off( currentInstruction ), true, true );
+
+         delete heff;
+         delete denPA;
+         delete denPB;
+         delete denSB;
+
+         updateMovingRightSafe( site, mpsOut, bkOut, mpsIn, bkIn );
       }
    }
 }
 
-double CheMPS2::TimeTaylor::Energy() {
+void CheMPS2::TimeTaylor::OneBodyDensity( dcomplex * data ) {
+   // deleteAllBoundaryOperators();
+   // for ( int cnt = 0; cnt < L - 1; cnt++ ) {
+   //    updateMovingRightSafe( cnt );
+   // }
+   // ( *data ) = 1;
+}
+
+dcomplex CheMPS2::TimeTaylor::Energy( CTensorT ** mpsIn, SyBookkeeper * bkIn ) {
 
    deleteAllBoundaryOperators();
 
-   denBKDT = denBK;
-   MPSDT   = MPS;
-
    for ( int cnt = 0; cnt < L - 1; cnt++ ) {
-      updateMovingRightSafe( cnt );
+      updateMovingRightSafe( cnt, mpsIn, bkIn, mpsIn, bkIn );
    }
-   CTensorX * myX = new CTensorX( L, true, denBKDT, denBK, prob );
+   CTensorX * myX = new CTensorX( L, true, bkIn, bkIn, prob );
 
-   myX->update( MPSDT[ L - 1 ], MPS[ L - 1 ], Otensors[ L - 2 ], Ltensors[ L - 2 ],
+   myX->update( mpsIn[ L - 1 ], mpsIn[ L - 1 ], Otensors[ L - 2 ], Ltensors[ L - 2 ],
                 LtensorsT[ L - 2 ], Xtensors[ L - 2 ], Qtensors[ L - 2 ][ 0 ],
                 QtensorsT[ L - 2 ][ 0 ], Atensors[ L - 2 ][ 0 ][ 0 ],
                 AtensorsT[ L - 2 ][ 0 ][ 0 ], CtensorsT[ L - 2 ][ 0 ][ 0 ],
@@ -1037,49 +1477,188 @@ double CheMPS2::TimeTaylor::Energy() {
 
    dcomplex result = myX->gStorage()[ 0 ];
    delete myX;
-   return std::real( result );
-   return 0.0;
+   return result;
+   // return 0.0;
 }
 
-void CheMPS2::TimeTaylor::Propagate() {
+void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary ) {
 
-   double t = 0.0;
+   double t           = 0.0;
+   double firstEnergy = 0;
+
+   ( *logger ) << "\n";
+   ( *logger ) << "   Starting to propagate MPS\n";
+   ( *logger ) << "\n";
+
+   ( *logger ) << "\n";
+   ( *logger ) << "   L = " << L << "\n";
+   ( *logger ) << "   N = " << prob->gN() << "\n";
+   ( *logger ) << "   TwoS = " << prob->gTwoS() << "\n";
+   ( *logger ) << "   I = " << prob->gIrrep() << "\n";
+   ( *logger ) << "\n";
+
+   ( *logger ) << "   full ci matrix product state dimensions:\n";
+   ( *logger ) << "   ";
+   for ( int i = 0; i < L + 1; i++ ) {
+      ( *logger ) << std::setw( 5 ) << i;
+   }
+   ( *logger ) << "\n";
+   ( *logger ) << "   ";
+   for ( int i = 0; i < L + 1; i++ ) {
+      ( *logger ) << std::setw( 5 ) << initBK->gFCIDimAtBound( i );
+   }
+   ( *logger ) << "\n";
+   ( *logger ) << "\n";
+   ( *logger ) << hashline;
+
    for ( int inst = 0; inst < scheme->get_number(); inst++ ) {
 
       for ( ; t < scheme->get_max_time( inst ); t += scheme->get_time_step( inst ) ) {
-         ( *logger ) << "t = " << t << " " << Energy();
+         ( *logger ) << hashline;
+         ( *logger ) << "\n";
+         ( *logger ) << "   t = " << t << "\n";
+         ( *logger ) << "   Tmax = " << scheme->get_max_time( inst ) << "\n";
+         ( *logger ) << "   dt = " << scheme->get_time_step( inst ) << "\n";
+         ( *logger ) << "\n";
 
+         ( *logger ) << "   matrix product state dimensions:\n";
+         ( *logger ) << "   ";
          for ( int i = 0; i < L + 1; i++ ) {
-            ( *logger ) << " " << denBK->gTotDimAtBound( i );
+            ( *logger ) << std::setw( 5 ) << i;
+         }
+         ( *logger ) << "\n";
+         ( *logger ) << "   ";
+         for ( int i = 0; i < L + 1; i++ ) {
+            ( *logger ) << std::setw( 5 ) << initBK->gTotDimAtBound( i );
+         }
+         ( *logger ) << "\n";
+         ( *logger ) << "\n";
+         ( *logger ) << "   MaxM = " << scheme->get_D( inst ) << "\n";
+         ( *logger ) << "   CutO = " << scheme->get_cut_off( inst ) << "\n";
+         ( *logger ) << "   NSwe = " << scheme->get_max_sweeps( inst ) << "\n";
+         ( *logger ) << "\n";
+
+         CTwoDM * the2DM            = new CTwoDM( initBK, prob );
+         CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, initMPS, initBK );
+         tdmbuilder->Build2RDM( the2DM );
+
+         ( *logger ) << "   Norm      = " << norm( initMPS ) << "\n";
+         ( *logger ) << "   Energy    = " << std::real( the2DM->energy() ) << "\n";
+         if ( t == 0.0 ) {
+            firstEnergy = std::real( the2DM->energy() );
+         }
+         ( *logger ) << "   tr(TwoDM) = " << std::real( the2DM->trace() ) << "\n";
+         ( *logger ) << "   N(N-1)    = " << prob->gN() * ( prob->gN() - 1.0 ) << "\n";
+         ( *logger ) << "\n";
+         ( *logger ) << "  occupation numbers of molecular orbitals:\n";
+         ( *logger ) << "   ";
+         for ( int i = 0; i < L; i++ ) {
+            ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( i, i ) );
+         }
+         ( *logger ) << "\n";
+         ( *logger ) << "   ";
+         ( *logger ) << "\n";
+         ( *logger ) << "   real part one body reduced density matrix:\n";
+         ( *logger ) << "\n";
+         for ( int irow = 0; irow < L; irow++ ) {
+            for ( int icol = 0; icol < L; icol++ ) {
+               ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( irow, icol ) );
+            }
+            ( *logger ) << "\n";
          }
          ( *logger ) << "\n";
 
+         ( *logger ) << "   imaginary part one body reduced density matrix:\n";
+         ( *logger ) << "\n";
+         for ( int irow = 0; irow < L; irow++ ) {
+            for ( int icol = 0; icol < L; icol++ ) {
+               ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::imag( the2DM->get1RDM_DMRG( irow, icol ) );
+            }
+            ( *logger ) << "\n";
+         }
+
+         ( *logger ) << "\n";
+
+         delete tdmbuilder;
+         delete the2DM;
+
          deleteAllBoundaryOperators();
 
-         denBKDT = new SyBookkeeper( prob, scheme->get_D( inst ) );
-         MPSDT   = new CTensorT *[ L ];
+         SyBookkeeper * denBKDT = new SyBookkeeper( prob, 200 );
+         CTensorT ** MPSDT      = new CTensorT *[ L ];
          for ( int index = 0; index < L; index++ ) {
             MPSDT[ index ] = new CTensorT( index, denBKDT );
             MPSDT[ index ]->random();
          }
-
-         for ( int cnt = 0; cnt < L - 1; cnt++ ) {
-            updateMovingRightSafe( cnt );
-         }
-
-         doStep( inst );
+         double normDT2 = norm( initMPS );
+         initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
+         // doStep_taylor_1( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
+         doStep_taylor_1site( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
+         // abort();
+         // doStep_euler_g( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
+         // doStep_rk_4( inst, doImaginary, firstEnergy );
+         // doStep_krylov( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
 
          for ( int site = 0; site < L; site++ ) {
-            delete MPS[ site ];
+            delete initMPS[ site ];
          }
-         delete[] MPS;
-         delete denBK;
+         delete[] initMPS;
+         delete initBK;
 
          double normDT = norm( MPSDT );
          MPSDT[ 0 ]->number_operator( 0.0, 1.0 / normDT );
 
-         MPS   = MPSDT;
-         denBK = denBKDT;
+         initMPS = MPSDT;
+         initBK  = denBKDT;
+         ( *logger ) << hashline;
       }
    }
+}
+
+void CheMPS2::TimeTaylor::left_normalize( CTensorT * left_mps, CTensorT * right_mps ) const {
+
+#ifdef CHEPsi2_MPI_COMPILATION
+   const bool am_i_master = ( MPIchemps2::mpi_rank() == MPI_CHEPsi2_MASTER );
+#else
+   const bool am_i_master = true;
+#endif
+
+   if ( am_i_master ) {
+      const int siteindex        = left_mps->gIndex();
+      const SyBookkeeper * theBK = left_mps->gBK();
+      // (J,N,I) = (0,0,0) and (moving_right, prime_last, jw_phase) = (true, true, false)
+      CTensorOperator * temp = new CTensorOperator( siteindex + 1, 0, 0, 0, true, true, false, theBK, theBK );
+      left_mps->QR( temp );
+      char notrans = 'N';
+      if ( right_mps != NULL ) { right_mps->LeftMultiply( temp, &notrans ); }
+      delete temp;
+   }
+#ifdef CHEPsi2_MPI_COMPILATION
+   MPIchemps2::broadcast_tensor( left_mps, MPI_CHEPsi2_MASTER );
+   if ( right_mps != NULL ) { MPIchemps2::broadcast_tensor( right_mps, MPI_CHEPsi2_MASTER ); }
+#endif
+}
+
+void CheMPS2::TimeTaylor::right_normalize( CTensorT * left_mps, CTensorT * right_mps ) const {
+
+#ifdef CHEPsi2_MPI_COMPILATION
+   const bool am_i_master = ( MPIchemps2::mpi_rank() == MPI_CHEPsi2_MASTER );
+#else
+   const bool am_i_master = true;
+#endif
+
+   if ( am_i_master ) {
+      const int siteindex        = right_mps->gIndex();
+      const SyBookkeeper * theBK = right_mps->gBK();
+      // (J,N,I) = (0,0,0) and (moving_right, prime_last, jw_phase) = (true, true, false)
+      CTensorOperator * temp = new CTensorOperator( siteindex, 0, 0, 0, true, true, false, theBK, theBK );
+      right_mps->LQ( temp );
+      char cotrans = 'C';
+      if ( left_mps != NULL ) { left_mps->RightMultiply( temp, &cotrans ); }
+      delete temp;
+   }
+#ifdef CHEPsi2_MPI_COMPILATION
+   MPIchemps2::broadcast_tensor( right_mps, MPI_CHEPsi2_MASTER );
+   if ( left_mps != NULL ) { MPIchemps2::broadcast_tensor( left_mps, MPI_CHEPsi2_MASTER ); }
+#endif
 }

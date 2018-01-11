@@ -1019,7 +1019,7 @@ void CheMPS2::CHeffNS::addDiagram2dall( const int ikappa, dcomplex * memHeff, CS
       int memSkappa = denS->gKappa( denP->gNL( ikappa ), denP->gTwoSL( ikappa ), denP->gIL( ikappa ), denP->gN1( ikappa ), denP->gN2( ikappa ), denP->gTwoJ( ikappa ), denP->gNR( ikappa ), denP->gTwoSR( ikappa ), denP->gIR( ikappa ) );
 
       if ( memSkappa != -1 ) {
-         int fase        = ( denS->gTwoJ( ikappa ) == 0 ) ? 1 : -1;
+         int fase        = ( denP->gTwoJ( ikappa ) == 0 ) ? 1 : -1;
          dcomplex factor = Prob->gMxElement( theindex, theindex + 1, theindex, theindex + 1 ) + fase * Prob->gMxElement( theindex, theindex + 1, theindex + 1, theindex );
          zaxpy_( &size, &factor, denS->gStorage() + denS->gKappa2index( memSkappa ), &inc, memHeff, &inc );
       }

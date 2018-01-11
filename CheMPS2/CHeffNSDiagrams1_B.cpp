@@ -81,7 +81,7 @@ void CheMPS2::CHeffNS::addDiagram1B( const int ikappa, dcomplex * memHeff, CSobj
       char notrans = 'N';
       dcomplex one = 1.0;
 
-      zgemm_( &notrans, &notrans, &dimLD, &dimRU, &dimRD, &one, BlockS, &dimLD, BlockX, &dimRD, &one, memHeff, &dimLD );
+      zgemm_( &notrans, &cotrans, &dimLD, &dimRU, &dimRD, &one, BlockS, &dimLD, BlockX, &dimRU, &one, memHeff, &dimLD );
    }
 }
 

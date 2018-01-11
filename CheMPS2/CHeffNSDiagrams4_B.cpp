@@ -2276,7 +2276,9 @@ void CheMPS2::CHeffNS::addDiagram4D( const int ikappa, dcomplex * memHeff, CSobj
                      factor   = fase * sqrt( ( TwoSL + 1.0 ) / ( TwoSR + 1.0 ) );
                   }
                   int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, 2, N2 - 1, TwoS2down, NR, TwoSR, IR );
-                  zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                  if ( memSkappa != -1 ) {
+                     zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                  }
                }
             }
          }
@@ -2320,7 +2322,9 @@ void CheMPS2::CHeffNS::addDiagram4D( const int ikappa, dcomplex * memHeff, CSobj
                      factor   = fase * sqrt( ( TwoSLdown + 1.0 ) / ( TwoSR + 1.0 ) );
                   }
                   int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, 0, N2 + 1, TwoS2down, NR, TwoSR, IR );
-                  zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                  if ( memSkappa != -1 ) {
+                     zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                  }
                }
             }
          }
@@ -2394,7 +2398,9 @@ void CheMPS2::CHeffNS::addDiagram4D( const int ikappa, dcomplex * memHeff, CSobj
 
                      dcomplex factor = 1.0;
                      int memSkappa   = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, N2 + 1, TwoJdown, NR, TwoSR, IR );
-                     zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                     if ( memSkappa != -1 ) {
+                        zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                     }
                   }
                }
             }
@@ -2471,7 +2477,9 @@ void CheMPS2::CHeffNS::addDiagram4D( const int ikappa, dcomplex * memHeff, CSobj
 
                      dcomplex factor = 1.0;
                      int memSkappa   = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, N2 - 1, TwoJdown, NR, TwoSR, IR );
-                     zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                     if ( memSkappa != -1 ) {
+                        zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                     }
                   }
                }
             }
@@ -2554,15 +2562,17 @@ void CheMPS2::CHeffNS::addDiagram4E( const int ikappa, dcomplex * memHeff, CSobj
                                  }
                               }
 
-                              int memSkappa  = denS->gKappa( NL - 1, TwoSLdown, ILdown, 2, N2, TwoS2, NR + 1, TwoSRdown, IRdown );
-                              dcomplex alpha = factor;
-                              dcomplex beta  = 0.0; //set
-                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
+                              int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, 2, N2, TwoS2, NR + 1, TwoSRdown, IRdown );
+                              if ( memSkappa != -1 ) {
+                                 dcomplex alpha = factor;
+                                 dcomplex beta  = 0.0; //set
+                                 zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
 
-                              alpha                 = 1.0;
-                              beta                  = 1.0; //add
-                              dcomplex * LblockLeft = LTleft[ theindex - 1 - l_alpha ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
-                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockLeft, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                 alpha                 = 1.0;
+                                 beta                  = 1.0; //add
+                                 dcomplex * LblockLeft = LTleft[ theindex - 1 - l_alpha ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                                 zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockLeft, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                              }
                            }
                         }
                      }
@@ -2620,15 +2630,17 @@ void CheMPS2::CHeffNS::addDiagram4E( const int ikappa, dcomplex * memHeff, CSobj
                                  }
                               }
 
-                              int memSkappa  = denS->gKappa( NL + 1, TwoSLdown, ILdown, 0, N2, TwoS2, NR - 1, TwoSRdown, IRdown );
-                              dcomplex alpha = factor;
-                              dcomplex beta  = 0.0; //set
-                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
+                              int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, 0, N2, TwoS2, NR - 1, TwoSRdown, IRdown );
+                              if ( memSkappa != -1 ) {
+                                 dcomplex alpha = factor;
+                                 dcomplex beta  = 0.0; //set
+                                 zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
 
-                              alpha                 = 1.0;
-                              beta                  = 1.0; //add
-                              dcomplex * LblockLeft = Lleft[ theindex - 1 - l_gamma ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
-                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockLeft, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                 alpha                 = 1.0;
+                                 beta                  = 1.0; //add
+                                 dcomplex * LblockLeft = Lleft[ theindex - 1 - l_gamma ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                                 zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockLeft, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                              }
                            }
                         }
                      }
@@ -2696,14 +2708,16 @@ void CheMPS2::CHeffNS::addDiagram4E( const int ikappa, dcomplex * memHeff, CSobj
                                     }
                                  }
 
-                                 int memSkappa  = denS->gKappa( NL - 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR - 1, TwoSRdown, IRdown );
-                                 dcomplex alpha = 1.0;
-                                 dcomplex beta  = 0.0; //set
-                                 zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
+                                 int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR - 1, TwoSRdown, IRdown );
+                                 if ( memSkappa != -1 ) {
+                                    dcomplex alpha = 1.0;
+                                    dcomplex beta  = 0.0; //set
+                                    zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
 
-                                 beta                  = 1.0; //add
-                                 dcomplex * LblockLeft = LTleft[ theindex - 1 - l_alpha ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
-                                 zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockLeft, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                    beta                  = 1.0; //add
+                                    dcomplex * LblockLeft = LTleft[ theindex - 1 - l_alpha ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                                    zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockLeft, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                 }
                               }
                            }
                         }
@@ -2762,15 +2776,17 @@ void CheMPS2::CHeffNS::addDiagram4E( const int ikappa, dcomplex * memHeff, CSobj
                                  }
                               }
 
-                              int memSkappa  = denS->gKappa( NL - 1, TwoSLdown, ILdown, 2, N2, TwoS2, NR - 1, TwoSRdown, IRdown );
-                              dcomplex alpha = factor;
-                              dcomplex beta  = 0.0; //set
-                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
+                              int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, 2, N2, TwoS2, NR - 1, TwoSRdown, IRdown );
+                              if ( memSkappa != -1 ) {
+                                 dcomplex alpha = factor;
+                                 dcomplex beta  = 0.0; //set
+                                 zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
 
-                              alpha                 = 1.0;
-                              beta                  = 1.0; //add
-                              dcomplex * LblockLeft = LTleft[ theindex - 1 - l_alpha ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
-                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockLeft, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                 alpha                 = 1.0;
+                                 beta                  = 1.0; //add
+                                 dcomplex * LblockLeft = LTleft[ theindex - 1 - l_alpha ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                                 zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockLeft, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                              }
                            }
                         }
                      }
@@ -2838,14 +2854,16 @@ void CheMPS2::CHeffNS::addDiagram4E( const int ikappa, dcomplex * memHeff, CSobj
                                     }
                                  }
 
-                                 int memSkappa  = denS->gKappa( NL + 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR + 1, TwoSRdown, IRdown );
-                                 dcomplex alpha = 1.0;
-                                 dcomplex beta  = 0.0; //set
-                                 zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
+                                 int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR + 1, TwoSRdown, IRdown );
+                                 if ( memSkappa != -1 ) {
+                                    dcomplex alpha = 1.0;
+                                    dcomplex beta  = 0.0; //set
+                                    zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
 
-                                 beta                  = 1.0; //add
-                                 dcomplex * LblockLeft = Lleft[ theindex - 1 - l_gamma ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
-                                 zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockLeft, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                    beta                  = 1.0; //add
+                                    dcomplex * LblockLeft = Lleft[ theindex - 1 - l_gamma ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                                    zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockLeft, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                 }
                               }
                            }
                         }
@@ -2904,15 +2922,17 @@ void CheMPS2::CHeffNS::addDiagram4E( const int ikappa, dcomplex * memHeff, CSobj
                                  }
                               }
 
-                              int memSkappa  = denS->gKappa( NL + 1, TwoSLdown, ILdown, 2, N2, TwoS2, NR + 1, TwoSRdown, IRdown );
-                              dcomplex alpha = factor;
-                              dcomplex beta  = 0.0; //set
-                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
+                              int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, 2, N2, TwoS2, NR + 1, TwoSRdown, IRdown );
+                              if ( memSkappa != -1 ) {
+                                 dcomplex alpha = factor;
+                                 dcomplex beta  = 0.0; //set
+                                 zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
 
-                              alpha                 = 1.0;
-                              beta                  = 1.0; //add
-                              dcomplex * LblockLeft = Lleft[ theindex - 1 - l_gamma ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
-                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockLeft, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                 alpha                 = 1.0;
+                                 beta                  = 1.0; //add
+                                 dcomplex * LblockLeft = Lleft[ theindex - 1 - l_gamma ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                                 zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockLeft, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                              }
                            }
                         }
                      }
@@ -3035,7 +3055,9 @@ void CheMPS2::CHeffNS::addDiagram4F( const int ikappa, dcomplex * memHeff, CSobj
                      factor = phase( TwoSRdown + 1 - TwoSR );
                   }
                   int memSkappa = denS->gKappa( NL, TwoSL, IL, 2, N2 - 1, TwoS2down, NR + 1, TwoSRdown, IRdown );
-                  zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                  if ( memSkappa != -1 ) {
+                     zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                  }
                }
             }
          }
@@ -3109,7 +3131,9 @@ void CheMPS2::CHeffNS::addDiagram4F( const int ikappa, dcomplex * memHeff, CSobj
 
                      dcomplex alpha = 1.0;
                      int memSkappa  = denS->gKappa( NL, TwoSL, IL, N1, N2 - 1, TwoJdown, NR - 1, TwoSRdown, IRdown );
-                     zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                     if ( memSkappa != -1 ) {
+                        zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                     }
                   }
                }
             }
@@ -3184,7 +3208,9 @@ void CheMPS2::CHeffNS::addDiagram4F( const int ikappa, dcomplex * memHeff, CSobj
 
                      dcomplex alpha = 1.0;
                      int memSkappa  = denS->gKappa( NL, TwoSL, IL, N1, N2 + 1, TwoJdown, NR + 1, TwoSRdown, IRdown );
-                     zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                     if ( memSkappa != -1 ) {
+                        zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                     }
                   }
                }
             }
@@ -3259,7 +3285,9 @@ void CheMPS2::CHeffNS::addDiagram4G( const int ikappa, dcomplex * memHeff, CSobj
                      factor = phase( TwoSR + 1 - TwoSRdown );
                   }
                   int memSkappa = denS->gKappa( NL, TwoSL, IL, N1 + 1, 0, TwoS1down, NR - 1, TwoSRdown, IRdown );
-                  zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                  if ( memSkappa != -1 ) {
+                     zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                  }
                }
             }
          }
@@ -3304,7 +3332,9 @@ void CheMPS2::CHeffNS::addDiagram4G( const int ikappa, dcomplex * memHeff, CSobj
                      factor = phase( TwoSRdown + 1 - TwoSR );
                   }
                   int memSkappa = denS->gKappa( NL, TwoSL, IL, N1 - 1, 2, TwoS1down, NR + 1, TwoSRdown, IRdown );
-                  zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                  if ( memSkappa != -1 ) {
+                     zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                  }
                }
             }
          }
@@ -3379,7 +3409,9 @@ void CheMPS2::CHeffNS::addDiagram4G( const int ikappa, dcomplex * memHeff, CSobj
 
                      dcomplex factor = 1.0;
                      int memSkappa   = denS->gKappa( NL, TwoSL, IL, N1 + 1, N2, TwoJdown, NR + 1, TwoSRdown, IRdown );
-                     zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                     if ( memSkappa != -1 ) {
+                        zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                     }
                   }
                }
             }
@@ -3455,7 +3487,9 @@ void CheMPS2::CHeffNS::addDiagram4G( const int ikappa, dcomplex * memHeff, CSobj
 
                      dcomplex factor = 1.0;
                      int memSkappa   = denS->gKappa( NL, TwoSL, IL, N1 - 1, N2, TwoJdown, NR - 1, TwoSRdown, IRdown );
-                     zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                     if ( memSkappa != -1 ) {
+                        zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                     }
                   }
                }
             }
@@ -3544,10 +3578,12 @@ void CheMPS2::CHeffNS::addDiagram4H( const int ikappa, dcomplex * memHeff, CSobj
                               dcomplex * LblockL = Lleft[ theindex - 1 - l_gamma ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
                               int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 0, TwoS1, NR - 1, TwoSRdown, IRdown );
-                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
+                              if ( memSkappa != -1 ) {
+                                 zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
 
-                              beta = 1.0; //add
-                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockL, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                 beta = 1.0; //add
+                                 zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockL, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                              }
                            }
                         }
                      }
@@ -3612,10 +3648,12 @@ void CheMPS2::CHeffNS::addDiagram4H( const int ikappa, dcomplex * memHeff, CSobj
                               dcomplex * LblockL = LTleft[ theindex - 1 - l_alpha ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
                               int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 2, TwoS1, NR + 1, TwoSRdown, IRdown );
-                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
+                              if ( memSkappa != -1 ) {
+                                 zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
 
-                              beta = 1.0; //add
-                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockL, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                 beta = 1.0; //add
+                                 zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockL, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                              }
                            }
                         }
                      }
@@ -3690,10 +3728,12 @@ void CheMPS2::CHeffNS::addDiagram4H( const int ikappa, dcomplex * memHeff, CSobj
                                  dcomplex * LblockL = LTleft[ theindex - 1 - l_alpha ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
                                  int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR - 1, TwoSRdown, IRdown );
-                                 zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
+                                 if ( memSkappa != -1 ) {
+                                    zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
 
-                                 beta = 1.0; //add
-                                 zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockL, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                    beta = 1.0; //add
+                                    zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockL, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                 }
                               }
                            }
                         }
@@ -3759,10 +3799,12 @@ void CheMPS2::CHeffNS::addDiagram4H( const int ikappa, dcomplex * memHeff, CSobj
                               dcomplex * LblockL = LTleft[ theindex - 1 - l_alpha ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
                               int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 2, TwoS1, NR - 1, TwoSRdown, IRdown );
-                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
+                              if ( memSkappa != -1 ) {
+                                 zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
 
-                              beta = 1.0; //add
-                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockL, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                 beta = 1.0; //add
+                                 zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockL, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                              }
                            }
                         }
                      }
@@ -3837,10 +3879,12 @@ void CheMPS2::CHeffNS::addDiagram4H( const int ikappa, dcomplex * memHeff, CSobj
                                  dcomplex * LblockL = Lleft[ theindex - 1 - l_gamma ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
                                  int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR + 1, TwoSRdown, IRdown );
-                                 zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
+                                 if ( memSkappa != -1 ) {
+                                    zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
 
-                                 beta = 1.0; //add
-                                 zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockL, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                    beta = 1.0; //add
+                                    zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockL, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                 }
                               }
                            }
                         }
@@ -3906,10 +3950,12 @@ void CheMPS2::CHeffNS::addDiagram4H( const int ikappa, dcomplex * memHeff, CSobj
                               dcomplex * LblockL = Lleft[ theindex - 1 - l_gamma ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
                               int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 2, TwoS1, NR + 1, TwoSRdown, IRdown );
-                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
+                              if ( memSkappa != -1 ) {
+                                 zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, temp, &dimRup, &beta, temp2, &dimLdown );
 
-                              beta = 1.0; //add
-                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockL, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                                 beta = 1.0; //add
+                                 zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, LblockL, &dimLup, temp2, &dimLdown, &beta, memHeff, &dimLup );
+                              }
                            }
                         }
                      }
@@ -3986,7 +4032,9 @@ void CheMPS2::CHeffNS::addDiagram4I( const int ikappa, dcomplex * memHeff, CSobj
                      factor   = fase * sqrt( ( TwoSL + 1.0 ) / ( TwoSR + 1.0 ) );
                   }
                   int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1 - 1, 2, TwoJdown, NR, TwoSR, IR );
-                  zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                  if ( memSkappa != -1 ) {
+                     zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                  }
                }
             }
          }
@@ -4030,7 +4078,9 @@ void CheMPS2::CHeffNS::addDiagram4I( const int ikappa, dcomplex * memHeff, CSobj
                      factor   = fase * sqrt( ( TwoSLdown + 1.0 ) / ( TwoSR + 1.0 ) );
                   }
                   int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1 + 1, 0, TwoJdown, NR, TwoSR, IR );
-                  zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                  if ( memSkappa != -1 ) {
+                     zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                  }
                }
             }
          }
@@ -4103,7 +4153,9 @@ void CheMPS2::CHeffNS::addDiagram4I( const int ikappa, dcomplex * memHeff, CSobj
 
                      dcomplex factor = 1.0;
                      int memSkappa   = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1 + 1, N2, TwoJdown, NR, TwoSR, IR );
-                     zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                     if ( memSkappa != -1 ) {
+                        zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                     }
                   }
                }
             }
@@ -4177,7 +4229,9 @@ void CheMPS2::CHeffNS::addDiagram4I( const int ikappa, dcomplex * memHeff, CSobj
 
                      dcomplex factor = 1.0;
                      int memSkappa   = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1 - 1, N2, TwoJdown, NR, TwoSR, IR );
-                     zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                     if ( memSkappa != -1 ) {
+                        zgemm_( &notrans, &notrans, &dimLup, &dimR, &dimLdown, &factor, temp, &dimLup, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, &beta, memHeff, &dimLup );
+                     }
                   }
                }
             }
@@ -4213,11 +4267,13 @@ void CheMPS2::CHeffNS::addDiagram4J1and4J2spin0( const int ikappa, dcomplex * me
       int dimRdown = bk_down->gCurrentDim( theindex + 2, NR + 2, TwoSR, IRdown );
       if ( dimRdown > 0 ) {
 
-         int memSkappa     = denS->gKappa( NL, TwoSL, IL, 1, 1, 0, NR + 2, TwoSR, IRdown );
-         dcomplex alpha    = 1.0;
-         dcomplex beta     = 1.0;
-         dcomplex * Ablock = Aright->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 1, 0, NR + 2, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha    = 1.0;
+            dcomplex beta     = 1.0;
+            dcomplex * Ablock = Aright->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         }
       }
    }
 
@@ -4227,11 +4283,13 @@ void CheMPS2::CHeffNS::addDiagram4J1and4J2spin0( const int ikappa, dcomplex * me
       int dimRdown = bk_down->gCurrentDim( theindex + 2, NR + 2, TwoSR, IRdown );
       if ( dimRdown > 0 ) {
 
-         int memSkappa     = denS->gKappa( NL, TwoSL, IL, 2, 1, 1, NR + 2, TwoSR, IRdown );
-         dcomplex alpha    = -sqrt( 0.5 );
-         dcomplex beta     = 1.0;
-         dcomplex * Ablock = Aright->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 2, 1, 1, NR + 2, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha    = -sqrt( 0.5 );
+            dcomplex beta     = 1.0;
+            dcomplex * Ablock = Aright->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         }
       }
    }
 
@@ -4241,11 +4299,13 @@ void CheMPS2::CHeffNS::addDiagram4J1and4J2spin0( const int ikappa, dcomplex * me
       int dimRdown = bk_down->gCurrentDim( theindex + 2, NR + 2, TwoSR, IRdown );
       if ( dimRdown > 0 ) {
 
-         int memSkappa     = denS->gKappa( NL, TwoSL, IL, 1, 2, 1, NR + 2, TwoSR, IRdown );
-         dcomplex alpha    = -sqrt( 0.5 );
-         dcomplex beta     = 1.0;
-         dcomplex * Ablock = Aright->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 2, 1, NR + 2, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha    = -sqrt( 0.5 );
+            dcomplex beta     = 1.0;
+            dcomplex * Ablock = Aright->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         }
       }
    }
 
@@ -4255,21 +4315,25 @@ void CheMPS2::CHeffNS::addDiagram4J1and4J2spin0( const int ikappa, dcomplex * me
       int dimRdown = bk_down->gCurrentDim( theindex + 2, NR + 2, TwoSR, IRdown );
       if ( dimRdown > 0 ) {
 
-         int memSkappa     = denS->gKappa( NL, TwoSL, IL, 2, 2, 0, NR + 2, TwoSR, IRdown );
-         dcomplex alpha    = -1.0;
-         dcomplex beta     = 1.0;
-         dcomplex * Ablock = Aright->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 2, 2, 0, NR + 2, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha    = -1.0;
+            dcomplex beta     = 1.0;
+            dcomplex * Ablock = Aright->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         }
       }
 
       dimRdown = bk_down->gCurrentDim( theindex + 2, NR - 2, TwoSR, IRdown );
       if ( dimRdown > 0 ) {
 
-         int memSkappa     = denS->gKappa( NL, TwoSL, IL, 0, 0, 0, NR - 2, TwoSR, IRdown );
-         dcomplex alpha    = 1.0;
-         dcomplex beta     = 1.0;
-         dcomplex * Ablock = ATright->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 0, 0, 0, NR - 2, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha    = 1.0;
+            dcomplex beta     = 1.0;
+            dcomplex * Ablock = ATright->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         }
       }
    }
 
@@ -4279,11 +4343,13 @@ void CheMPS2::CHeffNS::addDiagram4J1and4J2spin0( const int ikappa, dcomplex * me
       int dimRdown = bk_down->gCurrentDim( theindex + 2, NR - 2, TwoSR, IRdown );
       if ( dimRdown > 0 ) {
 
-         int memSkappa     = denS->gKappa( NL, TwoSL, IL, 1, 0, 1, NR - 2, TwoSR, IRdown );
-         dcomplex alpha    = -sqrt( 0.5 );
-         dcomplex beta     = 1.0;
-         dcomplex * Ablock = ATright->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 0, 1, NR - 2, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha    = -sqrt( 0.5 );
+            dcomplex beta     = 1.0;
+            dcomplex * Ablock = ATright->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         }
       }
    }
 
@@ -4293,11 +4359,13 @@ void CheMPS2::CHeffNS::addDiagram4J1and4J2spin0( const int ikappa, dcomplex * me
       int dimRdown = bk_down->gCurrentDim( theindex + 2, NR - 2, TwoSR, IRdown );
       if ( dimRdown > 0 ) {
 
-         int memSkappa     = denS->gKappa( NL, TwoSL, IL, 0, 1, 1, NR - 2, TwoSR, IRdown );
-         dcomplex alpha    = -sqrt( 0.5 );
-         dcomplex beta     = 1.0;
-         dcomplex * Ablock = ATright->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 0, 1, 1, NR - 2, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha    = -sqrt( 0.5 );
+            dcomplex beta     = 1.0;
+            dcomplex * Ablock = ATright->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         }
       }
    }
 
@@ -4307,11 +4375,13 @@ void CheMPS2::CHeffNS::addDiagram4J1and4J2spin0( const int ikappa, dcomplex * me
       int dimRdown = bk_down->gCurrentDim( theindex + 2, NR - 2, TwoSR, IRdown );
       if ( dimRdown > 0 ) {
 
-         int memSkappa     = denS->gKappa( NL, TwoSL, IL, 1, 1, 0, NR - 2, TwoSR, IRdown );
-         dcomplex alpha    = -1.0;
-         dcomplex beta     = 1.0;
-         dcomplex * Ablock = ATright->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 1, 0, NR - 2, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha    = -1.0;
+            dcomplex beta     = 1.0;
+            dcomplex * Ablock = ATright->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Ablock, &dimRup, &beta, memHeff, &dimL );
+         }
       }
    }
 }
@@ -4346,11 +4416,13 @@ void CheMPS2::CHeffNS::addDiagram4J1and4J2spin1( const int ikappa, dcomplex * me
          int dimRdown = bk_down->gCurrentDim( theindex + 2, NR + 2, TwoSRdown, IRdown );
          if ( dimRdown > 0 ) {
 
-            int memSkappa     = denS->gKappa( NL, TwoSL, IL, 1, 1, 2, NR + 2, TwoSRdown, IRdown );
-            dcomplex alpha    = sqrt( ( TwoSRdown + 1.0 ) / ( TwoSR + 1.0 ) );
-            dcomplex beta     = 1.0;
-            dcomplex * Bblock = Bright->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
-            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+            int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 1, 2, NR + 2, TwoSRdown, IRdown );
+            if ( memSkappa != -1 ) {
+               dcomplex alpha    = sqrt( ( TwoSRdown + 1.0 ) / ( TwoSR + 1.0 ) );
+               dcomplex beta     = 1.0;
+               dcomplex * Bblock = Bright->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
+               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+            }
          }
       }
    }
@@ -4364,12 +4436,14 @@ void CheMPS2::CHeffNS::addDiagram4J1and4J2spin1( const int ikappa, dcomplex * me
             int dimRdown = bk_down->gCurrentDim( theindex + 2, NR + 2, TwoSRdown, IRdown );
             if ( dimRdown > 0 ) {
 
-               int memSkappa     = denS->gKappa( NL, TwoSL, IL, 2, 1, 1, NR + 2, TwoSRdown, IRdown );
-               int fase          = phase( TwoSL + TwoSRdown + 3 );
-               dcomplex alpha    = fase * sqrt( 3.0 * ( TwoSRdown + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSR, TwoSRdown, TwoSL );
-               dcomplex beta     = 1.0;
-               dcomplex * Bblock = Bright->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
-               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+               int memSkappa = denS->gKappa( NL, TwoSL, IL, 2, 1, 1, NR + 2, TwoSRdown, IRdown );
+               if ( memSkappa != -1 ) {
+                  int fase          = phase( TwoSL + TwoSRdown + 3 );
+                  dcomplex alpha    = fase * sqrt( 3.0 * ( TwoSRdown + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSR, TwoSRdown, TwoSL );
+                  dcomplex beta     = 1.0;
+                  dcomplex * Bblock = Bright->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
+                  zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+               }
             }
          }
       }
@@ -4384,12 +4458,14 @@ void CheMPS2::CHeffNS::addDiagram4J1and4J2spin1( const int ikappa, dcomplex * me
             int dimRdown = bk_down->gCurrentDim( theindex + 2, NR + 2, TwoSRdown, IRdown );
             if ( dimRdown > 0 ) {
 
-               int memSkappa     = denS->gKappa( NL, TwoSL, IL, 1, 2, 1, NR + 2, TwoSRdown, IRdown );
-               int fase          = phase( TwoSL + TwoSRdown + 1 );
-               dcomplex alpha    = fase * sqrt( 3.0 * ( TwoSRdown + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSR, TwoSRdown, TwoSL );
-               dcomplex beta     = 1.0;
-               dcomplex * Bblock = Bright->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
-               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+               int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 2, 1, NR + 2, TwoSRdown, IRdown );
+               if ( memSkappa != -1 ) {
+                  int fase          = phase( TwoSL + TwoSRdown + 1 );
+                  dcomplex alpha    = fase * sqrt( 3.0 * ( TwoSRdown + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSR, TwoSRdown, TwoSL );
+                  dcomplex beta     = 1.0;
+                  dcomplex * Bblock = Bright->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
+                  zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+               }
             }
          }
       }
@@ -4403,21 +4479,25 @@ void CheMPS2::CHeffNS::addDiagram4J1and4J2spin1( const int ikappa, dcomplex * me
       int dimRdown = bk_down->gCurrentDim( theindex + 2, NR + 2, TwoSRdown, IRdown );
       if ( dimRdown > 0 ) { //4J1D.spin1
 
-         int memSkappa     = denS->gKappa( NL, TwoSL, IL, 2, 2, 0, NR + 2, TwoSRdown, IRdown );
-         dcomplex alpha    = phase( TwoSR - TwoSRdown );
-         dcomplex beta     = 1.0;
-         dcomplex * Bblock = Bright->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 2, 2, 0, NR + 2, TwoSRdown, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha    = phase( TwoSR - TwoSRdown );
+            dcomplex beta     = 1.0;
+            dcomplex * Bblock = Bright->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+         }
       }
 
       dimRdown = bk_down->gCurrentDim( theindex + 2, NR - 2, TwoSRdown, IRdown );
       if ( dimRdown > 0 ) { //4J2A.spin1
 
-         int memSkappa     = denS->gKappa( NL, TwoSL, IL, 0, 0, 0, NR - 2, TwoSRdown, IRdown );
-         dcomplex alpha    = sqrt( ( TwoSR + 1.0 ) / ( TwoSRdown + 1.0 ) );
-         dcomplex beta     = 1.0;
-         dcomplex * Bblock = BTright->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 0, 0, 0, NR - 2, TwoSRdown, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha    = sqrt( ( TwoSR + 1.0 ) / ( TwoSRdown + 1.0 ) );
+            dcomplex beta     = 1.0;
+            dcomplex * Bblock = BTright->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+         }
       }
    }
 
@@ -4430,12 +4510,14 @@ void CheMPS2::CHeffNS::addDiagram4J1and4J2spin1( const int ikappa, dcomplex * me
             int dimRdown = bk_down->gCurrentDim( theindex + 2, NR - 2, TwoSRdown, IRdown );
             if ( dimRdown > 0 ) {
 
-               int memSkappa     = denS->gKappa( NL, TwoSL, IL, 1, 0, 1, NR - 2, TwoSRdown, IRdown );
-               int fase          = phase( TwoSL + TwoSR + 3 );
-               dcomplex alpha    = fase * sqrt( 3.0 * ( TwoSR + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSRdown, TwoSR, TwoSL );
-               dcomplex beta     = 1.0;
-               dcomplex * Bblock = BTright->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
-               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+               int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 0, 1, NR - 2, TwoSRdown, IRdown );
+               if ( memSkappa != -1 ) {
+                  int fase          = phase( TwoSL + TwoSR + 3 );
+                  dcomplex alpha    = fase * sqrt( 3.0 * ( TwoSR + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSRdown, TwoSR, TwoSL );
+                  dcomplex beta     = 1.0;
+                  dcomplex * Bblock = BTright->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
+                  zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+               }
             }
          }
       }
@@ -4450,12 +4532,14 @@ void CheMPS2::CHeffNS::addDiagram4J1and4J2spin1( const int ikappa, dcomplex * me
             int dimRdown = bk_down->gCurrentDim( theindex + 2, NR - 2, TwoSRdown, IRdown );
             if ( dimRdown > 0 ) {
 
-               int memSkappa     = denS->gKappa( NL, TwoSL, IL, 0, 1, 1, NR - 2, TwoSRdown, IRdown );
-               int fase          = phase( TwoSL + TwoSR + 1 );
-               dcomplex alpha    = fase * sqrt( 3.0 * ( TwoSR + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSRdown, TwoSR, TwoSL );
-               dcomplex beta     = 1.0;
-               dcomplex * Bblock = BTright->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
-               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+               int memSkappa = denS->gKappa( NL, TwoSL, IL, 0, 1, 1, NR - 2, TwoSRdown, IRdown );
+               if ( memSkappa != -1 ) {
+                  int fase          = phase( TwoSL + TwoSR + 1 );
+                  dcomplex alpha    = fase * sqrt( 3.0 * ( TwoSR + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSRdown, TwoSR, TwoSL );
+                  dcomplex beta     = 1.0;
+                  dcomplex * Bblock = BTright->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
+                  zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+               }
             }
          }
       }
@@ -4469,11 +4553,13 @@ void CheMPS2::CHeffNS::addDiagram4J1and4J2spin1( const int ikappa, dcomplex * me
          int dimRdown = bk_down->gCurrentDim( theindex + 2, NR - 2, TwoSRdown, IRdown );
          if ( dimRdown > 0 ) {
 
-            int memSkappa     = denS->gKappa( NL, TwoSL, IL, 1, 1, 2, NR - 2, TwoSRdown, IRdown );
-            dcomplex alpha    = phase( TwoSR - TwoSRdown );
-            dcomplex beta     = 1.0;
-            dcomplex * Bblock = BTright->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
-            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+            int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 1, 2, NR - 2, TwoSRdown, IRdown );
+            if ( memSkappa != -1 ) {
+               dcomplex alpha    = phase( TwoSR - TwoSRdown );
+               dcomplex beta     = 1.0;
+               dcomplex * Bblock = BTright->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
+               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, Bblock, &dimRup, &beta, memHeff, &dimL );
+            }
          }
       }
    }
@@ -4508,89 +4594,105 @@ void CheMPS2::CHeffNS::addDiagram4J3and4J4spin0( const int ikappa, dcomplex * me
       //4J3A.spin0
       if ( ( N1 == 1 ) && ( N2 == 0 ) ) {
 
-         int memSkappa  = denS->gKappa( NL, TwoSL, IL, 0, 1, 1, NR, TwoSR, IRdown );
-         dcomplex alpha = sqrt( 0.5 );
-         dcomplex beta  = 1.0;
-         dcomplex * ptr = CTright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 0, 1, 1, NR, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha = sqrt( 0.5 );
+            dcomplex beta  = 1.0;
+            dcomplex * ptr = CTright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+         }
       }
 
       //4J3B.spin0
       if ( ( N1 == 2 ) && ( N2 == 0 ) ) {
 
-         int memSkappa  = denS->gKappa( NL, TwoSL, IL, 1, 1, 0, NR, TwoSR, IRdown );
-         dcomplex alpha = 1.0;
-         dcomplex beta  = 1.0;
-         dcomplex * ptr = CTright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 1, 0, NR, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha = 1.0;
+            dcomplex beta  = 1.0;
+            dcomplex * ptr = CTright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+         }
       }
 
       //4J3C.spin0
       if ( ( N1 == 1 ) && ( N2 == 1 ) && ( TwoJ == 0 ) ) {
 
-         int memSkappa  = denS->gKappa( NL, TwoSL, IL, 0, 2, 0, NR, TwoSR, IRdown );
-         dcomplex alpha = 1.0;
-         dcomplex beta  = 1.0;
-         dcomplex * ptr = CTright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 0, 2, 0, NR, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha = 1.0;
+            dcomplex beta  = 1.0;
+            dcomplex * ptr = CTright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+         }
       }
 
       //4J3D.spin0
       if ( ( N1 == 2 ) && ( N2 == 1 ) ) {
 
-         int memSkappa  = denS->gKappa( NL, TwoSL, IL, 1, 2, 1, NR, TwoSR, IRdown );
-         dcomplex alpha = -sqrt( 0.5 );
-         dcomplex beta  = 1.0;
-         dcomplex * ptr = CTright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 2, 1, NR, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha = -sqrt( 0.5 );
+            dcomplex beta  = 1.0;
+            dcomplex * ptr = CTright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+         }
       }
 
       //4J4A.spin0
       if ( ( N1 == 0 ) && ( N2 == 1 ) ) {
 
-         int memSkappa  = denS->gKappa( NL, TwoSL, IL, 1, 0, 1, NR, TwoSR, IRdown );
-         dcomplex alpha = sqrt( 0.5 );
-         dcomplex beta  = 1.0;
-         dcomplex * ptr = Cright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 0, 1, NR, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha = sqrt( 0.5 );
+            dcomplex beta  = 1.0;
+            dcomplex * ptr = Cright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+         }
       }
 
       //4J4B.spin0
       if ( ( N1 == 1 ) && ( N2 == 1 ) && ( TwoJ == 0 ) ) {
 
-         int memSkappa  = denS->gKappa( NL, TwoSL, IL, 2, 0, 0, NR, TwoSR, IRdown );
-         dcomplex alpha = 1.0;
-         dcomplex beta  = 1.0;
-         dcomplex * ptr = Cright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 2, 0, 0, NR, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha = 1.0;
+            dcomplex beta  = 1.0;
+            dcomplex * ptr = Cright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+         }
       }
 
       //4J4C.spin0
       if ( ( N1 == 0 ) && ( N2 == 2 ) ) {
 
-         int memSkappa  = denS->gKappa( NL, TwoSL, IL, 1, 1, 0, NR, TwoSR, IRdown );
-         dcomplex alpha = 1.0;
-         dcomplex beta  = 1.0;
-         dcomplex * ptr = Cright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 1, 0, NR, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha = 1.0;
+            dcomplex beta  = 1.0;
+            dcomplex * ptr = Cright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+         }
       }
 
       //4J4D.spin0
       if ( ( N1 == 1 ) && ( N2 == 2 ) ) {
 
-         int memSkappa  = denS->gKappa( NL, TwoSL, IL, 2, 1, 1, NR, TwoSR, IRdown );
-         dcomplex alpha = -sqrt( 0.5 );
-         dcomplex beta  = 1.0;
-         dcomplex * ptr = Cright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+         int memSkappa = denS->gKappa( NL, TwoSL, IL, 2, 1, 1, NR, TwoSR, IRdown );
+         if ( memSkappa != -1 ) {
+            dcomplex alpha = -sqrt( 0.5 );
+            dcomplex beta  = 1.0;
+            dcomplex * ptr = Cright->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-         zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+         }
       }
    }
 }
@@ -4625,93 +4727,109 @@ void CheMPS2::CHeffNS::addDiagram4J3and4J4spin1( const int ikappa, dcomplex * me
          //4J3A.spin1
          if ( ( N1 == 1 ) && ( N2 == 0 ) && ( abs( TwoSL - TwoSRdown ) <= 1 ) ) {
 
-            int memSkappa  = denS->gKappa( NL, TwoSL, IL, 0, 1, 1, NR, TwoSRdown, IRdown );
-            int fase       = phase( TwoSL + TwoSRdown + 3 );
-            dcomplex alpha = fase * sqrt( 3.0 * ( TwoSRdown + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSR, TwoSRdown, TwoSL );
-            dcomplex beta  = 1.0;
-            dcomplex * ptr = DTright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+            int memSkappa = denS->gKappa( NL, TwoSL, IL, 0, 1, 1, NR, TwoSRdown, IRdown );
+            if ( memSkappa != -1 ) {
+               int fase       = phase( TwoSL + TwoSRdown + 3 );
+               dcomplex alpha = fase * sqrt( 3.0 * ( TwoSRdown + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSR, TwoSRdown, TwoSL );
+               dcomplex beta  = 1.0;
+               dcomplex * ptr = DTright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
 
-            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            }
          }
 
          //4J3C.spin1
          if ( ( N1 == 2 ) && ( N2 == 0 ) ) { //TwoSL==TwoSR and hence TwoSRdown can be what it wants
 
-            int memSkappa  = denS->gKappa( NL, TwoSL, IL, 1, 1, 2, NR, TwoSRdown, IRdown );
-            dcomplex alpha = -sqrt( ( TwoSRdown + 1.0 ) / ( TwoSR + 1.0 ) );
-            dcomplex beta  = 1.0;
-            dcomplex * ptr = DTright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+            int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 1, 2, NR, TwoSRdown, IRdown );
+            if ( memSkappa != -1 ) {
+               dcomplex alpha = -sqrt( ( TwoSRdown + 1.0 ) / ( TwoSR + 1.0 ) );
+               dcomplex beta  = 1.0;
+               dcomplex * ptr = DTright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
 
-            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            }
          }
 
          //4J3B.spin1
          if ( ( N1 == 1 ) && ( N2 == 1 ) && ( TwoJ == 2 ) && ( TwoSL == TwoSRdown ) ) {
 
-            int memSkappa  = denS->gKappa( NL, TwoSL, IL, 0, 2, 0, NR, TwoSRdown, IRdown );
-            dcomplex alpha = phase( TwoSR - TwoSRdown );
-            dcomplex beta  = 1.0;
-            dcomplex * ptr = DTright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+            int memSkappa = denS->gKappa( NL, TwoSL, IL, 0, 2, 0, NR, TwoSRdown, IRdown );
+            if ( memSkappa != -1 ) {
+               dcomplex alpha = phase( TwoSR - TwoSRdown );
+               dcomplex beta  = 1.0;
+               dcomplex * ptr = DTright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
 
-            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            }
          }
 
          //4J3D.spin1
          if ( ( N1 == 2 ) && ( N2 == 1 ) && ( abs( TwoSL - TwoSRdown ) <= 1 ) ) {
 
-            int memSkappa  = denS->gKappa( NL, TwoSL, IL, 1, 2, 1, NR, TwoSRdown, IRdown );
-            int fase       = phase( TwoSL + TwoSRdown + 3 );
-            dcomplex alpha = fase * sqrt( 3.0 * ( TwoSRdown + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSR, TwoSRdown, TwoSL );
-            dcomplex beta  = 1.0;
-            dcomplex * ptr = DTright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+            int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 2, 1, NR, TwoSRdown, IRdown );
+            if ( memSkappa != -1 ) {
+               int fase       = phase( TwoSL + TwoSRdown + 3 );
+               dcomplex alpha = fase * sqrt( 3.0 * ( TwoSRdown + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSR, TwoSRdown, TwoSL );
+               dcomplex beta  = 1.0;
+               dcomplex * ptr = DTright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
 
-            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            }
          }
 
          //4J4A.spin1
          if ( ( N1 == 0 ) && ( N2 == 1 ) && ( abs( TwoSL - TwoSRdown ) <= 1 ) ) {
 
-            int memSkappa  = denS->gKappa( NL, TwoSL, IL, 1, 0, 1, NR, TwoSRdown, IRdown );
-            int fase       = phase( TwoSL + TwoSR + 3 );
-            dcomplex alpha = fase * sqrt( 3.0 * ( TwoSR + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSR, TwoSRdown, TwoSL );
-            dcomplex beta  = 1.0;
-            dcomplex * ptr = Dright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+            int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 0, 1, NR, TwoSRdown, IRdown );
+            if ( memSkappa != -1 ) {
+               int fase       = phase( TwoSL + TwoSR + 3 );
+               dcomplex alpha = fase * sqrt( 3.0 * ( TwoSR + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSR, TwoSRdown, TwoSL );
+               dcomplex beta  = 1.0;
+               dcomplex * ptr = Dright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
 
-            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            }
          }
 
          //4J4B.spin1
          if ( ( N1 == 1 ) && ( N2 == 1 ) && ( TwoJ == 2 ) && ( TwoSL == TwoSRdown ) ) {
 
-            int memSkappa  = denS->gKappa( NL, TwoSL, IL, 2, 0, 0, NR, TwoSRdown, IRdown );
-            dcomplex alpha = -sqrt( ( TwoSR + 1.0 ) / ( TwoSRdown + 1.0 ) );
-            dcomplex beta  = 1.0;
-            dcomplex * ptr = Dright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+            int memSkappa = denS->gKappa( NL, TwoSL, IL, 2, 0, 0, NR, TwoSRdown, IRdown );
+            if ( memSkappa != -1 ) {
+               dcomplex alpha = -sqrt( ( TwoSR + 1.0 ) / ( TwoSRdown + 1.0 ) );
+               dcomplex beta  = 1.0;
+               dcomplex * ptr = Dright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
 
-            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            }
          }
 
          //4J4C.spin1
          if ( ( N1 == 0 ) && ( N2 == 2 ) ) { // TwoSL == TwoSR --> TwoSRdown can be what it wants to be.
 
-            int memSkappa  = denS->gKappa( NL, TwoSL, IL, 1, 1, 2, NR, TwoSRdown, IRdown );
-            dcomplex alpha = phase( TwoSR - TwoSRdown );
-            dcomplex beta  = 1.0;
-            dcomplex * ptr = Dright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+            int memSkappa = denS->gKappa( NL, TwoSL, IL, 1, 1, 2, NR, TwoSRdown, IRdown );
+            if ( memSkappa != -1 ) {
+               dcomplex alpha = phase( TwoSR - TwoSRdown );
+               dcomplex beta  = 1.0;
+               dcomplex * ptr = Dright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
 
-            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            }
          }
 
          //4J4D.spin1
          if ( ( N1 == 1 ) && ( N2 == 2 ) && ( abs( TwoSL - TwoSRdown ) <= 1 ) ) {
 
-            int memSkappa  = denS->gKappa( NL, TwoSL, IL, 2, 1, 1, NR, TwoSRdown, IRdown );
-            int fase       = phase( TwoSL + TwoSR + 3 );
-            dcomplex alpha = fase * sqrt( 3.0 * ( TwoSR + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSR, TwoSRdown, TwoSL );
-            dcomplex beta  = 1.0;
-            dcomplex * ptr = Dright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+            int memSkappa = denS->gKappa( NL, TwoSL, IL, 2, 1, 1, NR, TwoSRdown, IRdown );
+            if ( memSkappa != -1 ) {
+               int fase       = phase( TwoSL + TwoSR + 3 );
+               dcomplex alpha = fase * sqrt( 3.0 * ( TwoSR + 1 ) ) * Wigner::wigner6j( 1, 1, 2, TwoSR, TwoSRdown, TwoSL );
+               dcomplex beta  = 1.0;
+               dcomplex * ptr = Dright->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
 
-            zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, ptr, &dimRup, &beta, memHeff, &dimL );
+            }
          }
       }
    }
@@ -4765,18 +4883,20 @@ void CheMPS2::CHeffNS::addDiagram4K1and4K2spin0( const int ikappa, dcomplex * me
 
                   if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                     int memSkappa     = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 0, TwoS1, NR - 2, TwoSR, IRdown );
-                     dcomplex * blockA = ATright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
-                     dcomplex beta     = 0.0; //set
-                     dcomplex alpha    = factor;
+                     int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 0, TwoS1, NR - 2, TwoSR, IRdown );
+                     if ( memSkappa != -1 ) {
+                        dcomplex * blockA = ATright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
+                        dcomplex beta     = 0.0; //set
+                        dcomplex alpha    = factor;
 
-                     zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
+                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
 
-                     beta              = 1.0; //add
-                     alpha             = 1.0;
-                     dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                        beta              = 1.0; //add
+                        alpha             = 1.0;
+                        dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                     zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                     }
                   }
                }
             }
@@ -4809,18 +4929,20 @@ void CheMPS2::CHeffNS::addDiagram4K1and4K2spin0( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa     = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR - 2, TwoSR, IRdown );
-                        dcomplex * blockA = ATright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
-                        dcomplex beta     = 0.0; //set
-                        dcomplex alpha    = factor;
+                        int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR - 2, TwoSR, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * blockA = ATright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
+                           dcomplex beta     = 0.0; //set
+                           dcomplex alpha    = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -4854,18 +4976,20 @@ void CheMPS2::CHeffNS::addDiagram4K1and4K2spin0( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa     = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR + 2, TwoSR, IRdown );
-                        dcomplex * blockA = Aright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
-                        dcomplex beta     = 0.0; //set
-                        dcomplex alpha    = factor;
+                        int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR + 2, TwoSR, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * blockA = Aright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
+                           dcomplex beta     = 0.0; //set
+                           dcomplex alpha    = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -4896,18 +5020,20 @@ void CheMPS2::CHeffNS::addDiagram4K1and4K2spin0( const int ikappa, dcomplex * me
 
                   if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                     int memSkappa     = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 2, TwoS1, NR + 2, TwoSR, IRdown );
-                     dcomplex * blockA = Aright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
-                     dcomplex beta     = 0.0; //set
-                     dcomplex alpha    = factor;
+                     int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 2, TwoS1, NR + 2, TwoSR, IRdown );
+                     if ( memSkappa != -1 ) {
+                        dcomplex * blockA = Aright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
+                        dcomplex beta     = 0.0; //set
+                        dcomplex alpha    = factor;
 
-                     zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
+                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
 
-                     beta              = 1.0; //add
-                     alpha             = 1.0;
-                     dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                        beta              = 1.0; //add
+                        alpha             = 1.0;
+                        dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                     zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                     }
                   }
                }
             }
@@ -4964,18 +5090,20 @@ void CheMPS2::CHeffNS::addDiagram4L1and4L2spin0( const int ikappa, dcomplex * me
 
                   if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                     int memSkappa     = denS->gKappa( NL - 1, TwoSLdown, ILdown, 0, N2, TwoS2, NR - 2, TwoSR, IRdown );
-                     dcomplex * blockA = ATright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
-                     dcomplex beta     = 0.0; //set
-                     dcomplex alpha    = factor;
+                     int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, 0, N2, TwoS2, NR - 2, TwoSR, IRdown );
+                     if ( memSkappa != -1 ) {
+                        dcomplex * blockA = ATright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
+                        dcomplex beta     = 0.0; //set
+                        dcomplex alpha    = factor;
 
-                     zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
+                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
 
-                     beta              = 1.0; //add
-                     alpha             = 1.0;
-                     dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                        beta              = 1.0; //add
+                        alpha             = 1.0;
+                        dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                     zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                     }
                   }
                }
             }
@@ -5008,18 +5136,20 @@ void CheMPS2::CHeffNS::addDiagram4L1and4L2spin0( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa     = denS->gKappa( NL - 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR - 2, TwoSR, IRdown );
-                        dcomplex * blockA = ATright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
-                        dcomplex beta     = 0.0; //set
-                        dcomplex alpha    = factor;
+                        int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR - 2, TwoSR, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * blockA = ATright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IRdown );
+                           dcomplex beta     = 0.0; //set
+                           dcomplex alpha    = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -5053,18 +5183,20 @@ void CheMPS2::CHeffNS::addDiagram4L1and4L2spin0( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa     = denS->gKappa( NL + 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR + 2, TwoSR, IRdown );
-                        dcomplex * blockA = Aright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
-                        dcomplex beta     = 0.0; //set
-                        dcomplex alpha    = factor;
+                        int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR + 2, TwoSR, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * blockA = Aright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
+                           dcomplex beta     = 0.0; //set
+                           dcomplex alpha    = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -5095,18 +5227,20 @@ void CheMPS2::CHeffNS::addDiagram4L1and4L2spin0( const int ikappa, dcomplex * me
 
                   if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                     int memSkappa     = denS->gKappa( NL + 1, TwoSLdown, ILdown, 2, N2, TwoS2, NR + 2, TwoSR, IRdown );
-                     dcomplex * blockA = Aright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
-                     dcomplex beta     = 0.0; //set
-                     dcomplex alpha    = factor;
+                     int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, 2, N2, TwoS2, NR + 2, TwoSR, IRdown );
+                     if ( memSkappa != -1 ) {
+                        dcomplex * blockA = Aright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
+                        dcomplex beta     = 0.0; //set
+                        dcomplex alpha    = factor;
 
-                     zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
+                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockA, &dimRup, &beta, temp, &dimLdown );
 
-                     beta              = 1.0; //add
-                     alpha             = 1.0;
-                     dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                        beta              = 1.0; //add
+                        alpha             = 1.0;
+                        dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                     zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                     }
                   }
                }
             }
@@ -5164,18 +5298,20 @@ void CheMPS2::CHeffNS::addDiagram4K1and4K2spin1( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa     = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 0, TwoS1, NR - 2, TwoSRdown, IRdown );
-                        dcomplex * blockB = BTright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
-                        dcomplex beta     = 0.0; //set
-                        dcomplex alpha    = factor;
+                        int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 0, TwoS1, NR - 2, TwoSRdown, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * blockB = BTright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
+                           dcomplex beta     = 0.0; //set
+                           dcomplex alpha    = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -5210,18 +5346,20 @@ void CheMPS2::CHeffNS::addDiagram4K1and4K2spin1( const int ikappa, dcomplex * me
 
                         if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                           int memSkappa     = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR - 2, TwoSRdown, IRdown );
-                           dcomplex * blockB = BTright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
-                           dcomplex beta     = 0.0; //set
-                           dcomplex alpha    = factor;
+                           int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR - 2, TwoSRdown, IRdown );
+                           if ( memSkappa != -1 ) {
+                              dcomplex * blockB = BTright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
+                              dcomplex beta     = 0.0; //set
+                              dcomplex alpha    = factor;
 
-                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
+                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
 
-                           beta              = 1.0; //add
-                           alpha             = 1.0;
-                           dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                              beta              = 1.0; //add
+                              alpha             = 1.0;
+                              dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           }
                         }
                      }
                   }
@@ -5257,18 +5395,20 @@ void CheMPS2::CHeffNS::addDiagram4K1and4K2spin1( const int ikappa, dcomplex * me
 
                         if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                           int memSkappa     = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR + 2, TwoSRdown, IRdown );
-                           dcomplex * blockB = Bright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
-                           dcomplex beta     = 0.0; //set
-                           dcomplex alpha    = factor;
+                           int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR + 2, TwoSRdown, IRdown );
+                           if ( memSkappa != -1 ) {
+                              dcomplex * blockB = Bright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
+                              dcomplex beta     = 0.0; //set
+                              dcomplex alpha    = factor;
 
-                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
+                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
 
-                           beta              = 1.0; //add
-                           alpha             = 1.0;
-                           dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                              beta              = 1.0; //add
+                              alpha             = 1.0;
+                              dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           }
                         }
                      }
                   }
@@ -5301,18 +5441,20 @@ void CheMPS2::CHeffNS::addDiagram4K1and4K2spin1( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa     = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 2, TwoS1, NR + 2, TwoSRdown, IRdown );
-                        dcomplex * blockB = Bright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
-                        dcomplex beta     = 0.0; //set
-                        dcomplex alpha    = factor;
+                        int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 2, TwoS1, NR + 2, TwoSRdown, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * blockB = Bright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
+                           dcomplex beta     = 0.0; //set
+                           dcomplex alpha    = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -5371,18 +5513,20 @@ void CheMPS2::CHeffNS::addDiagram4L1and4L2spin1( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa     = denS->gKappa( NL - 1, TwoSLdown, ILdown, 0, N2, TwoS2, NR - 2, TwoSRdown, IRdown );
-                        dcomplex * blockB = BTright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
-                        dcomplex beta     = 0.0; //set
-                        dcomplex alpha    = factor;
+                        int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, 0, N2, TwoS2, NR - 2, TwoSRdown, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * blockB = BTright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
+                           dcomplex beta     = 0.0; //set
+                           dcomplex alpha    = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -5417,18 +5561,20 @@ void CheMPS2::CHeffNS::addDiagram4L1and4L2spin1( const int ikappa, dcomplex * me
 
                         if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                           int memSkappa     = denS->gKappa( NL - 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR - 2, TwoSRdown, IRdown );
-                           dcomplex * blockB = BTright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
-                           dcomplex beta     = 0.0; //set
-                           dcomplex alpha    = factor;
+                           int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR - 2, TwoSRdown, IRdown );
+                           if ( memSkappa != -1 ) {
+                              dcomplex * blockB = BTright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR - 2, TwoSRdown, IRdown );
+                              dcomplex beta     = 0.0; //set
+                              dcomplex alpha    = factor;
 
-                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
+                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
 
-                           beta              = 1.0; //add
-                           alpha             = 1.0;
-                           dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                              beta              = 1.0; //add
+                              alpha             = 1.0;
+                              dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           }
                         }
                      }
                   }
@@ -5464,18 +5610,20 @@ void CheMPS2::CHeffNS::addDiagram4L1and4L2spin1( const int ikappa, dcomplex * me
 
                         if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                           int memSkappa     = denS->gKappa( NL + 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR + 2, TwoSRdown, IRdown );
-                           dcomplex * blockB = Bright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
-                           dcomplex beta     = 0.0; //set
-                           dcomplex alpha    = factor;
+                           int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR + 2, TwoSRdown, IRdown );
+                           if ( memSkappa != -1 ) {
+                              dcomplex * blockB = Bright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
+                              dcomplex beta     = 0.0; //set
+                              dcomplex alpha    = factor;
 
-                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
+                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
 
-                           beta              = 1.0; //add
-                           alpha             = 1.0;
-                           dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                              beta              = 1.0; //add
+                              alpha             = 1.0;
+                              dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           }
                         }
                      }
                   }
@@ -5508,18 +5656,20 @@ void CheMPS2::CHeffNS::addDiagram4L1and4L2spin1( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa     = denS->gKappa( NL + 1, TwoSLdown, ILdown, 2, N2, TwoS2, NR + 2, TwoSRdown, IRdown );
-                        dcomplex * blockB = Bright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
-                        dcomplex beta     = 0.0; //set
-                        dcomplex alpha    = factor;
+                        int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, 2, N2, TwoS2, NR + 2, TwoSRdown, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * blockB = Bright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSRdown, IRdown );
+                           dcomplex beta     = 0.0; //set
+                           dcomplex alpha    = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, blockB, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -5577,19 +5727,21 @@ void CheMPS2::CHeffNS::addDiagram4K3and4K4spin0( const int ikappa, dcomplex * me
 
                   if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                     int memSkappa  = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 0, TwoS1, NR, TwoSR, IRdown );
-                     dcomplex * ptr = Cright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+                     int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 0, TwoS1, NR, TwoSR, IRdown );
+                     if ( memSkappa != -1 ) {
+                        dcomplex * ptr = Cright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-                     dcomplex beta  = 0.0; //set
-                     dcomplex alpha = factor;
+                        dcomplex beta  = 0.0; //set
+                        dcomplex alpha = factor;
 
-                     zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                     beta              = 1.0; //add
-                     alpha             = 1.0;
-                     dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                        beta              = 1.0; //add
+                        alpha             = 1.0;
+                        dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                     zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                     }
                   }
                }
             }
@@ -5622,19 +5774,21 @@ void CheMPS2::CHeffNS::addDiagram4K3and4K4spin0( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa  = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR, TwoSR, IRdown );
-                        dcomplex * ptr = Cright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+                        int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR, TwoSR, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * ptr = Cright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-                        dcomplex beta  = 0.0; //set
-                        dcomplex alpha = factor;
+                           dcomplex beta  = 0.0; //set
+                           dcomplex alpha = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -5668,19 +5822,21 @@ void CheMPS2::CHeffNS::addDiagram4K3and4K4spin0( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa  = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR, TwoSR, IRdown );
-                        dcomplex * ptr = CTright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+                        int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR, TwoSR, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * ptr = CTright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-                        dcomplex beta  = 0.0; //set
-                        dcomplex alpha = factor;
+                           dcomplex beta  = 0.0; //set
+                           dcomplex alpha = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -5711,19 +5867,21 @@ void CheMPS2::CHeffNS::addDiagram4K3and4K4spin0( const int ikappa, dcomplex * me
 
                   if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                     int memSkappa  = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 2, TwoS1, NR, TwoSR, IRdown );
-                     dcomplex * ptr = CTright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+                     int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 2, TwoS1, NR, TwoSR, IRdown );
+                     if ( memSkappa != -1 ) {
+                        dcomplex * ptr = CTright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-                     dcomplex beta  = 0.0; //set
-                     dcomplex alpha = factor;
+                        dcomplex beta  = 0.0; //set
+                        dcomplex alpha = factor;
 
-                     zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                     beta              = 1.0; //add
-                     alpha             = 1.0;
-                     dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                        beta              = 1.0; //add
+                        alpha             = 1.0;
+                        dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                     zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                     }
                   }
                }
             }
@@ -5780,19 +5938,21 @@ void CheMPS2::CHeffNS::addDiagram4L3and4L4spin0( const int ikappa, dcomplex * me
 
                   if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                     int memSkappa  = denS->gKappa( NL + 1, TwoSLdown, ILdown, 0, N2, TwoS2, NR, TwoSR, IRdown );
-                     dcomplex * ptr = Cright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+                     int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, 0, N2, TwoS2, NR, TwoSR, IRdown );
+                     if ( memSkappa != -1 ) {
+                        dcomplex * ptr = Cright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-                     dcomplex beta  = 0.0; //set
-                     dcomplex alpha = factor;
+                        dcomplex beta  = 0.0; //set
+                        dcomplex alpha = factor;
 
-                     zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                     beta              = 1.0; //add
-                     alpha             = 1.0;
-                     dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                        beta              = 1.0; //add
+                        alpha             = 1.0;
+                        dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                     zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                     }
                   }
                }
             }
@@ -5825,19 +5985,21 @@ void CheMPS2::CHeffNS::addDiagram4L3and4L4spin0( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa  = denS->gKappa( NL + 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR, TwoSR, IRdown );
-                        dcomplex * ptr = Cright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+                        int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR, TwoSR, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * ptr = Cright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-                        dcomplex beta  = 0.0; //set
-                        dcomplex alpha = factor;
+                           dcomplex beta  = 0.0; //set
+                           dcomplex alpha = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -5871,19 +6033,21 @@ void CheMPS2::CHeffNS::addDiagram4L3and4L4spin0( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa  = denS->gKappa( NL - 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR, TwoSR, IRdown );
-                        dcomplex * ptr = CTright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+                        int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR, TwoSR, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * ptr = CTright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-                        dcomplex beta  = 0.0; //set
-                        dcomplex alpha = factor;
+                           dcomplex beta  = 0.0; //set
+                           dcomplex alpha = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -5914,19 +6078,21 @@ void CheMPS2::CHeffNS::addDiagram4L3and4L4spin0( const int ikappa, dcomplex * me
 
                   if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                     int memSkappa  = denS->gKappa( NL - 1, TwoSLdown, ILdown, 2, N2, TwoS2, NR, TwoSR, IRdown );
-                     dcomplex * ptr = CTright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
+                     int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, 2, N2, TwoS2, NR, TwoSR, IRdown );
+                     if ( memSkappa != -1 ) {
+                        dcomplex * ptr = CTright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSR, IRdown );
 
-                     dcomplex beta  = 0.0; //set
-                     dcomplex alpha = factor;
+                        dcomplex beta  = 0.0; //set
+                        dcomplex alpha = factor;
 
-                     zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                     beta              = 1.0; //add
-                     alpha             = 1.0;
-                     dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                        beta              = 1.0; //add
+                        alpha             = 1.0;
+                        dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                     zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                     }
                   }
                }
             }
@@ -5984,18 +6150,20 @@ void CheMPS2::CHeffNS::addDiagram4K3and4K4spin1( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa  = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 0, TwoS1, NR, TwoSRdown, IRdown );
-                        dcomplex * ptr = Dright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
-                        dcomplex beta  = 0.0; //set
-                        dcomplex alpha = factor;
+                        int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 0, TwoS1, NR, TwoSRdown, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * ptr = Dright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+                           dcomplex beta  = 0.0; //set
+                           dcomplex alpha = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -6030,18 +6198,20 @@ void CheMPS2::CHeffNS::addDiagram4K3and4K4spin1( const int ikappa, dcomplex * me
 
                         if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                           int memSkappa  = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR, TwoSRdown, IRdown );
-                           dcomplex * ptr = Dright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
-                           dcomplex beta  = 0.0; //set
-                           dcomplex alpha = factor;
+                           int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR, TwoSRdown, IRdown );
+                           if ( memSkappa != -1 ) {
+                              dcomplex * ptr = Dright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+                              dcomplex beta  = 0.0; //set
+                              dcomplex alpha = factor;
 
-                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                           beta              = 1.0; //add
-                           alpha             = 1.0;
-                           dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                              beta              = 1.0; //add
+                              alpha             = 1.0;
+                              dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           }
                         }
                      }
                   }
@@ -6077,18 +6247,20 @@ void CheMPS2::CHeffNS::addDiagram4K3and4K4spin1( const int ikappa, dcomplex * me
 
                         if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                           int memSkappa  = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR, TwoSRdown, IRdown );
-                           dcomplex * ptr = DTright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
-                           dcomplex beta  = 0.0; //set
-                           dcomplex alpha = factor;
+                           int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 1, TwoJdown, NR, TwoSRdown, IRdown );
+                           if ( memSkappa != -1 ) {
+                              dcomplex * ptr = DTright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+                              dcomplex beta  = 0.0; //set
+                              dcomplex alpha = factor;
 
-                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                           beta              = 1.0; //add
-                           alpha             = 1.0;
-                           dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                              beta              = 1.0; //add
+                              alpha             = 1.0;
+                              dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           }
                         }
                      }
                   }
@@ -6121,18 +6293,20 @@ void CheMPS2::CHeffNS::addDiagram4K3and4K4spin1( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa  = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 2, TwoS1, NR, TwoSRdown, IRdown );
-                        dcomplex * ptr = DTright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
-                        dcomplex beta  = 0.0; //set
-                        dcomplex alpha = factor;
+                        int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, N1, 2, TwoS1, NR, TwoSRdown, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * ptr = DTright[ theindex + 1 - l_index ][ 0 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+                           dcomplex beta  = 0.0; //set
+                           dcomplex alpha = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -6191,18 +6365,20 @@ void CheMPS2::CHeffNS::addDiagram4L3and4L4spin1( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa  = denS->gKappa( NL + 1, TwoSLdown, ILdown, 0, N2, TwoS2, NR, TwoSRdown, IRdown );
-                        dcomplex * ptr = Dright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
-                        dcomplex beta  = 0.0; //set
-                        dcomplex alpha = factor;
+                        int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, 0, N2, TwoS2, NR, TwoSRdown, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * ptr = Dright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+                           dcomplex beta  = 0.0; //set
+                           dcomplex alpha = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }
@@ -6237,18 +6413,20 @@ void CheMPS2::CHeffNS::addDiagram4L3and4L4spin1( const int ikappa, dcomplex * me
 
                         if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                           int memSkappa  = denS->gKappa( NL + 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR, TwoSRdown, IRdown );
-                           dcomplex * ptr = Dright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
-                           dcomplex beta  = 0.0; //set
-                           dcomplex alpha = factor;
+                           int memSkappa = denS->gKappa( NL + 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR, TwoSRdown, IRdown );
+                           if ( memSkappa != -1 ) {
+                              dcomplex * ptr = Dright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+                              dcomplex beta  = 0.0; //set
+                              dcomplex alpha = factor;
 
-                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                           beta              = 1.0; //add
-                           alpha             = 1.0;
-                           dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
+                              beta              = 1.0; //add
+                              alpha             = 1.0;
+                              dcomplex * blockL = Lleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL + 1, TwoSLdown, ILdown );
 
-                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           }
                         }
                      }
                   }
@@ -6284,18 +6462,20 @@ void CheMPS2::CHeffNS::addDiagram4L3and4L4spin1( const int ikappa, dcomplex * me
 
                         if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                           int memSkappa  = denS->gKappa( NL - 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR, TwoSRdown, IRdown );
-                           dcomplex * ptr = DTright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
-                           dcomplex beta  = 0.0; //set
-                           dcomplex alpha = factor;
+                           int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, 1, N2, TwoJdown, NR, TwoSRdown, IRdown );
+                           if ( memSkappa != -1 ) {
+                              dcomplex * ptr = DTright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+                              dcomplex beta  = 0.0; //set
+                              dcomplex alpha = factor;
 
-                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                              zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                           beta              = 1.0; //add
-                           alpha             = 1.0;
-                           dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                              beta              = 1.0; //add
+                              alpha             = 1.0;
+                              dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                              zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           }
                         }
                      }
                   }
@@ -6328,18 +6508,20 @@ void CheMPS2::CHeffNS::addDiagram4L3and4L4spin1( const int ikappa, dcomplex * me
 
                      if ( ( dimLdown > 0 ) && ( dimRdown > 0 ) ) {
 
-                        int memSkappa  = denS->gKappa( NL - 1, TwoSLdown, ILdown, 2, N2, TwoS2, NR, TwoSRdown, IRdown );
-                        dcomplex * ptr = DTright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
-                        dcomplex beta  = 0.0; //set
-                        dcomplex alpha = factor;
+                        int memSkappa = denS->gKappa( NL - 1, TwoSLdown, ILdown, 2, N2, TwoS2, NR, TwoSRdown, IRdown );
+                        if ( memSkappa != -1 ) {
+                           dcomplex * ptr = DTright[ theindex - l_index ][ 1 ]->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IRdown );
+                           dcomplex beta  = 0.0; //set
+                           dcomplex alpha = factor;
 
-                        zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
+                           zgemm_( &notrans, &cotrans, &dimLdown, &dimRup, &dimRdown, &alpha, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimLdown, ptr, &dimRup, &beta, temp, &dimLdown );
 
-                        beta              = 1.0; //add
-                        alpha             = 1.0;
-                        dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
+                           beta              = 1.0; //add
+                           alpha             = 1.0;
+                           dcomplex * blockL = LTleft[ theindex - 1 - l_index ]->gStorage( NL, TwoSL, IL, NL - 1, TwoSLdown, ILdown );
 
-                        zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                           zgemm_( &notrans, &notrans, &dimLup, &dimRup, &dimLdown, &alpha, blockL, &dimLup, temp, &dimLdown, &beta, memHeff, &dimLup );
+                        }
                      }
                   }
                }

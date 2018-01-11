@@ -21,6 +21,17 @@ CheMPS2::CTensorT::CTensorT( const int site_index,
    AllocateAllArrays();
 }
 
+CheMPS2::CTensorT::CTensorT( CTensorT * cpy ) : CTensor() {
+
+   this->index = cpy->gIndex(); //left boundary = index ; right boundary = index+1
+   this->denBK = cpy->gBK();
+
+   AllocateAllArrays();
+
+   int size = kappa2index[ nKappa ];
+   std::copy( &cpy->gStorage()[ 0 ], &cpy->gStorage()[ size ], &this->storage[ 0 ] );
+}
+
 void CheMPS2::CTensorT::AllocateAllArrays() {
    nKappa = 0;
    for ( int NL = denBK->gNmin( index ); NL <= denBK->gNmax( index ); NL++ ) {
@@ -192,19 +203,15 @@ void CheMPS2::CTensorT::QR( CTensor * Rstorage ) {
                if ( dimLtotal > 0 ) {
 
                   dcomplex * mem = new dcomplex[ dimLtotal * dimR ];
-                  // Copy the relevant parts from storage to mem
+                  //Copy the relevant parts from storage to mem
                   int dimLtotal2 = 0;
                   for ( int ikappa = 0; ikappa < nKappa; ikappa++ ) {
-                     if ( ( NR == sectorNR[ ikappa ] ) && ( TwoSR == sectorTwoSR[ ikappa ] ) &&
-                          ( IR == sectorIR[ ikappa ] ) ) {
-                        int dimL =
-                            denBK->gCurrentDim( index, sectorNL[ ikappa ],
-                                                sectorTwoSL[ ikappa ], sectorIL[ ikappa ] );
+                     if ( ( NR == sectorNR[ ikappa ] ) && ( TwoSR == sectorTwoSR[ ikappa ] ) && ( IR == sectorIR[ ikappa ] ) ) {
+                        int dimL = denBK->gCurrentDim( index, sectorNL[ ikappa ], sectorTwoSL[ ikappa ], sectorIL[ ikappa ] );
                         if ( dimL > 0 ) {
                            for ( int l = 0; l < dimL; l++ ) {
                               for ( int r = 0; r < dimR; r++ ) {
-                                 mem[ dimLtotal2 + l + dimLtotal * r ] =
-                                     storage[ kappa2index[ ikappa ] + l + dimL * r ];
+                                 mem[ dimLtotal2 + l + dimLtotal * r ] = storage[ kappa2index[ ikappa ] + l + dimL * r ];
                               }
                            }
                            dimLtotal2 += dimL;
@@ -212,35 +219,33 @@ void CheMPS2::CTensorT::QR( CTensor * Rstorage ) {
                      }
                   }
 
-                  // QR mem --> m = dimLtotal ; n = dimR
+                  //QR mem --> m = dimLtotal ; n = dimR
                   int info;
                   int minofdims   = min( dimR, dimLtotal );
                   dcomplex * tau  = new dcomplex[ minofdims ];
                   dcomplex * work = new dcomplex[ dimR ];
                   zgeqrf_( &dimLtotal, &dimR, mem, &dimLtotal, tau, work, &dimR, &info );
 
-                  // Copy R to Rstorage
-                  dcomplex * wheretoput = Rstorage->gStorage( NR, TwoSR, IR, NR, TwoSR, IR );
+                  //Copy R to Rstorage
+                  dcomplex * wheretoput = Rstorage->gStorage( NR, TwoSR, IR, NR, TwoSR, IR ); //dimR x dimR
 
                   for ( int irow = 0; irow < minofdims; irow++ ) {
                      for ( int icol = 0; icol < irow; icol++ ) {
-                        wheretoput[ icol + dimR * icol ] = 0.0;
+                        wheretoput[ irow + dimR * icol ] = 0.0;
                      }
                      for ( int icol = irow; icol < dimR; icol++ ) {
                         wheretoput[ irow + dimR * icol ] = mem[ irow + dimLtotal * icol ];
                      }
                   }
-
                   for ( int irow = minofdims; irow < dimR; irow++ ) {
                      for ( int icol = 0; icol < dimR; icol++ ) {
                         wheretoput[ irow + dimR * icol ] = 0.0;
                      }
                   }
 
-                  // Construct Q
-                  zungqr_( &dimLtotal2, &minofdims, &minofdims, mem, &dimLtotal, tau, work, &dimR, &info );
-
-                  if ( dimLtotal < dimR ) { // if number of cols larger than number of rows, rest of cols zero.
+                  //Construct Q
+                  zungqr_( &dimLtotal, &minofdims, &minofdims, mem, &dimLtotal, tau, work, &dimR, &info );
+                  if ( dimLtotal < dimR ) { //if number of cols larger than number of rows, rest of cols zero.
                      for ( int irow = 0; irow < dimLtotal; irow++ ) {
                         for ( int icol = dimLtotal; icol < dimR; icol++ ) {
                            mem[ irow + dimLtotal * icol ] = 0.0;
@@ -248,11 +253,10 @@ void CheMPS2::CTensorT::QR( CTensor * Rstorage ) {
                      }
                   }
 
-                  // Copy from mem to storage
+                  //Copy from mem to storage
                   dimLtotal2 = 0;
                   for ( int ikappa = 0; ikappa < nKappa; ikappa++ ) {
                      if ( ( NR == sectorNR[ ikappa ] ) && ( TwoSR == sectorTwoSR[ ikappa ] ) && ( IR == sectorIR[ ikappa ] ) ) {
-
                         int dimL = denBK->gCurrentDim( index, sectorNL[ ikappa ], sectorTwoSL[ ikappa ], sectorIL[ ikappa ] );
                         if ( dimL > 0 ) {
                            for ( int l = 0; l < dimL; l++ ) {
@@ -374,7 +378,7 @@ void CheMPS2::CTensorT::LQ( CTensor * Lstorage ) {
    }
 }
 
-void CheMPS2::CTensorT::LeftMultiply( CTensor * Mx ) {
+void CheMPS2::CTensorT::LeftMultiply( CTensor * Mx, char * trans ) {
 // PARALLEL
 #pragma omp parallel for schedule( dynamic )
    for ( int ikappa = 0; ikappa < nKappa; ikappa++ ) {
@@ -382,19 +386,19 @@ void CheMPS2::CTensorT::LeftMultiply( CTensor * Mx ) {
       int dimR           = denBK->gCurrentDim( index + 1, sectorNR[ ikappa ], sectorTwoSR[ ikappa ], sectorIR[ ikappa ] );
       dcomplex * MxBlock = Mx->gStorage( sectorNL[ ikappa ], sectorTwoSL[ ikappa ], sectorIL[ ikappa ],
                                          sectorNL[ ikappa ], sectorTwoSL[ ikappa ], sectorIL[ ikappa ] );
-      char notrans   = 'N';
-      dcomplex one   = 1.0;
-      dcomplex zero  = 0.0;
-      int dim        = dimL * dimR;
-      dcomplex * mem = new dcomplex[ dim ];
-      zgemm_( &notrans, &notrans, &dimL, &dimR, &dimL, &one, MxBlock, &dimL, storage + kappa2index[ ikappa ], &dimL, &zero, mem, &dimL );
+      char notrans       = 'N';
+      dcomplex one       = 1.0;
+      dcomplex zero      = 0.0;
+      int dim            = dimL * dimR;
+      dcomplex * mem     = new dcomplex[ dim ];
+      zgemm_( trans, &notrans, &dimL, &dimR, &dimL, &one, MxBlock, &dimL, storage + kappa2index[ ikappa ], &dimL, &zero, mem, &dimL );
       int inc = 1;
       zcopy_( &dim, mem, &inc, storage + kappa2index[ ikappa ], &inc );
       delete[] mem;
    }
 }
 
-void CheMPS2::CTensorT::RightMultiply( CTensor * Mx ) {
+void CheMPS2::CTensorT::RightMultiply( CTensor * Mx, char * trans ) {
 // PARALLEL
 #pragma omp parallel for schedule( dynamic )
    for ( int ikappa = 0; ikappa < nKappa; ikappa++ ) {
@@ -404,11 +408,12 @@ void CheMPS2::CTensorT::RightMultiply( CTensor * Mx ) {
                                          sectorNR[ ikappa ], sectorTwoSR[ ikappa ], sectorIR[ ikappa ] );
 
       char notrans   = 'N';
+      char twtrans   = ( *trans == 'N' ) ? 'C' : 'N';
       dcomplex one   = 1.0;
       dcomplex zero  = 0.0;
       int dim        = dimL * dimR;
       dcomplex * mem = new dcomplex[ dim ];
-      zgemm_( &notrans, &notrans, &dimL, &dimR, &dimR, &one, storage + kappa2index[ ikappa ], &dimL, MxBlock, &dimR, &zero, mem, &dimL );
+      zgemm_( &notrans, &twtrans, &dimL, &dimR, &dimR, &one, storage + kappa2index[ ikappa ], &dimL, MxBlock, &dimR, &zero, mem, &dimL );
 
       int inc = 1;
       zcopy_( &dim, mem, &inc, storage + kappa2index[ ikappa ], &inc );

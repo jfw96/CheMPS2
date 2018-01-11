@@ -14,16 +14,15 @@
 #include "SyBookkeeper.h"
 #include "Wigner.h"
 
-using std::min;
 using std::max;
+using std::min;
 
 CheMPS2::CSobject::CSobject( const int index, CheMPS2::SyBookkeeper * denBK )
     : index( index ), denBK( denBK ), Ilocal1( denBK->gIrrep( index ) ), Ilocal2( denBK->gIrrep( index + 1 ) ) {
    nKappa = 0;
 
    for ( int NL = denBK->gNmin( index ); NL <= denBK->gNmax( index ); NL++ ) {
-      for ( int TwoSL = denBK->gTwoSmin( index, NL );
-            TwoSL <= denBK->gTwoSmax( index, NL ); TwoSL += 2 ) {
+      for ( int TwoSL = denBK->gTwoSmin( index, NL ); TwoSL <= denBK->gTwoSmax( index, NL ); TwoSL += 2 ) {
          for ( int IL = 0; IL < denBK->getNumberOfIrreps(); IL++ ) {
             const int dimL = denBK->gCurrentDim( index, NL, TwoSL, IL );
             if ( dimL > 0 ) {
@@ -35,8 +34,7 @@ CheMPS2::CSobject::CSobject( const int index, CheMPS2::SyBookkeeper * denBK )
                      const int TwoJmin = ( N1 + N2 ) % 2;
                      const int TwoJmax = ( ( ( N1 == 1 ) && ( N2 == 1 ) ) ? 2 : TwoJmin );
                      for ( int TwoJ = TwoJmin; TwoJ <= TwoJmax; TwoJ += 2 ) {
-                        for ( int TwoSR = TwoSL - TwoJ; TwoSR <= TwoSL + TwoJ;
-                              TwoSR += 2 ) {
+                        for ( int TwoSR = TwoSL - TwoJ; TwoSR <= TwoSL + TwoJ; TwoSR += 2 ) {
                            if ( TwoSR >= 0 ) {
                               const int dimR = denBK->gCurrentDim( index + 2, NR, TwoSR, IR );
                               if ( dimR > 0 ) {
@@ -67,8 +65,7 @@ CheMPS2::CSobject::CSobject( const int index, CheMPS2::SyBookkeeper * denBK )
    nKappa = 0;
 
    for ( int NL = denBK->gNmin( index ); NL <= denBK->gNmax( index ); NL++ ) {
-      for ( int TwoSL = denBK->gTwoSmin( index, NL );
-            TwoSL <= denBK->gTwoSmax( index, NL ); TwoSL += 2 ) {
+      for ( int TwoSL = denBK->gTwoSmin( index, NL ); TwoSL <= denBK->gTwoSmax( index, NL ); TwoSL += 2 ) {
          for ( int IL = 0; IL < denBK->getNumberOfIrreps(); IL++ ) {
             const int dimL = denBK->gCurrentDim( index, NL, TwoSL, IL );
             if ( dimL > 0 ) {
@@ -80,8 +77,7 @@ CheMPS2::CSobject::CSobject( const int index, CheMPS2::SyBookkeeper * denBK )
                      const int TwoJmin = ( N1 + N2 ) % 2;
                      const int TwoJmax = ( ( ( N1 == 1 ) && ( N2 == 1 ) ) ? 2 : TwoJmin );
                      for ( int TwoJ = TwoJmin; TwoJ <= TwoJmax; TwoJ += 2 ) {
-                        for ( int TwoSR = TwoSL - TwoJ; TwoSR <= TwoSL + TwoJ;
-                              TwoSR += 2 ) {
+                        for ( int TwoSR = TwoSL - TwoJ; TwoSR <= TwoSL + TwoJ; TwoSR += 2 ) {
                            if ( TwoSR >= 0 ) {
                               const int dimR = denBK->gCurrentDim( index + 2, NR, TwoSR, IR );
                               if ( dimR > 0 ) {
@@ -130,6 +126,36 @@ CheMPS2::CSobject::CSobject( const int index, CheMPS2::SyBookkeeper * denBK )
    }
 }
 
+CheMPS2::CSobject::CSobject( const CSobject * cpy ) : index( cpy->gIndex() ), denBK( cpy->gBK_non_constant() ), Ilocal1( denBK->gIrrep( index ) ), Ilocal2( denBK->gIrrep( index + 1 ) ) {
+   nKappa = cpy->gNKappa();
+
+   sectorNL    = new int[ nKappa ];
+   sectorTwoSL = new int[ nKappa ];
+   sectorIL    = new int[ nKappa ];
+   sectorN1    = new int[ nKappa ];
+   sectorN2    = new int[ nKappa ];
+   sectorTwoJ  = new int[ nKappa ];
+   sectorNR    = new int[ nKappa ];
+   sectorTwoSR = new int[ nKappa ];
+   sectorIR    = new int[ nKappa ];
+   kappa2index = new int[ nKappa + 1 ];
+
+   std::copy( cpy->sectorNL, cpy->sectorNL + nKappa, sectorNL );
+   std::copy( cpy->sectorTwoSL, cpy->sectorTwoSL + nKappa, sectorTwoSL );
+   std::copy( cpy->sectorIL, cpy->sectorIL + nKappa, sectorIL );
+   std::copy( cpy->sectorN1, cpy->sectorN1 + nKappa, sectorN1 );
+   std::copy( cpy->sectorN2, cpy->sectorN2 + nKappa, sectorN2 );
+   std::copy( cpy->sectorTwoJ, cpy->sectorTwoJ + nKappa, sectorTwoJ );
+   std::copy( cpy->sectorNR, cpy->sectorNR + nKappa, sectorNR );
+   std::copy( cpy->sectorTwoSR, cpy->sectorTwoSR + nKappa, sectorTwoSR );
+   std::copy( cpy->sectorIR, cpy->sectorIR + nKappa, sectorIR );
+   std::copy( cpy->kappa2index, cpy->kappa2index + nKappa + 1, kappa2index );
+   storage = new dcomplex[ kappa2index[ nKappa ] ];
+   std::copy( cpy->storage, cpy->storage + kappa2index[ nKappa ], storage );
+   reorder = new int[ nKappa ];
+   std::copy( cpy->reorder, cpy->reorder + nKappa, reorder );
+}
+
 CheMPS2::CSobject::~CSobject() {
    delete[] sectorNL;
    delete[] sectorTwoSL;
@@ -143,6 +169,12 @@ CheMPS2::CSobject::~CSobject() {
    delete[] kappa2index;
    delete[] storage;
    delete[] reorder;
+}
+
+void CheMPS2::CSobject::Clear() {
+   for ( int i = 0; i < kappa2index[ nKappa ]; i++ ) {
+      storage[ i ] = 0.0;
+   }
 }
 
 int CheMPS2::CSobject::gNKappa() const { return nKappa; }
@@ -261,6 +293,113 @@ void CheMPS2::CSobject::Join( CTensorT * Tleft, CTensorT * Tright ) {
    }
 }
 
+void CheMPS2::CSobject::Join( CTensorO * Oleft, CTensorT * Tleft, CTensorT * Tright, CTensorO * Oright ) {
+
+   const bool atLeft  = ( index == 0 ) ? true : false;
+   const bool atRight = ( index == denBK->gL() - 2 ) ? true : false;
+
+   const int DIM_L = std::max( denBK->gMaxDimAtBound( index ), Tleft->gBK()->gMaxDimAtBound( index ) );
+   const int DIM_M = std::max( denBK->gMaxDimAtBound( index + 1 ), Tleft->gBK()->gMaxDimAtBound( index + 1 ) );
+   const int DIM_R = std::max( denBK->gMaxDimAtBound( index + 2 ), Tleft->gBK()->gMaxDimAtBound( index + 2 ) );
+
+   char cotrans = 'C';
+   char notrans = 'N';
+
+#pragma omp parallel
+   {
+      dcomplex * tempA = new dcomplex[ DIM_L * DIM_M ];
+      dcomplex * tempB = new dcomplex[ DIM_M * DIM_R ];
+      dcomplex * tempC = new dcomplex[ DIM_L * DIM_R ];
+
+#pragma omp for schedule( dynamic )
+      for ( int ikappa = 0; ikappa < nKappa; ikappa++ ) {
+         const int NL    = sectorNL[ ikappa ];
+         const int TwoSL = sectorTwoSL[ ikappa ];
+         const int IL    = sectorIL[ ikappa ];
+
+         const int NR    = sectorNR[ ikappa ];
+         const int TwoSR = sectorTwoSR[ ikappa ];
+         const int IR    = sectorIR[ ikappa ];
+
+         const int TwoJ       = sectorTwoJ[ ikappa ];
+         const int N1         = sectorN1[ ikappa ];
+         const int NM         = NL + N1;
+         const int N2         = sectorN2[ ikappa ];
+         const int TwoS1      = ( ( N1 == 1 ) ? 1 : 0 );
+         const int TwoS2      = ( ( N2 == 1 ) ? 1 : 0 );
+         const int TwoJMlower = max( abs( TwoSL - TwoS1 ), abs( TwoSR - TwoS2 ) );
+         const int TwoJMupper = min( ( TwoSL + TwoS1 ), ( TwoSR + TwoS2 ) );
+         const int IM         = ( ( TwoS1 == 1 ) ? Irreps::directProd( IL, Ilocal1 ) : IL );
+         const int fase       = Special::phase( TwoSL + TwoSR + TwoS1 + TwoS2 );
+
+         int dimLU = denBK->gCurrentDim( index, NL, TwoSL, IL );
+         int dimRU = denBK->gCurrentDim( index + 2, NR, TwoSR, IR );
+
+         int dimLD = Tleft->gBK()->gCurrentDim( index, NL, TwoSL, IL );
+         int dimRD = Tleft->gBK()->gCurrentDim( index + 2, NR, TwoSR, IR );
+
+         dcomplex * block_s = storage + kappa2index[ ikappa ];
+         for ( int cnt = 0; cnt < dimLU * dimRU; cnt++ ) {
+            block_s[ cnt ] = 0.0;
+         }
+
+         for ( int TwoJM = TwoJMlower; TwoJM <= TwoJMupper; TwoJM += 2 ) {
+            int dimM = Tleft->gBK()->gCurrentDim( index + 1, NM, TwoJM, IM );
+            if ( dimLD > 0 && dimRD > 0 && dimM > 0 ) {
+
+               if ( !atLeft && !atRight ) {
+
+                  dcomplex * overlap_left  = Oleft->gStorage( NL, TwoSL, IL, NL, TwoSL, IL );
+                  dcomplex * block_left    = Tleft->gStorage( NL, TwoSL, IL, NM, TwoJM, IM );
+                  dcomplex * block_right   = Tright->gStorage( NM, TwoJM, IM, NR, TwoSR, IR );
+                  dcomplex * overlap_right = Oright->gStorage( NR, TwoSR, IR, NR, TwoSR, IR );
+
+                  dcomplex prefactor = fase * sqrt( 1.0 * ( TwoJ + 1 ) * ( TwoJM + 1 ) ) * Wigner::wigner6j( TwoSL, TwoSR, TwoJ, TwoS2, TwoS1, TwoJM );
+                  dcomplex add       = 1.0;
+                  dcomplex noadd     = 0.0;
+                  zgemm_( &notrans, &notrans, &dimLU, &dimM, &dimLD, &prefactor, overlap_left, &dimLU, block_left, &dimLD, &noadd, tempA, &dimLU );
+
+                  prefactor = 1.0;
+                  zgemm_( &notrans, &notrans, &dimLU, &dimRD, &dimM, &prefactor, tempA, &dimLU, block_right, &dimM, &noadd, tempC, &dimLU );
+
+                  zgemm_( &notrans, &cotrans, &dimLU, &dimRU, &dimRD, &prefactor, tempC, &dimLU, overlap_right, &dimRU, &add, block_s, &dimLU );
+               }
+               if ( !atLeft && atRight ) {
+
+                  dcomplex * overlap_left = Oleft->gStorage( NL, TwoSL, IL, NL, TwoSL, IL );
+                  dcomplex * block_left   = Tleft->gStorage( NL, TwoSL, IL, NM, TwoJM, IM );
+                  dcomplex * block_right  = Tright->gStorage( NM, TwoJM, IM, NR, TwoSR, IR );
+
+                  dcomplex prefactor = fase * sqrt( 1.0 * ( TwoJ + 1 ) * ( TwoJM + 1 ) ) * Wigner::wigner6j( TwoSL, TwoSR, TwoJ, TwoS2, TwoS1, TwoJM );
+                  dcomplex add       = 1.0;
+                  dcomplex noadd     = 0.0;
+                  zgemm_( &notrans, &notrans, &dimLU, &dimM, &dimLD, &prefactor, overlap_left, &dimLU, block_left, &dimLD, &noadd, tempA, &dimLU );
+
+                  prefactor = 1.0;
+                  zgemm_( &notrans, &notrans, &dimLU, &dimRD, &dimM, &prefactor, tempA, &dimLU, block_right, &dimM, &add, block_s, &dimLU );
+               }
+               if ( atLeft && !atRight ) {
+                  dcomplex * block_left    = Tleft->gStorage( NL, TwoSL, IL, NM, TwoJM, IM );
+                  dcomplex * block_right   = Tright->gStorage( NM, TwoJM, IM, NR, TwoSR, IR );
+                  dcomplex * overlap_right = Oright->gStorage( NR, TwoSR, IR, NR, TwoSR, IR );
+
+                  dcomplex prefactor = fase * sqrt( 1.0 * ( TwoJ + 1 ) * ( TwoJM + 1 ) ) * Wigner::wigner6j( TwoSL, TwoSR, TwoJ, TwoS2, TwoS1, TwoJM );
+                  dcomplex add       = 1.0;
+                  dcomplex noadd     = 0.0;
+                  zgemm_( &notrans, &notrans, &dimLU, &dimRD, &dimM, &prefactor, block_left, &dimLU, block_right, &dimM, &noadd, tempC, &dimLU );
+
+                  prefactor = 1.0;
+                  zgemm_( &notrans, &cotrans, &dimLU, &dimRU, &dimRD, &prefactor, tempC, &dimLU, overlap_right, &dimRU, &add, block_s, &dimLU );
+               }
+            }
+         }
+      }
+      delete[] tempA;
+      delete[] tempB;
+      delete[] tempC;
+   }
+}
+
 void CheMPS2::CSobject::Join( CTensorO * Oleft, CSobject * innerS, CTensorO * Oright ) {
 
    const bool atLeft  = ( index == 0 ) ? true : false;
@@ -274,11 +413,11 @@ void CheMPS2::CSobject::Join( CTensorO * Oleft, CSobject * innerS, CTensorO * Or
    char cotrans = 'C';
    char notrans = 'N';
 
-   // #pragma omp parallel
+#pragma omp parallel
    {
       dcomplex * temp = new dcomplex[ DIM_L * DIM_R ];
 
-      // #pragma omp for schedule( dynamic )
+#pragma omp for schedule( dynamic )
       for ( int ikappa = 0; ikappa < nKappa; ikappa++ ) {
          const int NL    = sectorNL[ ikappa ];
          const int TwoSL = sectorTwoSL[ ikappa ];
@@ -351,13 +490,17 @@ void CheMPS2::CSobject::Add( dcomplex alpha, CSobject * to_add ) {
    zaxpy_( kappa2index + nKappa, &alpha, to_add->gStorage(), &inc, storage, &inc );
 }
 
+void CheMPS2::CSobject::Multiply( dcomplex alpha ) {
+   int inc = 1;
+   zscal_( kappa2index + nKappa, &alpha, storage, &inc );
+}
+
 double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int virtualdimensionD,
                                  const double cut_off, const bool movingright, const bool change ) {
    // Get the number of central sectors
    int nCenterSectors = 0;
    for ( int NM = denBK->gNmin( index + 1 ); NM <= denBK->gNmax( index + 1 ); NM++ ) {
-      for ( int TwoSM = denBK->gTwoSmin( index + 1, NM );
-            TwoSM <= denBK->gTwoSmax( index + 1, NM ); TwoSM += 2 ) {
+      for ( int TwoSM = denBK->gTwoSmin( index + 1, NM ); TwoSM <= denBK->gTwoSmax( index + 1, NM ); TwoSM += 2 ) {
          for ( int IM = 0; IM < denBK->getNumberOfIrreps(); IM++ ) {
             const int dimM = denBK->gFCIdim( index + 1, NM, TwoSM, IM ); // FCIdim !! Whether possible hence.
             if ( dimM > 0 ) {
@@ -373,8 +516,7 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
    int * SplitSectIM    = new int[ nCenterSectors ];
    nCenterSectors       = 0;
    for ( int NM = denBK->gNmin( index + 1 ); NM <= denBK->gNmax( index + 1 ); NM++ ) {
-      for ( int TwoSM = denBK->gTwoSmin( index + 1, NM );
-            TwoSM <= denBK->gTwoSmax( index + 1, NM ); TwoSM += 2 ) {
+      for ( int TwoSM = denBK->gTwoSmin( index + 1, NM ); TwoSM <= denBK->gTwoSmax( index + 1, NM ); TwoSM += 2 ) {
          for ( int IM = 0; IM < denBK->getNumberOfIrreps(); IM++ ) {
             const int dimM = denBK->gFCIdim( index + 1, NM, TwoSM, IM ); // FCIdim !! Whether possible hence.
             if ( dimM > 0 ) {
@@ -410,8 +552,7 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
       DimLtotal[ iCenter ] = 0;
       for ( int NL = SplitSectNM[ iCenter ] - 2; NL <= SplitSectNM[ iCenter ]; NL++ ) {
          const int TwoS1 = ( ( NL + 1 == SplitSectNM[ iCenter ] ) ? 1 : 0 );
-         for ( int TwoSL = SplitSectTwoJM[ iCenter ] - TwoS1;
-               TwoSL <= SplitSectTwoJM[ iCenter ] + TwoS1; TwoSL += 2 ) {
+         for ( int TwoSL = SplitSectTwoJM[ iCenter ] - TwoS1; TwoSL <= SplitSectTwoJM[ iCenter ] + TwoS1; TwoSL += 2 ) {
             if ( TwoSL >= 0 ) {
                const int IL   = ( ( TwoS1 == 1 ) ? Irreps::directProd( Ilocal1, SplitSectIM[ iCenter ] ) : SplitSectIM[ iCenter ] );
                const int dimL = denBK->gCurrentDim( index, NL, TwoSL, IL );
@@ -454,24 +595,19 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
          }
 
          int dimLtotal2 = 0;
-         for ( int NL = SplitSectNM[ iCenter ] - 2; NL <= SplitSectNM[ iCenter ];
-               NL++ ) {
+         for ( int NL = SplitSectNM[ iCenter ] - 2; NL <= SplitSectNM[ iCenter ]; NL++ ) {
             const int TwoS1 = ( ( NL + 1 == SplitSectNM[ iCenter ] ) ? 1 : 0 );
-            for ( int TwoSL = SplitSectTwoJM[ iCenter ] - TwoS1;
-                  TwoSL <= SplitSectTwoJM[ iCenter ] + TwoS1; TwoSL += 2 ) {
+            for ( int TwoSL = SplitSectTwoJM[ iCenter ] - TwoS1; TwoSL <= SplitSectTwoJM[ iCenter ] + TwoS1; TwoSL += 2 ) {
                if ( TwoSL >= 0 ) {
                   const int IL   = ( ( TwoS1 == 1 ) ? Irreps::directProd( Ilocal1, SplitSectIM[ iCenter ] ) : SplitSectIM[ iCenter ] );
                   const int dimL = denBK->gCurrentDim( index, NL, TwoSL, IL );
                   if ( dimL > 0 ) {
                      int dimRtotal2 = 0;
-                     for ( int NR = SplitSectNM[ iCenter ];
-                           NR <= SplitSectNM[ iCenter ] + 2; NR++ ) {
+                     for ( int NR = SplitSectNM[ iCenter ]; NR <= SplitSectNM[ iCenter ] + 2; NR++ ) {
                         const int TwoS2 = ( ( NR == SplitSectNM[ iCenter ] + 1 ) ? 1 : 0 );
-                        for ( int TwoSR = SplitSectTwoJM[ iCenter ] - TwoS2;
-                              TwoSR <= SplitSectTwoJM[ iCenter ] + TwoS2; TwoSR += 2 ) {
+                        for ( int TwoSR = SplitSectTwoJM[ iCenter ] - TwoS2; TwoSR <= SplitSectTwoJM[ iCenter ] + TwoS2; TwoSR += 2 ) {
                            if ( TwoSR >= 0 ) {
-                              const int IR = ( ( TwoS2 == 1 ) ? Irreps::directProd( Ilocal2, SplitSectIM[ iCenter ] )
-                                                              : SplitSectIM[ iCenter ] );
+                              const int IR   = ( ( TwoS2 == 1 ) ? Irreps::directProd( Ilocal2, SplitSectIM[ iCenter ] ) : SplitSectIM[ iCenter ] );
                               const int dimR = denBK->gCurrentDim( index + 2, NR, TwoSR, IR );
                               if ( dimR > 0 ) {
                                  // Loop over contributing TwoJ's
@@ -481,16 +617,13 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
                                  for ( int TwoJ = TwoJmin; TwoJ <= TwoJmax; TwoJ += 2 ) {
                                     // Calc prefactor
                                     const dcomplex prefactor = fase * sqrt( 1.0 * ( TwoJ + 1 ) * ( TwoSR + 1 ) ) *
-                                                               Wigner::wigner6j( TwoSL, TwoSR, TwoJ, TwoS2, TwoS1,
-                                                                                 SplitSectTwoJM[ iCenter ] );
+                                                               Wigner::wigner6j( TwoSL, TwoSR, TwoJ, TwoS2, TwoS1, SplitSectTwoJM[ iCenter ] );
 
                                     // Add them to mem --> += because several TwoJ
-                                    dcomplex * Block = gStorage( NL, TwoSL, IL, SplitSectNM[ iCenter ] - NL,
-                                                                 NR - SplitSectNM[ iCenter ], TwoJ, NR, TwoSR, IR );
+                                    dcomplex * Block = gStorage( NL, TwoSL, IL, SplitSectNM[ iCenter ] - NL, NR - SplitSectNM[ iCenter ], TwoJ, NR, TwoSR, IR );
                                     for ( int l = 0; l < dimL; l++ ) {
                                        for ( int r = 0; r < dimR; r++ ) {
-                                          mem[ dimLtotal2 + l + DimLtotal[ iCenter ] * ( dimRtotal2 + r ) ] +=
-                                              prefactor * Block[ l + dimL * r ];
+                                          mem[ dimLtotal2 + l + DimLtotal[ iCenter ] * ( dimRtotal2 + r ) ] += prefactor * Block[ l + dimL * r ];
                                        }
                                     }
                                  }
@@ -507,17 +640,14 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
 
          // Now mem contains sqrt((2jR+1)/(2jM+1)) * (TT)^{jM nM IM) --> SVD per
          // central symmetry
-         char jobz = 'S'; // M x min(M,N) in U and min(M,N) x N in VT
-         int lwork = 3 * CenterDims[ iCenter ] + max( max( DimLtotal[ iCenter ], DimRtotal[ iCenter ] ),
-                                                      4 * CenterDims[ iCenter ] * ( CenterDims[ iCenter ] + 1 ) );
+         char jobz       = 'S'; // M x min(M,N) in U and min(M,N) x N in VT
+         int lwork       = 3 * CenterDims[ iCenter ] + max( max( DimLtotal[ iCenter ], DimRtotal[ iCenter ] ), 4 * CenterDims[ iCenter ] * ( CenterDims[ iCenter ] + 1 ) );
          double * rwork  = new double[ 5 * CenterDims[ iCenter ] * CenterDims[ iCenter ] + 7 * CenterDims[ iCenter ] ];
          dcomplex * work = new dcomplex[ lwork ];
          int * iwork     = new int[ 8 * CenterDims[ iCenter ] ];
          int info;
 
-         // dgesdd is not thread-safe in every implementation ( intel MKL is safe,
-         // Atlas
-         // is not safe )
+         // dgesdd is not thread-safe in every implementation ( intel MKL is safe, Atlas is not safe )
          zgesdd_( &jobz, DimLtotal + iCenter, DimRtotal + iCenter, mem, DimLtotal + iCenter,
                   Lambdas[ iCenter ], Us[ iCenter ], DimLtotal + iCenter, VTs[ iCenter ],
                   CenterDims + iCenter, work, &lwork, rwork, iwork, &info );
@@ -594,17 +724,15 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
             }
          }
          discardedWeight = discardedSum / totalSum;
-
-         // Clean-up
-         delete[] values;
       }
+
+      // Clean-up
+      delete[] values;
 
       // Check if there is a sector which differs
       updateSectors = 0;
       for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
-         const int MPSdim =
-             denBK->gCurrentDim( index + 1, SplitSectNM[ iCenter ],
-                                 SplitSectTwoJM[ iCenter ], SplitSectIM[ iCenter ] );
+         const int MPSdim = denBK->gCurrentDim( index + 1, SplitSectNM[ iCenter ], SplitSectTwoJM[ iCenter ], SplitSectIM[ iCenter ] );
          if ( NewDims[ iCenter ] != MPSdim ) {
             updateSectors = 1;
          }
@@ -630,17 +758,14 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
       if ( dimM > 0 ) {
          // U-part: copy
          int dimLtotal2 = 0;
-         for ( int NL = SplitSectNM[ iCenter ] - 2; NL <= SplitSectNM[ iCenter ];
-               NL++ ) {
+         for ( int NL = SplitSectNM[ iCenter ] - 2; NL <= SplitSectNM[ iCenter ]; NL++ ) {
             const int TwoS1 = ( ( NL + 1 == SplitSectNM[ iCenter ] ) ? 1 : 0 );
             for ( int TwoSL = SplitSectTwoJM[ iCenter ] - TwoS1; TwoSL <= SplitSectTwoJM[ iCenter ] + TwoS1; TwoSL += 2 ) {
                if ( TwoSL >= 0 ) {
-                  const int IL = ( ( TwoS1 == 1 ) ? Irreps::directProd( Ilocal1, SplitSectIM[ iCenter ] )
-                                                  : SplitSectIM[ iCenter ] );
+                  const int IL   = ( ( TwoS1 == 1 ) ? Irreps::directProd( Ilocal1, SplitSectIM[ iCenter ] ) : SplitSectIM[ iCenter ] );
                   const int dimL = denBK->gCurrentDim( index, NL, TwoSL, IL );
                   if ( dimL > 0 ) {
-                     dcomplex * TleftBlock = Tleft->gStorage( NL, TwoSL, IL, SplitSectNM[ iCenter ], SplitSectTwoJM[ iCenter ],
-                                                              SplitSectIM[ iCenter ] );
+                     dcomplex * TleftBlock           = Tleft->gStorage( NL, TwoSL, IL, SplitSectNM[ iCenter ], SplitSectTwoJM[ iCenter ], SplitSectIM[ iCenter ] );
                      const int dimension_limit_right = min( dimM, CenterDims[ iCenter ] );
                      for ( int r = 0; r < dimension_limit_right; r++ ) {
                         const dcomplex factor = ( ( movingright ) ? 1.0 : Lambdas[ iCenter ][ r ] );
@@ -665,12 +790,11 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
             const int TwoS2 = ( ( NR == SplitSectNM[ iCenter ] + 1 ) ? 1 : 0 );
             for ( int TwoSR = SplitSectTwoJM[ iCenter ] - TwoS2; TwoSR <= SplitSectTwoJM[ iCenter ] + TwoS2; TwoSR += 2 ) {
                if ( TwoSR >= 0 ) {
-                  const int IR = ( ( TwoS2 == 1 ) ? Irreps::directProd( Ilocal2, SplitSectIM[ iCenter ] )
+                  const int IR   = ( ( TwoS2 == 1 ) ? Irreps::directProd( Ilocal2, SplitSectIM[ iCenter ] )
                                                   : SplitSectIM[ iCenter ] );
                   const int dimR = denBK->gCurrentDim( index + 2, NR, TwoSR, IR );
                   if ( dimR > 0 ) {
-                     dcomplex * TrightBlock = Tright->gStorage( SplitSectNM[ iCenter ], SplitSectTwoJM[ iCenter ],
-                                                                SplitSectIM[ iCenter ], NR, TwoSR, IR );
+                     dcomplex * TrightBlock         = Tright->gStorage( SplitSectNM[ iCenter ], SplitSectTwoJM[ iCenter ], SplitSectIM[ iCenter ], NR, TwoSR, IR );
                      const int dimension_limit_left = min( dimM, CenterDims[ iCenter ] );
                      const dcomplex factor_base     = sqrt( ( SplitSectTwoJM[ iCenter ] + 1.0 ) / ( TwoSR + 1 ) );
                      for ( int l = 0; l < dimension_limit_left; l++ ) {

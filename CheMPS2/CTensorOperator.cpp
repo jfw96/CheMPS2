@@ -33,8 +33,7 @@ CheMPS2::CTensorOperator::CTensorOperator(
 
    nKappa = 0;
    for ( int n_up = bk_up->gNmin( index ); n_up <= bk_up->gNmax( index ); n_up++ ) {
-      for ( int TwoSU = bk_up->gTwoSmin( index, n_up );
-            TwoSU <= bk_up->gTwoSmax( index, n_up ); TwoSU += 2 ) {
+      for ( int TwoSU = bk_up->gTwoSmin( index, n_up ); TwoSU <= bk_up->gTwoSmax( index, n_up ); TwoSU += 2 ) {
          for ( int IRU = 0; IRU < bk_up->getNumberOfIrreps(); IRU++ ) {
             const int dimU = bk_up->gCurrentDim( index, n_up, TwoSU, IRU );
             if ( dimU > 0 ) {
@@ -511,7 +510,37 @@ dcomplex CheMPS2::CTensorOperator::inproduct( CTensorOperator * buddy, const cha
    int inc        = 1;
 
    if ( trans == 'N' ) {
-      zdotc_( kappa2index + nKappa, storage, &inc, buddy->gStorage(), &inc );
+      for ( int ikappa = 0; ikappa < nKappa; ikappa++ ) {
+         const int N     = sector_nelec_up[ ikappa ];
+         const int TwoJU = sector_spin_up[ ikappa ];
+         const int TwoJD = sector_spin_down[ ikappa ];
+         const int IRU   = sector_irrep_up[ ikappa ];
+         const int IRD   = Irreps::directProd( IRU, n_irrep );
+
+         dcomplex * my_block    = storage + kappa2index[ ikappa ];
+         dcomplex * buddy_block = buddy->gStorage( N, TwoJD, IRD, N, TwoJU, IRU );
+
+         int dimU = bk_up->gCurrentDim( index, N, TwoJU, IRU );
+         int dimD = bk_down->gCurrentDim( index, N, TwoJD, IRD );
+
+         if ( dimU > 0 && dimD > 0 ) {
+            char cotrans       = 'C';
+            char notrans       = 'N';
+            dcomplex beta      = 0.0;             // set
+            dcomplex alpha     = ( TwoJU + 1.0 ); // add
+            dcomplex * workmem = new dcomplex[ dimU * dimU ];
+            zgemm_( &notrans, &cotrans, &dimU, &dimU, &dimD, &alpha, my_block, &dimU, buddy_block, &dimU, &beta, workmem, &dimU );
+            for ( int i = 0; i < dimU; i++ ) {
+               for ( int j = 0; j < dimU; j++ ) {
+                  if ( i == j ) {
+                     value += workmem[ j + dimU * i ];
+                  }
+               }
+            }
+         }
+      }
+
+      // value = zdotc_( kappa2index + nKappa, storage, &inc, buddy->gStorage(), &inc );
    } else {
       assert( n_elec == 0 );
       for ( int ikappa = 0; ikappa < nKappa; ikappa++ ) {
@@ -535,8 +564,7 @@ dcomplex CheMPS2::CTensorOperator::inproduct( CTensorOperator * buddy, const cha
                }
             }
 
-            const dcomplex prefactor =
-                ( ( get_2j() == 0 ) ? 1.0 : ( sqrt( ( TwoJU + 1.0 ) / ( TwoJD + 1 ) ) * Special::phase( TwoJU - TwoJD ) ) );
+            const dcomplex prefactor = ( ( get_2j() == 0 ) ? 1.0 : ( sqrt( ( TwoJU + 1.0 ) / ( TwoJD + 1 ) ) * Special::phase( TwoJU - TwoJD ) ) );
             value += prefactor * temp;
          }
       }

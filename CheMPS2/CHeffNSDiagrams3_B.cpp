@@ -632,7 +632,7 @@ void CheMPS2::CHeffNS::addDiagram3Land3G( const int ikappa, dcomplex * memHeff, 
                         }
                      }
 
-                     zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor,  denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+                     zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
                   }
                }
             }
@@ -656,7 +656,7 @@ void CheMPS2::CHeffNS::addDiagram3Land3G( const int ikappa, dcomplex * memHeff, 
                      dcomplex factor   = sqrt( ( TwoJdown + 1 ) * ( TwoSRdown + 1.0 ) ) * fase * Wigner::wigner6j( TwoJdown, TwoS1, 1, TwoSR, TwoSRdown, TwoSL );
                      dcomplex beta     = 1.0; //add
                      dcomplex * BlockQ = Qright->gStorage( NR, TwoSR, IR, NR + 1, TwoSRdown, IRdown );
-                     zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor,  denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, BlockQ, &dimRup, &beta, memHeff, &dimL );
+                     zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, BlockQ, &dimRup, &beta, memHeff, &dimL );
                   }
                }
             }
@@ -687,7 +687,7 @@ void CheMPS2::CHeffNS::addDiagram3Land3G( const int ikappa, dcomplex * memHeff, 
                   }
                }
 
-               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor,  denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
+               zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &factor, denS->gStorage() + denS->gKappa2index( memSkappa ), &dimL, temp, &dimRup, &beta, memHeff, &dimL );
             }
          }
       }

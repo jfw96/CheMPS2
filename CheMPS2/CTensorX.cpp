@@ -19,7 +19,7 @@ CheMPS2::CTensorX::CTensorX( const int boundary_index, const bool moving_right, 
                        false,          // jw_phase (four 2nd quantized operators)
                        bk_up,          // upper bookkeeper
                        bk_down         // lower bookeeper
-                       ) {
+      ) {
    this->Prob = Prob;
 }
 
@@ -43,7 +43,7 @@ void CheMPS2::CTensorX::update( CTensorT * denTup, CTensorT * denTdown ) {
 
 void CheMPS2::CTensorX::update( CTensorT * denTup, CTensorT * denTdown, CTensorO * overlap,
                                 CTensorL ** Ltensors, CTensorLT ** LtensorsT,
-                                CTensorX * Xtensor, CTensorQ * Qtensor, CTensorQT * QtensorT,
+                                CTensorOperator * Xtensor, CTensorQ * Qtensor, CTensorQT * QtensorT,
                                 CTensorOperator * Atensor, CTensorOperator * AtensorT,
                                 CTensorOperator * CtensorT, CTensorOperator * DtensorT ) {
    clear();
@@ -665,12 +665,12 @@ void CheMPS2::CTensorX::addTermQTLTLeft( const int ikappa, CTensorT * denTup, CT
             dcomplex * ptr;
             dcomplex * ptrTmp;
             if ( geval < 2 ) {
-               factor = ( TwoSRU + 1.0 ) / ( TwoSLU + 1.0 );
+               factor = ( TwoSRU + 1.0 ) / ( TwoSLD + 1.0 );
                ptr    = BlockQ;
 
             } else {
                int fase = ( ( ( ( TwoSLU + 1 - TwoSRD ) / 2 ) % 2 ) != 0 ) ? -1 : 1;
-               factor   = fase * sqrt( ( TwoSRD + 1.0 ) / ( TwoSLU + 1.0 ) );
+               factor   = fase * sqrt( ( TwoSRD + 1.0 ) / ( TwoSLD + 1.0 ) );
 
                int dimRUD = dimRU * dimRD;
                ptrTmp     = workmemRR;

@@ -35,7 +35,7 @@ namespace CheMPS2 {
       \param ProbIn The Problem that contains the Hamiltonian
       \param dvdson_rtol_in The residual tolerance for the DMRG Davidson
      iterations */
-      CHeffNS( const SyBookkeeper * bk_upIn, const SyBookkeeper * bk_downIn, const Problem * ProbIn );
+      CHeffNS( const SyBookkeeper * bk_upIn, const SyBookkeeper * bk_downIn, const Problem * ProbIn, const dcomplex offsetEnergyIn );
 
       void Apply( CSobject * denS, CSobject * denP, CTensorL *** Ltensors,
                   CTensorLT *** LtensorsT, CTensorOperator **** Atensors,
@@ -70,6 +70,8 @@ namespace CheMPS2 {
       // The Problem (and hence Hamiltonian)
       const CheMPS2::Problem * Prob;
 
+      const dcomplex offsetEnergy;
+
       void makeHeff( CSobject * denS, CSobject * denP, CTensorL *** Ltensors,
                      CTensorLT *** LtensorsT, CTensorOperator **** Atensors,
                      CTensorOperator **** AtensorsT, CTensorOperator **** Btensors,
@@ -83,6 +85,10 @@ namespace CheMPS2 {
                      CTensorQT *** QtensorsT, CTensorX ** Xtensors, CTensorO * OtensorsL,
                      CTensorO * OtensorsR );
 
+      //The diagrams: Type 0/5
+      void addDiagram0A( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, dcomplex Helem_links );
+
+      //The diagrams: Type 1/5
       void addDiagram1A( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorX * Xleft );
       void addDiagram1B( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, CTensorX * Xright );
       void addDiagram1C( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, dcomplex Helem_links );

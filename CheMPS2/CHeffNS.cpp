@@ -10,8 +10,8 @@
 #include "Lapack.h"
 #include "MPIchemps2.h"
 
-CheMPS2::CHeffNS::CHeffNS( const SyBookkeeper * bk_upIn, const SyBookkeeper * bk_downIn, const Problem * ProbIn )
-    : bk_up( bk_upIn ), bk_down( bk_downIn ), Prob( ProbIn ) {}
+CheMPS2::CHeffNS::CHeffNS( const SyBookkeeper * bk_upIn, const SyBookkeeper * bk_downIn, const Problem * ProbIn, const dcomplex offsetEnergyIn )
+    : bk_up( bk_upIn ), bk_down( bk_downIn ), Prob( ProbIn ), offsetEnergy( offsetEnergyIn ) {}
 
 CheMPS2::CHeffNS::~CHeffNS() {}
 
@@ -74,6 +74,7 @@ void CheMPS2::CHeffNS::makeHeff( CSobject * denS, CSobject * denP,
          for ( int cnt = 0; cnt < dimLD * dimRD; cnt++ ) {
             memLDxRD[ cnt ] = 0.0;
          }
+         //  addDiagram0A( ikappa, memLDxRD, denS, denP, offsetEnergy );
          addDiagram1C( ikappa, memLDxRD, denS, denP, Prob->gMxElement( indexS, indexS, indexS, indexS ) );
          addDiagram1D( ikappa, memLDxRD, denS, denP, Prob->gMxElement( indexS + 1, indexS + 1, indexS + 1, indexS + 1 ) );
 

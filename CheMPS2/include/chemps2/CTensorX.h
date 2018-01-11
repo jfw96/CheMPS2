@@ -43,7 +43,7 @@ namespace CheMPS2 {
       \param Ctensor The previous C-tensor
       \param Dtensor The previous D-tensor */
       void update( CTensorT * denTup, CTensorT * denTdown, CTensorO * overlap, CTensorL ** Ltensors,
-                   CTensorLT ** LtensorsT, CTensorX * Xtensor, CTensorQ * Qtensor, CTensorQT * QtensorT,
+                   CTensorLT ** LtensorsT, CTensorOperator * Xtensor, CTensorQ * Qtensor, CTensorQT * QtensorT,
                    CTensorOperator * Atensor, CTensorOperator * ATtensor, CTensorOperator * CtensorT,
                    CTensorOperator * DtensorT );
 

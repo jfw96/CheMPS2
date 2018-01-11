@@ -39,6 +39,8 @@ namespace CheMPS2 {
              \param denBK The symmetry bookkeeper of the MPS */
       CTensorT( const int site_index, const SyBookkeeper * denBK );
 
+      CTensorT( CTensorT * cpy );
+
       //! Destructor
       virtual ~CTensorT();
 
@@ -81,7 +83,15 @@ namespace CheMPS2 {
 
       int gNL( const int kappa ) const { return sectorNL[ kappa ]; }
 
+      int gTwoSL( const int kappa ) const { return sectorTwoSL[ kappa ]; }
+
+      int gIL( const int kappa ) const { return sectorIL[ kappa ]; }
+
       int gNR( const int kappa ) const { return sectorNR[ kappa ]; }
+
+      int gTwoSR( const int kappa ) const { return sectorTwoSR[ kappa ]; }
+
+      int gIR( const int kappa ) const { return sectorIR[ kappa ]; }
 
       //! Get the pointer to the symmetry bookkeeper
       /** \return the pointer to the symmetry bookkeeper */
@@ -109,11 +119,11 @@ namespace CheMPS2 {
 
       //! Multiply at the left with a diagonal TensorOperator
       /** \param Mx The diagonal TensorOperator with which the current CTensorT should be multiplied at the left */
-      void LeftMultiply( CTensor * Mx );
+      void LeftMultiply( CTensor * Mx, char * trans );
 
       //! Multiply at the right with a diagonal TensorOperator
       /** \param Mx The diagonal TensorOperator with which the current CTensorT should be multiplied at the right */
-      void RightMultiply( CTensor * Mx );
+      void RightMultiply( CTensor * Mx, char * trans );
 
       //! Reset the CTensorT (if virtual dimensions are changed)
       void Reset();
@@ -165,6 +175,6 @@ namespace CheMPS2 {
    double norm( CTensorT ** mps );
 
    std::ostream & operator<<( std::ostream & os, const CheMPS2::CTensorT & tns );
-}
+} // namespace CheMPS2
 
 #endif
