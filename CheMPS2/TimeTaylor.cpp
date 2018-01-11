@@ -852,10 +852,8 @@ void CheMPS2::TimeTaylor::fitApplyH_1site( CTensorT ** mpsIn, SyBookkeeper * bkI
                       Qtensors, QtensorsT,
                       Xtensors, Otensors, false );
          delete heff;
-         //    std::cout << *mpsOut[ site ] << std::endl;
          right_normalize( mpsOut[ site - 1 ], mpsOut[ site ] );
          updateMovingLeftSafe( site - 1, mpsOut, bkOut, mpsIn, bkIn );
-         std::cout << i << " " << site << " " << overlap( mpsIn, mpsOut ) << std::endl;
       }
 
       for ( int site = 0; site < L - 1; site++ ) {
@@ -877,80 +875,8 @@ void CheMPS2::TimeTaylor::fitApplyH_1site( CTensorT ** mpsIn, SyBookkeeper * bkI
 
          left_normalize( mpsOut[ site ], mpsOut[ site + 1 ] );
          updateMovingRightSafe( site, mpsOut, bkOut, mpsIn, bkIn );
-         std::cout << i << " " << site << " " << overlap( mpsIn, mpsOut ) << std::endl;
       }
-      std::cout << i << " " << overlap( mpsIn, mpsOut ) << std::endl;
    }
-
-   // for ( int index = L - 1; index > 0; index-- ) {
-   //    right_normalize( mpsOut[ index - 1 ], mpsOut[ index ] );
-   //    // right_normalize( mpsIn[ index - 1 ], mpsIn[ index ] );
-   // }
-   // right_normalize( NULL, mpsOut[ 0 ] );
-   // // right_normalize( NULL, mpsIn[ 0 ] );
-
-   // for ( int cnt = L - 1; cnt > 0; cnt-- ) {
-   //    updateMovingLeftSafe( cnt - 1, mpsOut, bkOut, mpsIn, bkIn );
-   // }
-
-   // CTensorX * first = new CTensorX( 0, false, bkOut, bkIn, prob );
-   // first->update( mpsOut[ 0 ], mpsIn[ 0 ], Otensors[ 0 ],
-   //                Ltensors[ 0 ], LtensorsT[ 0 ], Xtensors[ 0 ],
-   //                Qtensors[ 0 ][ 0 ], QtensorsT[ 0 ][ 0 ],
-   //                Atensors[ 0 ][ 0 ][ 0 ], AtensorsT[ 0 ][ 0 ][ 0 ],
-   //                CtensorsT[ 0 ][ 0 ][ 0 ], DtensorsT[ 0 ][ 0 ][ 0 ] );
-   // std::cout << "first->inproduct( Xtensors[ 0 ], 'N' )" << std::endl;
-   // std::cout << *first << std::endl;
-
-   // // for ( int i = 0; i < nSweeps; ++i ) {
-   // //    for ( int site = 0; site < L - 1; site++ ) {
-
-   // //       CHeffNS_1S * heff = new CHeffNS_1S( bkOut, bkIn, prob );
-   // //       heff->Apply( mpsIn[ site ], mpsOut[ site ],
-   // //                    Ltensors, LtensorsT,
-   // //                    Atensors, AtensorsT,
-   // //                    Btensors, BtensorsT,
-   // //                    Ctensors, CtensorsT,
-   // //                    Dtensors, DtensorsT,
-   // //                    S0tensors, S0tensorsT,
-   // //                    S1tensors, S1tensorsT,
-   // //                    F0tensors, F0tensorsT,
-   // //                    F1tensors, F1tensorsT,
-   // //                    Qtensors, QtensorsT,
-   // //                    Xtensors, Otensors, true );
-
-   // //       delete heff;
-   // //       left_normalize( mpsOut[ site ], mpsOut[ site + 1 ] );
-   // //       left_normalize( mpsIn[ site ], mpsIn[ site + 1 ] );
-   // //       updateMovingRightSafe( site, mpsOut, bkOut, mpsIn, bkIn );
-   // //       std::cout << i << " " << site << " " << overlap( mpsIn, mpsOut ) << " " << overlap( mpsOut, mpsOut ) << std::endl;
-   // //    }
-
-   // //    for ( int site = L - 1; site > 0; site-- ) {
-
-   // //       CHeffNS_1S * heff = new CHeffNS_1S( bkOut, bkIn, prob );
-
-   // //       heff->Apply( mpsIn[ site ], mpsOut[ site ],
-   // //                    Ltensors, LtensorsT,
-   // //                    Atensors, AtensorsT,
-   // //                    Btensors, BtensorsT,
-   // //                    Ctensors, CtensorsT,
-   // //                    Dtensors, DtensorsT,
-   // //                    S0tensors, S0tensorsT,
-   // //                    S1tensors, S1tensorsT,
-   // //                    F0tensors, F0tensorsT,
-   // //                    F1tensors, F1tensorsT,
-   // //                    Qtensors, QtensorsT,
-   // //                    Xtensors, Otensors, false );
-   // //       delete heff;
-
-   // //       std::cout << i << " " << site << " " << overlap( mpsIn, mpsOut ) << " " << overlap( mpsOut, mpsOut ) << std::endl;
-   // //       right_normalize( mpsOut[ site - 1 ], mpsOut[ site ] );
-   // //       right_normalize( mpsIn[ site - 1 ], mpsIn[ site ] );
-   // //       updateMovingLeftSafe( site - 1, mpsOut, bkOut, mpsIn, bkIn );
-   // //    }
-   // //    // std::cout << i << " " << overlap( mpsIn, mpsOut ) << std::endl;
-   // // }
 }
 
 void CheMPS2::TimeTaylor::fitApplyH( dcomplex factor, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut, const int nSweeps, const int D, const double cut_off ) {
@@ -982,7 +908,6 @@ void CheMPS2::TimeTaylor::fitApplyH( dcomplex factor, const double offset, CTens
                       Xtensors, leftOverlapA, rightOverlapA );
 
          double disc = denPB->Split( mpsOut[ site ], mpsOut[ site + 1 ], D, cut_off, false, false );
-         std::cout << i << " " << site << " " << overlap( mpsIn, mpsOut ) << " " << overlap( mpsOut, mpsOut ) << std::endl;
          delete heff;
          delete denPB;
          delete denSB;
@@ -1007,14 +932,12 @@ void CheMPS2::TimeTaylor::fitApplyH( dcomplex factor, const double offset, CTens
                       Xtensors, leftOverlapA, rightOverlapA );
 
          double disc = denPB->Split( mpsOut[ site ], mpsOut[ site + 1 ], D, cut_off, true, false );
-         std::cout << i << " " << site << " " << overlap( mpsIn, mpsOut ) << std::endl;
          delete heff;
          delete denPB;
          delete denSB;
 
          updateMovingRightSafe( site, mpsOut, bkOut, mpsIn, bkIn );
       }
-      std::cout << i << " " << overlap( mpsIn, mpsOut ) << std::endl;
    }
 }
 
@@ -1023,6 +946,12 @@ void CheMPS2::TimeTaylor::fitAddMPS( dcomplex factor,
                                      CTensorT ** mpsB, SyBookkeeper * bkB,
                                      CTensorT ** mpsOut, SyBookkeeper * bkOut,
                                      const int nSweeps, const int D, const double cut_off ) {
+
+   for ( int index = 0; index < L - 1; index++ ) {
+      left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
+   }
+   left_normalize( mpsOut[ L - 1 ], NULL );
+
    CTensorO ** OtensorsA = new CTensorO *[ L - 1 ];
    CTensorO ** OtensorsB = new CTensorO *[ L - 1 ];
 
@@ -1081,7 +1010,7 @@ void CheMPS2::TimeTaylor::fitAddMPS( dcomplex factor,
          CTensorO * rightOverlapB = ( site + 2 ) < L ? OtensorsB[ site + 1 ] : NULL;
 
          CSobject * denSA = new CSobject( site, bkOut );
-         denSA->Join( leftOverlapA, mpsA[ site ], mpsA[ site + 1 ], rightOverlapB );
+         denSA->Join( leftOverlapA, mpsA[ site ], mpsA[ site + 1 ], rightOverlapA );
 
          CSobject * denSB = new CSobject( site, bkOut );
          denSB->Join( leftOverlapB, mpsB[ site ], mpsB[ site + 1 ], rightOverlapB );
@@ -1214,10 +1143,13 @@ void CheMPS2::TimeTaylor::doStep_euler_g( const int currentInstruction, const bo
       HPsi[ index ] = new CheMPS2::CTensorT( index, denHPsi );
       HPsi[ index ]->random();
    }
-   const dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
+   dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
 
-   fitApplyH( step, offset, mpsIn, bkIn, HPsi, denHPsi );
-   fitAddMPS( 1.0, mpsIn, bkIn, HPsi, denHPsi, mpsOut, bkOut );
+   // fitApplyH( step, offset, mpsIn, bkIn, HPsi, denHPsi );
+   // fitApplyH_1site( mpsIn, bkIn, HPsi, denHPsi, 5 );
+
+   fitApplyH_1site( mpsIn, bkIn, HPsi, denHPsi, 5 );
+   fitAddMPS( step, mpsIn, bkIn, HPsi, denHPsi, mpsOut, bkOut );
 
    for ( int idx = 0; idx < prob->gL(); idx++ ) {
       delete HPsi[ idx ];
@@ -1316,72 +1248,7 @@ void CheMPS2::TimeTaylor::doStep_taylor_1site( const int currentInstruction, con
 
          left_normalize( mpsOut[ site ], mpsOut[ site + 1 ] );
          updateMovingRightSafe( site, mpsOut, bkOut, mpsIn, bkIn );
-         // std::cout << i << " " << site << " " << overlap( mpsIn, mpsOut ) << std::endl;
       }
-
-      // for ( int cnt = 0; cnt < L - 1; cnt++ ) {
-      //    updateMovingRightSafe( cnt, mpsOut, bkOut, mpsIn, bkIn );
-      // }
-
-      // for ( int i = 0; i < scheme->get_max_sweeps( currentInstruction ); ++i ) {
-      //    for ( int site = L - 2; site > 0; site-- ) {
-      //       CSobject * denSB = new CSobject( site, bkIn );
-      //       denSB->Join( mpsIn[ site ], mpsIn[ site + 1 ] );
-
-      //       CSobject * denPA         = new CSobject( site, bkOut );
-      //       CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? Otensors[ site - 1 ] : NULL;
-      //       CTensorO * rightOverlapA = ( site + 2 ) < L ? Otensors[ site + 1 ] : NULL;
-      //       denPA->Join( leftOverlapA, denSB, rightOverlapA );
-
-      //       CSobject * denPB = new CSobject( site, bkOut );
-
-      //       CHeffNS * heff = new CHeffNS( bkOut, bkIn, prob, offset );
-      //       heff->Apply( denSB, denPB, Ltensors, LtensorsT, Atensors, AtensorsT,
-      //                    Btensors, BtensorsT, Ctensors, CtensorsT, Dtensors, DtensorsT,
-      //                    S0tensors, S0tensorsT, S1tensors, S1tensorsT, F0tensors,
-      //                    F0tensorsT, F1tensors, F1tensorsT, Qtensors, QtensorsT,
-      //                    Xtensors, leftOverlapA, rightOverlapA );
-
-      //       denPA->Add( step, denPB );
-      //       double disc = denPA->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( currentInstruction ), scheme->get_cut_off( currentInstruction ), false, true );
-
-      //       delete heff;
-      //       delete denPA;
-      //       delete denPB;
-      //       delete denSB;
-
-      //       updateMovingLeftSafe( site, mpsOut, bkOut, mpsIn, bkIn );
-      //    }
-
-      //    for ( int site = 0; site < L - 2; site++ ) {
-      //       CSobject * denSB = new CSobject( site, bkIn );
-      //       denSB->Join( mpsIn[ site ], mpsIn[ site + 1 ] );
-
-      //       CSobject * denPA         = new CSobject( site, bkOut );
-      //       CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? Otensors[ site - 1 ] : NULL;
-      //       CTensorO * rightOverlapA = ( site + 2 ) < L ? Otensors[ site + 1 ] : NULL;
-      //       denPA->Join( leftOverlapA, denSB, rightOverlapA );
-
-      //       CSobject * denPB = new CSobject( site, bkOut );
-
-      //       CHeffNS * heff = new CHeffNS( bkOut, bkIn, prob, offset );
-      //       heff->Apply( denSB, denPB, Ltensors, LtensorsT, Atensors, AtensorsT,
-      //                    Btensors, BtensorsT, Ctensors, CtensorsT, Dtensors, DtensorsT,
-      //                    S0tensors, S0tensorsT, S1tensors, S1tensorsT, F0tensors,
-      //                    F0tensorsT, F1tensors, F1tensorsT, Qtensors, QtensorsT,
-      //                    Xtensors, leftOverlapA, rightOverlapA );
-
-      //       denPA->Add( step, denPB );
-      //       double disc = denPA->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( currentInstruction ), scheme->get_cut_off( currentInstruction ), true, true );
-
-      //       delete heff;
-      //       delete denPA;
-      //       delete denPB;
-      //       delete denSB;
-
-      //       updateMovingRightSafe( site, mpsOut, bkOut, mpsIn, bkIn );
-      //    }
-      // }
    }
 }
 void CheMPS2::TimeTaylor::doStep_taylor_1( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
@@ -1592,8 +1459,8 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          }
          double normDT2 = norm( initMPS );
          initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
-         // doStep_taylor_1( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
-         doStep_taylor_1site( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
+         doStep_taylor_1( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
+         // doStep_taylor_1site( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
          // abort();
          // doStep_euler_g( inst, doImaginary, firstEnergy, initMPS, initBK, MPSDT, denBKDT );
          // doStep_rk_4( inst, doImaginary, firstEnergy );

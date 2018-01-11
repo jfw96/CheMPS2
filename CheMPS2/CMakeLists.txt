@@ -93,7 +93,6 @@ set (CHEMPS2LIB_SOURCE_FILES "CASPT2.cpp"
                              "ThreeDM.cpp"
                              "TwoDM.cpp"
                              "CTwoDM.cpp"
-                             "TwoDMBuilder.cpp"
                              "CTwoDMBuilder.cpp"
                              "TwoIndex.cpp"
                              "Wigner.cpp")
