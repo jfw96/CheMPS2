@@ -12,3 +12,7 @@ PyCheMPS2/tests/*.h5
 integrals/molcas/a.out
 integrals/molcas/molcas_*.h5
 
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/settings.json
+.vscode/tags
