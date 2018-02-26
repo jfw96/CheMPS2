@@ -120,8 +120,6 @@ namespace CheMPS2 {
       void doStep_rk_4( const int currentInstruction, const bool doImaginary, const double offset );
       void doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
 
-      void left_normalize( CTensorT * left_mps, CTensorT * right_mps ) const;
-      void right_normalize( CTensorT * left_mps, CTensorT * right_mps ) const;
    };
 } // namespace CheMPS2
 

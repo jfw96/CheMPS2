@@ -662,3 +662,51 @@ dcomplex CheMPS2::overlap( CTensorT ** mpsA, CTensorT ** mpsB ) {
 double CheMPS2::norm( CTensorT ** mps ) {
    return std::real( sqrt( overlap( mps, mps ) ) );
 }
+
+void CheMPS2::left_normalize( CTensorT * left_mps, CTensorT * right_mps ) {
+
+#ifdef CHEPsi2_MPI_COMPILATION
+   const bool am_i_master = ( MPIchemps2::mpi_rank() == MPI_CHEPsi2_MASTER );
+#else
+   const bool am_i_master = true;
+#endif
+
+   if ( am_i_master ) {
+      const int siteindex        = left_mps->gIndex();
+      const SyBookkeeper * theBK = left_mps->gBK();
+      // (J,N,I) = (0,0,0) and (moving_right, prime_last, jw_phase) = (true, true, false)
+      CTensorOperator * temp = new CTensorOperator( siteindex + 1, 0, 0, 0, true, true, false, theBK, theBK );
+      left_mps->QR( temp );
+      char notrans = 'N';
+      if ( right_mps != NULL ) { right_mps->LeftMultiply( temp, &notrans ); }
+      delete temp;
+   }
+#ifdef CHEPsi2_MPI_COMPILATION
+   MPIchemps2::broadcast_tensor( left_mps, MPI_CHEPsi2_MASTER );
+   if ( right_mps != NULL ) { MPIchemps2::broadcast_tensor( right_mps, MPI_CHEPsi2_MASTER ); }
+#endif
+}
+
+void CheMPS2::right_normalize( CTensorT * left_mps, CTensorT * right_mps ) {
+
+#ifdef CHEPsi2_MPI_COMPILATION
+   const bool am_i_master = ( MPIchemps2::mpi_rank() == MPI_CHEPsi2_MASTER );
+#else
+   const bool am_i_master = true;
+#endif
+
+   if ( am_i_master ) {
+      const int siteindex        = right_mps->gIndex();
+      const SyBookkeeper * theBK = right_mps->gBK();
+      // (J,N,I) = (0,0,0) and (moving_right, prime_last, jw_phase) = (true, true, false)
+      CTensorOperator * temp = new CTensorOperator( siteindex, 0, 0, 0, true, true, false, theBK, theBK );
+      right_mps->LQ( temp );
+      char cotrans = 'C';
+      if ( left_mps != NULL ) { left_mps->RightMultiply( temp, &cotrans ); }
+      delete temp;
+   }
+#ifdef CHEPsi2_MPI_COMPILATION
+   MPIchemps2::broadcast_tensor( right_mps, MPI_CHEPsi2_MASTER );
+   if ( left_mps != NULL ) { MPIchemps2::broadcast_tensor( left_mps, MPI_CHEPsi2_MASTER ); }
+#endif
+}
