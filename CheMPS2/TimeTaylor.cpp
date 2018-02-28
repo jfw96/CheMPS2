@@ -1056,12 +1056,85 @@ void CheMPS2::TimeTaylor::doStep_rk_4( const int currentInstruction, const bool 
 void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
    HamiltonianOperator * op = new HamiltonianOperator( prob );
-   dcomplex alpha_1         = op->ExpectationValue( mpsIn, bkIn );
 
-   std::cout << op->ExpectationValue( mpsIn, bkIn ) << std::endl;
+   int krylovSpaceDimension = 2;
+
+   CTensorT *** krylovBasisVectors              = new CTensorT **[ krylovSpaceDimension ];
+   SyBookkeeper ** krylovBasisVectorBookkeepers = new SyBookkeeper *[ krylovSpaceDimension ];
+   dcomplex * krylovHamiltonianDiagonal         = new dcomplex[ krylovSpaceDimension ];
+   dcomplex * krylovHamiltonianOffDiagonal      = new dcomplex[ krylovSpaceDimension - 1 ];
+
+   krylovBasisVectors[ 0 ]           = mpsIn;
+   krylovBasisVectorBookkeepers[ 0 ] = bkIn;
+   krylovHamiltonianDiagonal[ 0 ]    = op->ExpectationValue( krylovBasisVectors[ 0 ], krylovBasisVectorBookkeepers[ 0 ] );
+
+   for ( int it = 1; it < krylovSpaceDimension; it++ ) {
+
+      SyBookkeeper * bkTemp = new SyBookkeeper( *bkIn );
+      CTensorT ** mpsTemp   = new CTensorT *[ L ];
+      for ( int index = 0; index < L; index++ ) {
+         mpsTemp[ index ] = new CTensorT( mpsIn[ index ] );
+         mpsTemp[ index ]->random();
+      }
+
+      dcomplex coef[]              = {-krylovHamiltonianDiagonal[ it - 1 ]};
+      CTensorT ** states[]         = {krylovBasisVectors[ it - 1 ]};
+      SyBookkeeper * bookkeepers[] = {krylovBasisVectorBookkeepers[ it - 1 ]};
+
+      op->ApplyAndAdd( krylovBasisVectors[ it - 1 ], krylovBasisVectorBookkeepers[ it - 1 ],
+                       1, coef, states, bookkeepers,
+                       mpsTemp, bkTemp );
+
+      krylovHamiltonianOffDiagonal[ it - 1 ] = norm( mpsTemp );
+      mpsTemp[ 0 ]->number_operator( 0.0, 1.0 / krylovHamiltonianOffDiagonal[ it - 1 ] );
+      krylovBasisVectors[ it ]           = mpsTemp;
+      krylovBasisVectorBookkeepers[ it ] = bkTemp;
+      krylovHamiltonianDiagonal[ it ]    = op->ExpectationValue( krylovBasisVectors[ it ], krylovBasisVectorBookkeepers[ it ] );
+   }
+
+   dcomplex * krylovHamiltonian = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+      for ( int j = 0; j < krylovSpaceDimension; j++ ) {
+         if ( i == j ) {
+            krylovHamiltonian[ i + krylovSpaceDimension * j ] = krylovHamiltonianDiagonal[ i ];
+         } else if ( i == j - 1 ) {
+            krylovHamiltonian[ i + krylovSpaceDimension * j ] = krylovHamiltonianOffDiagonal[ i ];
+         } else if ( i == j + 1 ) {
+            krylovHamiltonian[ i + krylovSpaceDimension * j ] = krylovHamiltonianOffDiagonal[ j ];
+         } else {
+            krylovHamiltonian[ i + krylovSpaceDimension * j ] = 0.0;
+         }
+      }
+   }
+
+   char jobz       = 'V';
+   char uplo       = 'U';
+   double * evals  = new double[ krylovSpaceDimension ];
+   int lwork       = 2 * krylovSpaceDimension - 1;
+   dcomplex * work = new dcomplex[ lwork ];
+   double * rwork  = new double[ 3 * krylovSpaceDimension - 2 ];
+   int info;
+
+   zheev_( &jobz, &uplo, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, evals, work, &lwork, rwork, &info );
+
+   dcomplex * firstVec = new dcomplex[ krylovSpaceDimension ];
+   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+      firstVec[ i ] = exp( dcomplex( 0.0, -1.0 ) * evals[ i ] * scheme->get_time_step( currentInstruction ) ) *
+                      krylovHamiltonian[ krylovSpaceDimension * i ];
+   }
+
+   char notrans      = 'N';
+   int onedim        = 1;
+   dcomplex one      = 1.0;
+   dcomplex zero     = 0.0;
+   dcomplex * result = new dcomplex[ krylovSpaceDimension ];
+   zgemm_( &notrans, &notrans, &krylovSpaceDimension, &onedim, &krylovSpaceDimension, &one, krylovHamiltonian, &krylovSpaceDimension,
+           firstVec, &krylovSpaceDimension, &zero, result, &krylovSpaceDimension );
+
+
+   op->Sum( krylovSpaceDimension, result, krylovBasisVectors, krylovBasisVectorBookkeepers, mpsOut, bkOut );
 
    delete op;
-   abort();
 }
 
 void CheMPS2::TimeTaylor::doStep_euler_g( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {

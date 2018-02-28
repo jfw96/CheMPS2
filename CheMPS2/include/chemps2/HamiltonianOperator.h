@@ -57,7 +57,16 @@ namespace CheMPS2 {
 
       dcomplex Overlap( CTensorT ** mpsLeft, SyBookkeeper * bkLeft, CTensorT ** mpsRight, SyBookkeeper * bkRight );
 
-      void ApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA, dcomplex alpha, CTensorT ** mpsB, SyBookkeeper * bkB, CTensorT ** mpsOut, SyBookkeeper * bkOut );
+      void ApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
+                        int statesToAdd,
+                        dcomplex * factors,
+                        CTensorT *** states,
+                        SyBookkeeper ** bookkeepers,
+                        CTensorT ** mpsOut, SyBookkeeper * bkOut );
+
+      void Sum( int statesToAdd,
+                dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
+                CTensorT ** mpsOut, SyBookkeeper * bkOut );
 
       private:
       void updateMovingLeftSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown );
