@@ -1055,6 +1055,8 @@ void CheMPS2::TimeTaylor::doStep_rk_4( const int currentInstruction, const bool 
 
 void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
+   dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
+
    HamiltonianOperator * op = new HamiltonianOperator( prob );
 
    int krylovSpaceDimension = 2;
@@ -1064,11 +1066,37 @@ void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const boo
    dcomplex * krylovHamiltonianDiagonal         = new dcomplex[ krylovSpaceDimension ];
    dcomplex * krylovHamiltonianOffDiagonal      = new dcomplex[ krylovSpaceDimension - 1 ];
 
-   krylovBasisVectors[ 0 ]           = mpsIn;
-   krylovBasisVectorBookkeepers[ 0 ] = bkIn;
-   krylovHamiltonianDiagonal[ 0 ]    = op->ExpectationValue( krylovBasisVectors[ 0 ], krylovBasisVectorBookkeepers[ 0 ] );
+   // First Lanczos Step
+   {
+      krylovBasisVectors[ 0 ]           = mpsIn;
+      krylovBasisVectorBookkeepers[ 0 ] = bkIn;
+      krylovHamiltonianDiagonal[ 0 ]    = op->ExpectationValue( krylovBasisVectors[ 0 ], krylovBasisVectorBookkeepers[ 0 ] );
+   }
 
-   for ( int it = 1; it < krylovSpaceDimension; it++ ) {
+   {
+      SyBookkeeper * bkTemp = new SyBookkeeper( *bkIn );
+      CTensorT ** mpsTemp   = new CTensorT *[ L ];
+      for ( int index = 0; index < L; index++ ) {
+         mpsTemp[ index ] = new CTensorT( mpsIn[ index ] );
+         mpsTemp[ index ]->random();
+      }
+
+      dcomplex coef[]              = {-krylovHamiltonianDiagonal[ 0 ]};
+      CTensorT ** states[]         = {krylovBasisVectors[ 0 ]};
+      SyBookkeeper * bookkeepers[] = {krylovBasisVectorBookkeepers[ 0 ]};
+
+      op->ApplyAndAdd( krylovBasisVectors[ 0 ], krylovBasisVectorBookkeepers[ 0 ],
+                       1, coef, states, bookkeepers,
+                       mpsTemp, bkTemp );
+
+      krylovHamiltonianOffDiagonal[ 0 ] = norm( mpsTemp );
+      mpsTemp[ 0 ]->number_operator( 0.0, 1.0 / krylovHamiltonianOffDiagonal[ 0 ] );
+      krylovBasisVectors[ 1 ]           = mpsTemp;
+      krylovBasisVectorBookkeepers[ 1 ] = bkTemp;
+      krylovHamiltonianDiagonal[ 1 ]    = op->ExpectationValue( krylovBasisVectors[ 1 ], krylovBasisVectorBookkeepers[ 1 ] );
+   }
+
+   for ( int it = 2; it < krylovSpaceDimension; it++ ) {
 
       SyBookkeeper * bkTemp = new SyBookkeeper( *bkIn );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
@@ -1077,12 +1105,12 @@ void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const boo
          mpsTemp[ index ]->random();
       }
 
-      dcomplex coef[]              = {-krylovHamiltonianDiagonal[ it - 1 ]};
-      CTensorT ** states[]         = {krylovBasisVectors[ it - 1 ]};
-      SyBookkeeper * bookkeepers[] = {krylovBasisVectorBookkeepers[ it - 1 ]};
+      dcomplex coef[]              = {-krylovHamiltonianOffDiagonal[ it - 2 ], -krylovHamiltonianDiagonal[ it - 1 ]};
+      CTensorT ** states[]         = {krylovBasisVectors[ it - 2 ], krylovBasisVectors[ it - 1 ]};
+      SyBookkeeper * bookkeepers[] = {krylovBasisVectorBookkeepers[ it - 2 ], krylovBasisVectorBookkeepers[ it - 1 ]};
 
       op->ApplyAndAdd( krylovBasisVectors[ it - 1 ], krylovBasisVectorBookkeepers[ it - 1 ],
-                       1, coef, states, bookkeepers,
+                       2, coef, states, bookkeepers,
                        mpsTemp, bkTemp );
 
       krylovHamiltonianOffDiagonal[ it - 1 ] = norm( mpsTemp );
@@ -1119,8 +1147,7 @@ void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const boo
 
    dcomplex * firstVec = new dcomplex[ krylovSpaceDimension ];
    for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-      firstVec[ i ] = exp( dcomplex( 0.0, -1.0 ) * evals[ i ] * scheme->get_time_step( currentInstruction ) ) *
-                      krylovHamiltonian[ krylovSpaceDimension * i ];
+      firstVec[ i ] = exp( evals[ i ] * step ) * krylovHamiltonian[ krylovSpaceDimension * i ];
    }
 
    char notrans      = 'N';
@@ -1128,9 +1155,9 @@ void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const boo
    dcomplex one      = 1.0;
    dcomplex zero     = 0.0;
    dcomplex * result = new dcomplex[ krylovSpaceDimension ];
-   zgemm_( &notrans, &notrans, &krylovSpaceDimension, &onedim, &krylovSpaceDimension, &one, krylovHamiltonian, &krylovSpaceDimension,
+   zgemm_( &notrans, &notrans, &krylovSpaceDimension, &onedim, &krylovSpaceDimension,
+           &one, krylovHamiltonian, &krylovSpaceDimension,
            firstVec, &krylovSpaceDimension, &zero, result, &krylovSpaceDimension );
-
 
    op->Sum( krylovSpaceDimension, result, krylovBasisVectors, krylovBasisVectorBookkeepers, mpsOut, bkOut );
 
