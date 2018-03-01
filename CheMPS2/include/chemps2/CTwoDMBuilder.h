@@ -84,10 +84,6 @@ namespace CheMPS2 {
       //TwoDM
       CTwoDM * the2DM;
 
-      void left_normalize( CTensorT * left_mps, CTensorT * right_mps ) const;
-
-      void right_normalize( CTensorT * left_mps, CTensorT * right_mps ) const;
-
       void deleteAllBoundaryOperators();
       void deleteTensors( const int index, const bool movingRight );
       void allocateTensors( const int index, const bool movingRight );
