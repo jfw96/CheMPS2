@@ -1407,27 +1407,27 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          for ( int i = 0; i < L; i++ ) {
             ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( i, i ) );
          }
-         ( *logger ) << "\n";
-         ( *logger ) << "   ";
-         ( *logger ) << "\n";
-         ( *logger ) << "   real part one body reduced density matrix:\n";
-         ( *logger ) << "\n";
-         for ( int irow = 0; irow < L; irow++ ) {
-            for ( int icol = 0; icol < L; icol++ ) {
-               ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( irow, icol ) );
-            }
-            ( *logger ) << "\n";
-         }
-         ( *logger ) << "\n";
+         // ( *logger ) << "\n";
+         // ( *logger ) << "   ";
+         // ( *logger ) << "\n";
+         // ( *logger ) << "   real part one body reduced density matrix:\n";
+         // ( *logger ) << "\n";
+         // for ( int irow = 0; irow < L; irow++ ) {
+         //    for ( int icol = 0; icol < L; icol++ ) {
+         //       ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( irow, icol ) );
+         //    }
+         //    ( *logger ) << "\n";
+         // }
+         // ( *logger ) << "\n";
 
-         ( *logger ) << "   imaginary part one body reduced density matrix:\n";
-         ( *logger ) << "\n";
-         for ( int irow = 0; irow < L; irow++ ) {
-            for ( int icol = 0; icol < L; icol++ ) {
-               ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::imag( the2DM->get1RDM_DMRG( irow, icol ) );
-            }
-            ( *logger ) << "\n";
-         }
+         // ( *logger ) << "   imaginary part one body reduced density matrix:\n";
+         // ( *logger ) << "\n";
+         // for ( int irow = 0; irow < L; irow++ ) {
+         //    for ( int icol = 0; icol < L; icol++ ) {
+         //       ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::imag( the2DM->get1RDM_DMRG( irow, icol ) );
+         //    }
+         //    ( *logger ) << "\n";
+         // }
 
          ( *logger ) << "\n";
 
