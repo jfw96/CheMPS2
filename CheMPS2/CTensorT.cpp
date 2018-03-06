@@ -621,18 +621,18 @@ std::ostream & CheMPS2::operator<<( std::ostream & os, const CheMPS2::CTensorT &
       const int TwoSR = tns.sectorTwoSR[ ikappa ];
       const int IR    = tns.sectorIR[ ikappa ];
 
-      std::cout << "Block number " << ikappa << " with left size "
+      os << "Block number " << ikappa << " with left size "
                 << tns.denBK->gCurrentDim( tns.index, NL, TwoSL, IL ) << " and rightsize "
                 << tns.denBK->gCurrentDim( tns.index + 1, NR, TwoSR, IR ) << std::endl;
-      std::cout << "NL:    " << NL << ", "
+      os << "NL:    " << NL << ", "
                 << "NR:    " << NR << std::endl;
-      std::cout << "TwoSL: " << TwoSL << ", "
+      os << "TwoSL: " << TwoSL << ", "
                 << "TwoSR: " << TwoSR << std::endl;
-      std::cout << "IL:    " << IL << ", "
+      os << "IL:    " << IL << ", "
                 << "IR:    " << IR << std::endl;
 
       for ( int i = tns.kappa2index[ ikappa ]; i < tns.kappa2index[ ikappa + 1 ]; ++i ) {
-         std::cout << tns.storage[ i ] << std::endl;
+         os << tns.storage[ i ] << std::endl;
       }
    }
    os << CheMPS2::hashline;
