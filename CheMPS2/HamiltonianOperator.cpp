@@ -26,7 +26,6 @@
 #include "Special.h"
 
 CheMPS2::HamiltonianOperator::HamiltonianOperator( Problem * probIn ) : prob( probIn ), L( probIn->gL() ) {
-   std::cout << L << std::endl;
 
    Ltensors    = new CTensorL **[ L - 1 ];
    LtensorsT   = new CTensorLT **[ L - 1 ];
