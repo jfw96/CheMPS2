@@ -86,7 +86,7 @@ CheMPS2::HamiltonianOperator::~HamiltonianOperator() {
 }
 
 dcomplex CheMPS2::HamiltonianOperator::ExpectationValue( CTensorT ** mps, SyBookkeeper * bk ) {
-   return Overlap( mps, bk, mps, bk );
+   return Overlap( mps, bk, mps, bk ) + prob->gEconst();
 }
 
 dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeeper * bkLeft, CTensorT ** mpsRight, SyBookkeeper * bkRight ) {
