@@ -1328,6 +1328,8 @@ void CheMPS2::TimeTaylor::doStep_taylor_1( const int currentInstruction, const b
 
 void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary ) {
 
+   HamiltonianOperator * hamOp = new HamiltonianOperator( prob );
+
    SyBookkeeper * MPSBK = new SyBookkeeper( *initBK );
    CTensorT ** MPS      = new CTensorT *[ L ];
    for ( int index = 0; index < L; index++ ) {
@@ -1389,24 +1391,26 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          ( *logger ) << "   NSwe = " << scheme->get_max_sweeps( inst ) << "\n";
          ( *logger ) << "\n";
 
-         CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
-         CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
-         tdmbuilder->Build2RDM( the2DM );
-
          ( *logger ) << "   Norm      = " << norm( MPS ) << "\n";
-         ( *logger ) << "   Energy    = " << std::real( the2DM->energy() ) << "\n";
+         ( *logger ) << "   Energy    = " << std::real( hamOp->ExpectationValue( MPS, MPSBK ) ) << "\n";
 
          if ( t == 0.0 ) {
-            firstEnergy = std::real( the2DM->energy() );
+            firstEnergy = std::real( hamOp->ExpectationValue( MPS, MPSBK ) );
          }
-         ( *logger ) << "   tr(TwoDM) = " << std::real( the2DM->trace() ) << "\n";
-         ( *logger ) << "   N(N-1)    = " << prob->gN() * ( prob->gN() - 1.0 ) << "\n";
-         ( *logger ) << "\n";
-         ( *logger ) << "  occupation numbers of molecular orbitals:\n";
-         ( *logger ) << "   ";
-         for ( int i = 0; i < L; i++ ) {
-            ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( i, i ) );
-         }
+
+         // CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
+         // CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
+         // tdmbuilder->Build2RDM( the2DM );
+
+         // ( *logger ) << "   tr(TwoDM) = " << std::real( the2DM->trace() ) << "\n";
+         // ( *logger ) << "   N(N-1)    = " << prob->gN() * ( prob->gN() - 1.0 ) << "\n";
+         // ( *logger ) << "\n";
+         // ( *logger ) << "  occupation numbers of molecular orbitals:\n";
+         // ( *logger ) << "   ";
+         // for ( int i = 0; i < L; i++ ) {
+         //    ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( i, i ) );
+         // }
+
          // ( *logger ) << "\n";
          // ( *logger ) << "   ";
          // ( *logger ) << "\n";
@@ -1428,11 +1432,10 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          //    }
          //    ( *logger ) << "\n";
          // }
+         // delete the2DM;
+         // delete tdmbuilder;
 
          ( *logger ) << "\n";
-
-         delete tdmbuilder;
-         delete the2DM;
 
          deleteAllBoundaryOperators();
 
@@ -1471,4 +1474,5 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
    }
    delete[] MPS;
    delete MPSBK;
+   delete hamOp;
 }
