@@ -142,6 +142,8 @@ namespace CheMPS2 {
         \return The in-product */
       dcomplex inproduct( CTensorOperator * buddy, const char trans ) const;
 
+      dcomplex trace();
+
       friend std::ostream & operator<<( std::ostream & os, const CTensorOperator & tns );
 
       protected:

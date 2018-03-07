@@ -573,6 +573,32 @@ dcomplex CheMPS2::CTensorOperator::inproduct( CTensorOperator * buddy, const cha
    return value;
 }
 
+dcomplex CheMPS2::CTensorOperator::trace() {
+   dcomplex sum = 0.0;
+
+   for ( int ikappa = 0; ikappa < nKappa; ikappa++ ) {
+      const int N     = sector_nelec_up[ ikappa ];
+      const int TwoJU = sector_spin_up[ ikappa ];
+      const int TwoJD = sector_spin_down[ ikappa ];
+      const int IRU   = sector_irrep_up[ ikappa ];
+      const int IRD   = Irreps::directProd( IRU, n_irrep );
+
+      if ( n_elec == 0 && TwoJU == TwoJD && IRU == IRD ) {
+
+         const int dimU = bk_up->gCurrentDim( index, N, TwoJU, IRU );
+         const int dimD = bk_down->gCurrentDim( index, N, TwoJD, IRD );
+
+         assert( dimU == dimD );
+
+         dcomplex * my_block = storage + kappa2index[ ikappa ];
+         for ( int run = 0; run < dimU; run++ ) {
+            sum += (TwoJU + 1.0) * my_block[ run + dimU * run ];
+         }
+      }
+   }
+   return sum;
+}
+
 std::ostream & CheMPS2::operator<<( std::ostream & os, const CheMPS2::CTensorOperator & tns ) {
    os << CheMPS2::hashline;
 
