@@ -38,8 +38,11 @@ namespace CheMPS2 {
 
       ~COneDM();
 
-      private:
+      void gOEDMRe( double * array );
 
+      void gOEDMIm( double * array );
+
+      private:
       void updateMovingRightSafe( const int cnt );
 
       void updateMovingRight( const int index );

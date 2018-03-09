@@ -41,6 +41,18 @@ CheMPS2::COneDM::~COneDM() {
    delete[] F1tensors;
 }
 
+void CheMPS2::COneDM::gOEDMRe( double * array ) {
+   for ( int i = 0; i < L * L; i++ ) {
+      array[ i ] = std::real( matrix[ i ] );
+   }
+}
+
+void CheMPS2::COneDM::gOEDMIm( double * array ) {
+   for ( int i = 0; i < L * L; i++ ) {
+      array[ i ] = std::imag( matrix[ i ] );
+   }
+}
+
 void CheMPS2::COneDM::updateMovingRightSafe( const int cnt ) {
 
    allocateTensors( cnt );
