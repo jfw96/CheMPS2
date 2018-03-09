@@ -654,7 +654,7 @@ dcomplex CheMPS2::overlap( CTensorT ** mpsA, CTensorT ** mpsB ) {
       overlapOld = overlapNext;
    }
    assert( overlapOld->gNKappa() == 1 );
-   dcomplex result = overlapOld->gStorage()[ 0 ];
+   dcomplex result = overlapOld->trace();
    delete overlapOld;
    return result;
 }
