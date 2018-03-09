@@ -103,7 +103,7 @@ dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeepe
                  Qtensors[ L - 1 - 1 ][ 0 ], QtensorsT[ L - 1 - 1 ][ 0 ],
                  Atensors[ L - 1 - 1 ][ 0 ][ 0 ], AtensorsT[ L - 1 - 1 ][ 0 ][ 0 ],
                  CtensorsT[ L - 1 - 1 ][ 0 ][ 0 ], DtensorsT[ L - 1 - 1 ][ 0 ][ 0 ] );
-   dcomplex item = last->gStorage()[ 0 ];
+   dcomplex item = last->trace();
 
    return item;
 }
