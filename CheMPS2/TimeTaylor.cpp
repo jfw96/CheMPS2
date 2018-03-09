@@ -7,12 +7,15 @@
 #include "CDensityMatrix.h"
 #include "CHeffNS.h"
 #include "CHeffNS_1S.h"
+#include "COneDM.h"
 #include "CSobject.h"
 #include "CTwoDMBuilder.h"
 #include "HamiltonianOperator.h"
 #include "Lapack.h"
+#include "MyHDF5.h"
 #include "Special.h"
 #include "TwoDMBuilder.h"
+#include "hdf5_hl.h"
 
 CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn, Logger * loggerIn )
     : prob( probIn ), scheme( schemeIn ), logger( loggerIn ), L( probIn->gL() ) {
@@ -1328,6 +1331,14 @@ void CheMPS2::TimeTaylor::doStep_taylor_1( const int currentInstruction, const b
 
 void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary ) {
 
+   hid_t fileID                   = H5Fcreate( "test.hdf5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+   hid_t inputGroupID             = H5Gcreate( fileID, "/Input", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+   hid_t systemPropertiesID       = H5Gcreate( fileID, "/Input/SystemProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+   hid_t waveFunctionPropertiesID = H5Gcreate( fileID, "/Input/WaveFunctionProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+   hid_t outputID                 = H5Gcreate( fileID, "/Output", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+
+   hsize_t dimarray1 = 1;
+
    HamiltonianOperator * hamOp = new HamiltonianOperator( prob );
 
    SyBookkeeper * MPSBK = new SyBookkeeper( *initBK );
@@ -1345,9 +1356,40 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
 
    ( *logger ) << "\n";
    ( *logger ) << "   L = " << L << "\n";
-   ( *logger ) << "   N = " << prob->gN() << "\n";
-   ( *logger ) << "   TwoS = " << prob->gTwoS() << "\n";
-   ( *logger ) << "   I = " << prob->gIrrep() << "\n";
+   H5LTmake_dataset( systemPropertiesID, "L", 1, &dimarray1, H5T_STD_I32LE, &L );
+
+   int Sy = prob->gSy();
+   ( *logger ) << "   Sy = " << Sy << "\n";
+   H5LTmake_dataset( systemPropertiesID, "Sy", 1, &dimarray1, H5T_STD_I32LE, &Sy );
+
+   ( *logger ) << "   Irreps =";
+   int * irreps = new int[ L ];
+   for ( int i = 0; i < L; i++ ) {
+      irreps[ i ] = prob->gIrrep( i );
+      ( *logger ) << std::setw( 5 ) << irreps[ i ];
+   }
+   ( *logger ) << "\n";
+   hsize_t Lsize = L;
+   H5LTmake_dataset( systemPropertiesID, "Irrep", 1, &Lsize, H5T_STD_I32LE, irreps );
+   delete[] irreps;
+
+   double Econst = prob->gEconst();
+   H5LTmake_dataset( systemPropertiesID, "Econst", 1, &dimarray1, H5T_NATIVE_DOUBLE, &Econst );
+
+   ( *logger ) << "\n";
+
+   int N = prob->gN();
+   ( *logger ) << "   N = " << N << "\n";
+   H5LTmake_dataset( waveFunctionPropertiesID, "N", 1, &dimarray1, H5T_STD_I32LE, &N );
+
+   int TwoS = prob->gTwoS();
+   ( *logger ) << "   TwoS = " << TwoS << "\n";
+   H5LTmake_dataset( waveFunctionPropertiesID, "TwoS", 1, &dimarray1, H5T_STD_I32LE, &TwoS );
+
+   int I = prob->gIrrep();
+   ( *logger ) << "   I = " << I << "\n";
+   H5LTmake_dataset( waveFunctionPropertiesID, "I", 1, &dimarray1, H5T_STD_I32LE, &I );
+
    ( *logger ) << "\n";
 
    ( *logger ) << "   full ci matrix product state dimensions:\n";
@@ -1357,22 +1399,39 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
    }
    ( *logger ) << "\n";
    ( *logger ) << "   ";
+
+   int * fcidims = new int[ L + 1 ];
    for ( int i = 0; i < L + 1; i++ ) {
-      ( *logger ) << std::setw( 5 ) << MPSBK->gFCIDimAtBound( i );
+      fcidims[ i ] = MPSBK->gFCIDimAtBound( i );
+      ( *logger ) << std::setw( 5 ) << fcidims[ i ];
    }
    ( *logger ) << "\n";
+   hsize_t Lposize = L + 1;
+   H5LTmake_dataset( waveFunctionPropertiesID, "FCIDims", 1, &Lposize, H5T_STD_I32LE, fcidims );
+
    ( *logger ) << "\n";
    ( *logger ) << hashline;
 
    for ( int inst = 0; inst < scheme->get_number(); inst++ ) {
 
       for ( ; t < scheme->get_max_time( inst ); t += scheme->get_time_step( inst ) ) {
+         char str[ 1024 ];
+         sprintf( str, "/Output/DataPoint%.5f", t );
+         hid_t dataPointID = H5Gcreate( fileID, str, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+
          ( *logger ) << hashline;
          ( *logger ) << "\n";
          ( *logger ) << "   t = " << t << "\n";
-         ( *logger ) << "   Tmax = " << scheme->get_max_time( inst ) << "\n";
-         ( *logger ) << "   dt = " << scheme->get_time_step( inst ) << "\n";
+         H5LTmake_dataset( dataPointID, "t", 1, &dimarray1, H5T_NATIVE_DOUBLE, &t );
+
+         double Tmax = scheme->get_max_time( inst );
+         ( *logger ) << "   Tmax = " << Tmax << "\n";
+         H5LTmake_dataset( dataPointID, "Tmax", 1, &dimarray1, H5T_NATIVE_DOUBLE, &Tmax );
+
+         double dt = scheme->get_time_step( inst );
+         ( *logger ) << "   dt = " << dt << "\n";
          ( *logger ) << "\n";
+         H5LTmake_dataset( dataPointID, "dt", 1, &dimarray1, H5T_NATIVE_DOUBLE, &dt );
 
          ( *logger ) << "   matrix product state dimensions:\n";
          ( *logger ) << "   ";
@@ -1382,58 +1441,105 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          ( *logger ) << "\n";
          ( *logger ) << "   ";
          for ( int i = 0; i < L + 1; i++ ) {
-            ( *logger ) << std::setw( 5 ) << MPSBK->gTotDimAtBound( i );
+            fcidims[ i ] = MPSBK->gFCIDimAtBound( i );
+            ( *logger ) << std::setw( 5 ) << fcidims[ i ];
          }
+         H5LTmake_dataset( dataPointID, "MPSDims", 1, &Lposize, H5T_STD_I32LE, fcidims );
+
          ( *logger ) << "\n";
-         ( *logger ) << "\n";
-         ( *logger ) << "   MaxM = " << scheme->get_D( inst ) << "\n";
-         ( *logger ) << "   CutO = " << scheme->get_cut_off( inst ) << "\n";
-         ( *logger ) << "   NSwe = " << scheme->get_max_sweeps( inst ) << "\n";
          ( *logger ) << "\n";
 
-         ( *logger ) << "   Norm      = " << norm( MPS ) << "\n";
-         ( *logger ) << "   Energy    = " << std::real( hamOp->ExpectationValue( MPS, MPSBK ) ) << "\n";
+         int MaxM = scheme->get_D( inst );
+         ( *logger ) << "   MaxM = " << MaxM << "\n";
+         H5LTmake_dataset( dataPointID, "MaxM", 1, &dimarray1, H5T_STD_I32LE, &MaxM );
+
+         double CutO = scheme->get_cut_off( inst );
+         ( *logger ) << "   CutO = " << CutO << "\n";
+         H5LTmake_dataset( dataPointID, "CutO", 1, &dimarray1, H5T_NATIVE_DOUBLE, &CutO );
+
+         int NSwe = scheme->get_max_sweeps( inst );
+         ( *logger ) << "   NSwe = " << NSwe << "\n";
+         H5LTmake_dataset( dataPointID, "NSwe", 1, &dimarray1, H5T_STD_I32LE, &NSwe );
+
+         ( *logger ) << "\n";
+
+         double normOfMPS = norm( MPS );
+         ( *logger ) << "   Norm      = " << normOfMPS << "\n";
+         H5LTmake_dataset( dataPointID, "Norm", 1, &dimarray1, H5T_NATIVE_DOUBLE, &normOfMPS );
+
+         double energy = std::real( hamOp->ExpectationValue( MPS, MPSBK ) );
+         ( *logger ) << "   Energy    = " << energy << "\n";
+         H5LTmake_dataset( dataPointID, "Energy", 1, &dimarray1, H5T_NATIVE_DOUBLE, &energy );
 
          if ( t == 0.0 ) {
-            firstEnergy = std::real( hamOp->ExpectationValue( MPS, MPSBK ) );
+            firstEnergy = energy;
          }
+
+         COneDM * theodm = new COneDM( MPS, MPSBK );
+         hsize_t Lsq[ 2 ];
+         Lsq[ 0 ]        = L;
+         Lsq[ 1 ]        = L;
+         double * oedmre = new double[ L * L ];
+         double * oedmim = new double[ L * L ];
+         theodm->gOEDMRe( oedmre );
+         theodm->gOEDMIm( oedmim );
+
+         CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
+         CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
+         tdmbuilder->Build2RDM( the2DM );
+
+         ( *logger ) << "\n";
+         ( *logger ) << "  occupation numbers of molecular orbitals:\n";
+         ( *logger ) << "   ";
+         for ( int i = 0; i < L; i++ ) {
+            ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << oedmre[ i + L * i ];
+         }
+         ( *logger ) << "\n";
+
+         H5LTmake_dataset( dataPointID, "OEDM_REAL", 2, Lsq, H5T_NATIVE_DOUBLE, oedmre );
+         H5LTmake_dataset( dataPointID, "OEDM_IMAG", 2, Lsq, H5T_NATIVE_DOUBLE, oedmim );
+         delete theodm;
+         delete[] oedmre;
+         delete[] oedmim;
 
          // CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
          // CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
+
          // tdmbuilder->Build2RDM( the2DM );
+         ( *logger ) << "   energy " << the2DM->energy() << "\n";
 
-         // ( *logger ) << "   tr(TwoDM) = " << std::real( the2DM->trace() ) << "\n";
-         // ( *logger ) << "   N(N-1)    = " << prob->gN() * ( prob->gN() - 1.0 ) << "\n";
-         // ( *logger ) << "\n";
-         // ( *logger ) << "  occupation numbers of molecular orbitals:\n";
-         // ( *logger ) << "   ";
-         // for ( int i = 0; i < L; i++ ) {
-         //    ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( i, i ) );
-         // }
+         ( *logger ) << "   tr(TwoDM) = " << std::real( the2DM->trace() ) << "\n";
+         ( *logger ) << "   N(N-1)    = " << prob->gN() * ( prob->gN() - 1.0 ) << "\n";
+         ( *logger ) << "\n";
+         ( *logger ) << "  occupation numbers of molecular orbitals:\n";
+         ( *logger ) << "   ";
+         for ( int i = 0; i < L; i++ ) {
+            ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( i, i ) );
+         }
 
-         // ( *logger ) << "\n";
-         // ( *logger ) << "   ";
-         // ( *logger ) << "\n";
-         // ( *logger ) << "   real part one body reduced density matrix:\n";
-         // ( *logger ) << "\n";
-         // for ( int irow = 0; irow < L; irow++ ) {
-         //    for ( int icol = 0; icol < L; icol++ ) {
-         //       ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( irow, icol ) );
+         //    ( *logger ) << "\n";
+         //    ( *logger ) << "   ";
+         //    ( *logger ) << "\n";
+         //    ( *logger ) << "   real part one body reduced density matrix:\n";
+         //    ( *logger ) << "\n";
+         //    for ( int irow = 0; irow < L; irow++ ) {
+         //       for ( int icol = 0; icol < L; icol++ ) {
+         //          ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( irow, icol ) );
+         //       }
+         //       ( *logger ) << "\n";
          //    }
          //    ( *logger ) << "\n";
-         // }
-         // ( *logger ) << "\n";
 
-         // ( *logger ) << "   imaginary part one body reduced density matrix:\n";
-         // ( *logger ) << "\n";
-         // for ( int irow = 0; irow < L; irow++ ) {
-         //    for ( int icol = 0; icol < L; icol++ ) {
-         //       ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::imag( the2DM->get1RDM_DMRG( irow, icol ) );
-         //    }
+         //    ( *logger ) << "   imaginary part one body reduced density matrix:\n";
          //    ( *logger ) << "\n";
-         // }
-         // delete the2DM;
-         // delete tdmbuilder;
+         //    for ( int irow = 0; irow < L; irow++ ) {
+         //       for ( int icol = 0; icol < L; icol++ ) {
+         //          ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::imag( the2DM->get1RDM_DMRG( irow, icol ) );
+         //       }
+         //       ( *logger ) << "\n";
+         //    }
+         //    delete the2DM;
+         //    delete tdmbuilder;
 
          ( *logger ) << "\n";
 
@@ -1468,6 +1574,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          ( *logger ) << hashline;
       }
    }
+   delete[] fcidims;
 
    for ( int site = 0; site < L; site++ ) {
       delete MPS[ site ];
@@ -1475,4 +1582,6 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
    delete[] MPS;
    delete MPSBK;
    delete hamOp;
+
+   H5Fclose( fileID );
 }

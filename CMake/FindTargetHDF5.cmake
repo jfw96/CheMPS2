@@ -39,7 +39,6 @@
 #   CMAKE_PREFIX_PATH - CMake variable, set to root directory of this package
 
 set(PN TargetHDF5)
-
 # 1st precedence - libraries passed in through -DHDF5_LIBRARIES
 if (HDF5_LIBRARIES AND HDF5_INCLUDE_DIRS)
     if (HDF5_VERSION)
@@ -48,7 +47,7 @@ if (HDF5_LIBRARIES AND HDF5_INCLUDE_DIRS)
         endif()
 
         add_library (tgt::hdf5 INTERFACE IMPORTED)
-        set_property (TARGET tgt::hdf5 PROPERTY INTERFACE_LINK_LIBRARIES ${HDF5_LIBRARIES})
+        set_property (TARGET tgt::hdf5 PROPERTY INTERFACE_LINK_LIBRARIES ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
         set_property (TARGET tgt::hdf5 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${HDF5_INCLUDE_DIRS})
         set (${PN}_VERSION ${HDF5_VERSION})
     else()
@@ -63,13 +62,12 @@ else()
         endif()
     else()
         # 3rd precedence - usual variables from FindHDF5.cmake
-        find_package (HDF5 QUIET COMPONENTS ${HDF5_FIND_COMPONENTS})
+        find_package (HDF5 QUIET COMPONENTS HL ${HDF5_FIND_COMPONENTS})
         if (NOT ${PN}_FIND_QUIETLY)
             message (STATUS "HDF5 detected.")
         endif()
-    
         add_library (tgt::hdf5 INTERFACE IMPORTED)
-        set_property (TARGET tgt::hdf5 PROPERTY INTERFACE_LINK_LIBRARIES ${HDF5_LIBRARIES})
+        set_property (TARGET tgt::hdf5 PROPERTY INTERFACE_LINK_LIBRARIES ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
         set_property (TARGET tgt::hdf5 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${HDF5_INCLUDE_DIRS})
         set (${PN}_VERSION ${HDF5_VERSION})
 

@@ -112,6 +112,7 @@ if (NOT STATIC_ONLY)
     target_link_libraries (chemps2-shared PRIVATE ${LIBC_INTERJECT}
                                                   tgt::lapack
                                                   tgt::hdf5)
+                                                  
     set_target_properties (chemps2-shared PROPERTIES SOVERSION ${CheMPS2_LIB_SOVERSION}
                                                      MACOSX_RPATH ON
                                                      OUTPUT_NAME "chemps2"
