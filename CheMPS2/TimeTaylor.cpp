@@ -1484,9 +1484,6 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          theodm->gOEDMRe( oedmre );
          theodm->gOEDMIm( oedmim );
 
-         CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
-         CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
-         tdmbuilder->Build2RDM( the2DM );
 
          ( *logger ) << "\n";
          ( *logger ) << "  occupation numbers of molecular orbitals:\n";
@@ -1502,20 +1499,23 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          delete[] oedmre;
          delete[] oedmim;
 
+      //    CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
+      //    CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
+      //    tdmbuilder->Build2RDM( the2DM );
          // CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
          // CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
 
          // tdmbuilder->Build2RDM( the2DM );
-         ( *logger ) << "   energy " << the2DM->energy() << "\n";
+      //    ( *logger ) << "   energy " << the2DM->energy() << "\n";
 
-         ( *logger ) << "   tr(TwoDM) = " << std::real( the2DM->trace() ) << "\n";
-         ( *logger ) << "   N(N-1)    = " << prob->gN() * ( prob->gN() - 1.0 ) << "\n";
-         ( *logger ) << "\n";
-         ( *logger ) << "  occupation numbers of molecular orbitals:\n";
-         ( *logger ) << "   ";
-         for ( int i = 0; i < L; i++ ) {
-            ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( i, i ) );
-         }
+      //    ( *logger ) << "   tr(TwoDM) = " << std::real( the2DM->trace() ) << "\n";
+      //    ( *logger ) << "   N(N-1)    = " << prob->gN() * ( prob->gN() - 1.0 ) << "\n";
+      //    ( *logger ) << "\n";
+      //    ( *logger ) << "  occupation numbers of molecular orbitals:\n";
+      //    ( *logger ) << "   ";
+      //    for ( int i = 0; i < L; i++ ) {
+      //       ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( i, i ) );
+      //    }
 
          //    ( *logger ) << "\n";
          //    ( *logger ) << "   ";
