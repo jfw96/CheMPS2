@@ -113,7 +113,8 @@ void CheMPS2::HamiltonianOperator::ApplyAndAdd( CTensorT ** mpsA, SyBookkeeper *
                                                 dcomplex * factors,
                                                 CTensorT *** states,
                                                 SyBookkeeper ** bookkeepers,
-                                                CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+                                                CTensorT ** mpsOut, SyBookkeeper * bkOut, 
+                                                int numberOfSweeps ) {
 
    for ( int index = 0; index < L - 1; index++ ) {
       left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
@@ -138,7 +139,7 @@ void CheMPS2::HamiltonianOperator::ApplyAndAdd( CTensorT ** mpsA, SyBookkeeper *
       }
    }
 
-   for ( int i = 0; i < 2; ++i ) {
+   for ( int i = 0; i < numberOfSweeps; ++i ) {
       for ( int site = L - 1; site > 0; site-- ) {
 
          CTensorT * fromAdded = new CTensorT( site, bkOut );
@@ -240,7 +241,8 @@ void CheMPS2::HamiltonianOperator::ApplyAndAdd( CTensorT ** mpsA, SyBookkeeper *
 
 void CheMPS2::HamiltonianOperator::Sum( int statesToAdd,
                                         dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
-                                        CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+                                        CTensorT ** mpsOut, SyBookkeeper * bkOut,
+                                        int numberOfSweeps ) {
 
    for ( int index = 0; index < L - 1; index++ ) {
       left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
@@ -263,7 +265,7 @@ void CheMPS2::HamiltonianOperator::Sum( int statesToAdd,
       }
    }
 
-   for ( int i = 0; i < 2; ++i ) {
+   for ( int i = 0; i < numberOfSweeps; ++i ) {
       for ( int site = L - 1; site > 0; site-- ) {
 
          CTensorT * added = new CTensorT( site, bkOut );

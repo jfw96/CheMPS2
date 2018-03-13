@@ -62,11 +62,13 @@ namespace CheMPS2 {
                         dcomplex * factors,
                         CTensorT *** states,
                         SyBookkeeper ** bookkeepers,
-                        CTensorT ** mpsOut, SyBookkeeper * bkOut );
+                        CTensorT ** mpsOut, SyBookkeeper * bkOut,
+                        int numberOfSweeps = 2 );
 
       void Sum( int statesToAdd,
                 dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
-                CTensorT ** mpsOut, SyBookkeeper * bkOut );
+                CTensorT ** mpsOut, SyBookkeeper * bkOut, 
+                int numberOfSweeps = 2 );
 
       private:
       void updateMovingLeftSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown );

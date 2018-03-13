@@ -1089,7 +1089,8 @@ void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const boo
 
          op->ApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
                           1, coef, states, bookkeepers,
-                          mpsTemp, bkTemp );
+                          mpsTemp, bkTemp,
+                          scheme->get_max_sweeps( currentInstruction ) );
       } else {
          dcomplex coef[]              = {-krylovHamiltonianOffDiagonal.back(), -krylovHamiltonianDiagonal.back()};
          CTensorT ** states[]         = {krylovBasisVectors.end()[ -2 ], krylovBasisVectors.back()};
@@ -1097,7 +1098,8 @@ void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const boo
 
          op->ApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
                           2, coef, states, bookkeepers,
-                          mpsTemp, bkTemp );
+                          mpsTemp, bkTemp,
+                          scheme->get_max_sweeps( currentInstruction ) );
       }
 
       dcomplex beta = norm( mpsTemp );
@@ -1152,7 +1154,7 @@ void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const boo
            &one, krylovHamiltonian, &krylovSpaceDimension,
            firstVec, &krylovSpaceDimension, &zero, result, &krylovSpaceDimension );
 
-   op->Sum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut );
+   op->Sum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
 
    delete op;
 }
