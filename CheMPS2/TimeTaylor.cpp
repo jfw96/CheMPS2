@@ -1087,19 +1087,19 @@ void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const boo
          CTensorT ** states[]         = {krylovBasisVectors.back()};
          SyBookkeeper * bookkeepers[] = {krylovBasisVectorBookkeepers.back()};
 
-         op->ApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
-                          1, coef, states, bookkeepers,
-                          mpsTemp, bkTemp,
-                          scheme->get_max_sweeps( currentInstruction ) );
+         op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
+                            1, coef, states, bookkeepers,
+                            mpsTemp, bkTemp,
+                            scheme->get_max_sweeps( currentInstruction ) );
       } else {
          dcomplex coef[]              = {-krylovHamiltonianOffDiagonal.back(), -krylovHamiltonianDiagonal.back()};
          CTensorT ** states[]         = {krylovBasisVectors.end()[ -2 ], krylovBasisVectors.back()};
          SyBookkeeper * bookkeepers[] = {krylovBasisVectorBookkeepers.end()[ -2 ], krylovBasisVectorBookkeepers.back()};
 
-         op->ApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
-                          2, coef, states, bookkeepers,
-                          mpsTemp, bkTemp,
-                          scheme->get_max_sweeps( currentInstruction ) );
+         op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
+                            2, coef, states, bookkeepers,
+                            mpsTemp, bkTemp,
+                            scheme->get_max_sweeps( currentInstruction ) );
       }
 
       dcomplex beta = norm( mpsTemp );
@@ -1154,7 +1154,7 @@ void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const boo
            &one, krylovHamiltonian, &krylovSpaceDimension,
            firstVec, &krylovSpaceDimension, &zero, result, &krylovSpaceDimension );
 
-   op->Sum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
+   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
 
    delete op;
 }
@@ -1486,7 +1486,6 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          theodm->gOEDMRe( oedmre );
          theodm->gOEDMIm( oedmim );
 
-
          ( *logger ) << "\n";
          ( *logger ) << "  occupation numbers of molecular orbitals:\n";
          ( *logger ) << "   ";
@@ -1501,23 +1500,23 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          delete[] oedmre;
          delete[] oedmim;
 
-      //    CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
-      //    CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
-      //    tdmbuilder->Build2RDM( the2DM );
+         //    CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
+         //    CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
+         //    tdmbuilder->Build2RDM( the2DM );
          // CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
          // CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
 
          // tdmbuilder->Build2RDM( the2DM );
-      //    ( *logger ) << "   energy " << the2DM->energy() << "\n";
+         //    ( *logger ) << "   energy " << the2DM->energy() << "\n";
 
-      //    ( *logger ) << "   tr(TwoDM) = " << std::real( the2DM->trace() ) << "\n";
-      //    ( *logger ) << "   N(N-1)    = " << prob->gN() * ( prob->gN() - 1.0 ) << "\n";
-      //    ( *logger ) << "\n";
-      //    ( *logger ) << "  occupation numbers of molecular orbitals:\n";
-      //    ( *logger ) << "   ";
-      //    for ( int i = 0; i < L; i++ ) {
-      //       ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( i, i ) );
-      //    }
+         //    ( *logger ) << "   tr(TwoDM) = " << std::real( the2DM->trace() ) << "\n";
+         //    ( *logger ) << "   N(N-1)    = " << prob->gN() * ( prob->gN() - 1.0 ) << "\n";
+         //    ( *logger ) << "\n";
+         //    ( *logger ) << "  occupation numbers of molecular orbitals:\n";
+         //    ( *logger ) << "   ";
+         //    for ( int i = 0; i < L; i++ ) {
+         //       ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( i, i ) );
+         //    }
 
          //    ( *logger ) << "\n";
          //    ( *logger ) << "   ";

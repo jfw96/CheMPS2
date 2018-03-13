@@ -57,18 +57,33 @@ namespace CheMPS2 {
 
       dcomplex Overlap( CTensorT ** mpsLeft, SyBookkeeper * bkLeft, CTensorT ** mpsRight, SyBookkeeper * bkRight );
 
-      void ApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
-                        int statesToAdd,
-                        dcomplex * factors,
-                        CTensorT *** states,
-                        SyBookkeeper ** bookkeepers,
-                        CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                        int numberOfSweeps = 2 );
+      // Single Site functions
+      void SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
+                          int statesToAdd,
+                          dcomplex * factors,
+                          CTensorT *** states,
+                          SyBookkeeper ** bookkeepers,
+                          CTensorT ** mpsOut, SyBookkeeper * bkOut,
+                          int numberOfSweeps = 2 );
 
-      void Sum( int statesToAdd,
-                dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
-                CTensorT ** mpsOut, SyBookkeeper * bkOut, 
-                int numberOfSweeps = 2 );
+      void SSSum( int statesToAdd,
+                  dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
+                  CTensorT ** mpsOut, SyBookkeeper * bkOut,
+                  int numberOfSweeps = 2 );
+
+      // Double Site functions
+      void DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
+                          int statesToAdd,
+                          dcomplex * factors,
+                          CTensorT *** states,
+                          SyBookkeeper ** bookkeepers,
+                          CTensorT ** mpsOut, SyBookkeeper * bkOut,
+                          int numberOfSweeps = 2 );
+
+      void DSSum( int statesToAdd,
+                  dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
+                  CTensorT ** mpsOut, SyBookkeeper * bkOut,
+                  int numberOfSweeps = 2 );
 
       private:
       void updateMovingLeftSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown );
