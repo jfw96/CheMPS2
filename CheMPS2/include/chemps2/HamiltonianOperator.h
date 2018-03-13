@@ -80,6 +80,11 @@ namespace CheMPS2 {
                           CTensorT ** mpsOut, SyBookkeeper * bkOut,
                           int numberOfSweeps = 2 );
 
+      // Double Site functions
+      void DSApply( CTensorT ** mpsA, SyBookkeeper * bkA,
+                    CTensorT ** mpsOut, SyBookkeeper * bkOut,
+                    int numberOfSweeps = 2 );
+
       void DSSum( int statesToAdd,
                   dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
                   CTensorT ** mpsOut, SyBookkeeper * bkOut,

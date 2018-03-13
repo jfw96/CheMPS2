@@ -326,6 +326,12 @@ void CheMPS2::HamiltonianOperator::SSSum( int statesToAdd,
    }
 }
 
+void CheMPS2::HamiltonianOperator::DSApply( CTensorT ** mpsA, SyBookkeeper * bkA,
+                                            CTensorT ** mpsOut, SyBookkeeper * bkOut,
+                                            int numberOfSweeps ) {
+   DSApplyAndAdd(mpsA, bkA, 0, NULL, NULL, NULL, mpsOut, bkOut, numberOfSweeps);                                                  
+}
+
 void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
                                                   int statesToAdd,
                                                   dcomplex * factors,
