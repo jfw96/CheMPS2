@@ -961,6 +961,32 @@ void CheMPS2::CHeffNS_1S::addDiagram2e1and2e2( const int ikappa, dcomplex * memH
    char notrans = 'N';
 
    int N1 = out->gNR( ikappa ) - out->gNL( ikappa );
+   int N2 = 0;
+
+   //    if ( N1 == 2 ) {
+
+   //       int theindex = out->gIndex();
+   //       int NL       = out->gNL( ikappa );
+   //       int TwoSL    = out->gTwoSL( ikappa );
+   //       int IL       = out->gIL( ikappa );
+   //       int NR       = out->gNR( ikappa );
+   //       int TwoSR    = out->gTwoSR( ikappa );
+   //       int IR       = out->gIR( ikappa );
+
+   //       int dimL     = bk_down->gCurrentDim( theindex, NL, TwoSL, IL );
+   //       int dimRdown = bk_down->gCurrentDim( theindex + 1, NR - 2, TwoSR, IR );
+   //       int dimRup   = bk_up->gCurrentDim( theindex + 1, NR, TwoSR, IR );
+
+   //       int memSkappa = in->gKappa( NL, TwoSL, IL, NR - 2, TwoSR, IR );
+
+   //       if ( memSkappa != -1 ) {
+
+   //          dcomplex * BlockA = ATtensor->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IR );
+   //          dcomplex alpha    = sqrt( 2.0 );
+   //          dcomplex beta     = 1.0;
+   //          zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, in->gStorage() + in->gKappa2index( memSkappa ), &dimL, BlockA, &dimRup, &beta, memHeff, &dimL );
+   //       }
+   //    }
 
    if ( N1 == 2 ) {
 
@@ -983,9 +1009,35 @@ void CheMPS2::CHeffNS_1S::addDiagram2e1and2e2( const int ikappa, dcomplex * memH
          dcomplex * BlockA = ATtensor->gStorage( NR, TwoSR, IR, NR - 2, TwoSR, IR );
          dcomplex alpha    = sqrt( 2.0 );
          dcomplex beta     = 1.0;
+
          zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, in->gStorage() + in->gKappa2index( memSkappa ), &dimL, BlockA, &dimRup, &beta, memHeff, &dimL );
       }
    }
+
+   // if ( N1 == 0 ) {
+
+   //    int theindex = out->gIndex();
+   //    int NL       = out->gNL( ikappa );
+   //    int TwoSL    = out->gTwoSL( ikappa );
+   //    int IL       = out->gIL( ikappa );
+   //    int NR       = out->gNR( ikappa );
+   //    int TwoSR    = out->gTwoSR( ikappa );
+   //    int IR       = out->gIR( ikappa );
+
+   //    int dimL     = bk_down->gCurrentDim( theindex, NL, TwoSL, IL );
+   //    int dimRdown = bk_down->gCurrentDim( theindex + 1, NR + 2, TwoSR, IR );
+   //    int dimRup   = bk_up->gCurrentDim( theindex + 1, NR, TwoSR, IR );
+
+   //    int memSkappa = in->gKappa( NL, TwoSL, IL, NR + 2, TwoSR, IR );
+
+   //    if ( memSkappa != -1 ) {
+
+   //       dcomplex * BlockA = Atensor->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IR );
+   //       dcomplex alpha    = sqrt( 2.0 );
+   //       dcomplex beta     = 1.0;
+   //       zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, in->gStorage() + in->gKappa2index( memSkappa ), &dimL, BlockA, &dimRup, &beta, memHeff, &dimL );
+   //    }
+   // }
 
    if ( N1 == 0 ) {
 
@@ -1008,6 +1060,7 @@ void CheMPS2::CHeffNS_1S::addDiagram2e1and2e2( const int ikappa, dcomplex * memH
          dcomplex * BlockA = Atensor->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IR );
          dcomplex alpha    = sqrt( 2.0 );
          dcomplex beta     = 1.0;
+
          zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, in->gStorage() + in->gKappa2index( memSkappa ), &dimL, BlockA, &dimRup, &beta, memHeff, &dimL );
       }
    }
@@ -1045,22 +1098,77 @@ void CheMPS2::CHeffNS_1S::addDiagram2e3spin0( const int ikappa, dcomplex * memHe
 
 void CheMPS2::CHeffNS_1S::addDiagram2e3spin1( const int ikappa, dcomplex * memHeff, CTensorT * in, CTensorT * out, CTensorOperator * DTtensor ) {
 
+   // char cotrans = 'C';
+   // char notrans = 'N';
+
+   // int N1 = out->gNR( ikappa ) - out->gNL( ikappa );
+   // if ( N1 == 1 ) {
+
+   //    int theindex = out->gIndex();
+
+   //    int NL    = out->gNL( ikappa );
+   //    int TwoSL = out->gTwoSL( ikappa );
+   //    int IL    = out->gIL( ikappa );
+   //    int NR    = out->gNR( ikappa );
+   //    int TwoSR = out->gTwoSR( ikappa );
+   //    int IR    = out->gIR( ikappa );
+   //    int TwoJ  = ( N1 == 1 ) ? 1 : 0;
+   //    int N2    = 0;
+
+   //    int dimL   = bk_down->gCurrentDim( theindex, NL, TwoSL, IL );
+   //    int dimRup = bk_up->gCurrentDim( theindex + 1, NR, TwoSR, IR );
+
+   //    for ( int TwoSRdown = TwoSR - 2; TwoSRdown <= TwoSR + 2; TwoSRdown += 2 ) {
+
+   //       int dimRdown = bk_down->gCurrentDim( theindex + 1, NR, TwoSRdown, IR );
+
+   //       if ( dimRdown > 0 ) {
+
+   //          dcomplex * Dblock = DTtensor->gStorage( NR, TwoSR, IR, NR, TwoSRdown, IR );
+
+   //          int TwoS2     = ( N2 == 1 ) ? 1 : 0;
+   //          int TwoJstart = ( ( TwoSRdown != TwoSL ) || ( TwoS2 == 0 ) ) ? 1 + TwoS2 : 0;
+   //          for ( int TwoJdown = TwoJstart; TwoJdown <= 1 + TwoS2; TwoJdown += 2 ) {
+   //             if ( abs( TwoSL - TwoSRdown ) <= TwoJdown ) {
+
+   //                int memSkappa = in->gKappa( NL, TwoSL, IL, NR, TwoSRdown, IR );
+
+   //                if ( memSkappa != -1 ) {
+
+   //                   int fase       = phase( TwoSRdown + TwoSL + 2 * TwoJ + TwoS2 + 1 );
+   //                   dcomplex alpha = fase * sqrt( 3.0 * ( TwoJ + 1.0 ) * ( TwoJdown + 1.0 ) / ( TwoSR + 1.0 ) ) * ( TwoSRdown + 1.0 ) * Wigner::wigner6j( TwoJdown, TwoJ, 2, 1, 1, TwoS2 ) * Wigner::wigner6j( TwoJdown, TwoJ, 2, TwoSR, TwoSRdown, TwoSL );
+   //                   dcomplex beta  = 1.0;
+   //                   zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, in->gStorage() + in->gKappa2index( memSkappa ), &dimL, Dblock, &dimRup, &beta, memHeff, &dimL );
+   //                }
+   //             }
+   //          }
+   //       }
+   //    }
+   // }
+
    char cotrans = 'C';
    char notrans = 'N';
 
    int N1 = out->gNR( ikappa ) - out->gNL( ikappa );
+
    if ( N1 == 1 ) {
 
-      int theindex = out->gIndex();
+      int TwoS1 = ( N1 == 1 ) ? 1 : 0;
 
-      int NL    = out->gNL( ikappa );
-      int TwoSL = out->gTwoSL( ikappa );
-      int IL    = out->gIL( ikappa );
-      int NR    = out->gNR( ikappa );
-      int TwoSR = out->gTwoSR( ikappa );
-      int IR    = out->gIR( ikappa );
-      int TwoJ  = ( N1 == 1 ) ? 1 : 0;
+      int theindex = in->gIndex();
+
+      int NL    = in->gNL( ikappa );
+      int TwoSL = in->gTwoSL( ikappa );
+      int IL    = in->gIL( ikappa );
+      int NR    = in->gNR( ikappa );
+      int TwoSR = in->gTwoSR( ikappa );
+      int IR    = in->gIR( ikappa );
+
+      int TwoJ  = TwoS1;
+      int TwoS2 = 0;
       int N2    = 0;
+
+      int N1 = NR - NL;
 
       int dimL   = bk_down->gCurrentDim( theindex, NL, TwoSL, IL );
       int dimRup = bk_up->gCurrentDim( theindex + 1, NR, TwoSR, IR );
@@ -1083,9 +1191,10 @@ void CheMPS2::CHeffNS_1S::addDiagram2e3spin1( const int ikappa, dcomplex * memHe
                   if ( memSkappa != -1 ) {
 
                      int fase       = phase( TwoSRdown + TwoSL + 2 * TwoJ + TwoS2 + 1 );
-                     dcomplex alpha = fase * sqrt( 3.0 * ( TwoJ + 1.0 ) * ( TwoJdown + 1.0 ) / ( TwoSR + 1.0 ) ) * ( TwoSRdown + 1.0 ) * Wigner::wigner6j( TwoJdown, TwoJ, 2, 1, 1, TwoS2 ) * Wigner::wigner6j( TwoJdown, TwoJ, 2, TwoSR, TwoSRdown, TwoSL );
+                     dcomplex alpha = fase * sqrt( 3.0 * ( TwoJ + 1 ) * ( TwoJdown + 1 ) * ( TwoSRdown + 1 ) ) * Wigner::wigner6j( TwoJdown, TwoJ, 2, 1, 1, TwoS2 ) * Wigner::wigner6j( TwoJdown, TwoJ, 2, TwoSR, TwoSRdown, TwoSL );
                      dcomplex beta  = 1.0;
-                     zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, in->gStorage() + in->gKappa2index( memSkappa ), &dimL, Dblock, &dimRup, &beta, memHeff, &dimL );
+
+                     zgemm_( &notrans, &cotrans, &dimL, &dimRup, &dimRdown, &alpha, in->gStorage() + in->gKappa2index( memSkappa ), &dimL, Dblock, &dimRdown, &beta, memHeff, &dimL );
                   }
                }
             }
