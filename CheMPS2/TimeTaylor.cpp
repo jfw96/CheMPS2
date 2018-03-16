@@ -1056,7 +1056,244 @@ void CheMPS2::TimeTaylor::doStep_rk_4( const int currentInstruction, const bool 
    abort();
 }
 
+void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+
+   dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
+
+   HamiltonianOperator * op = new HamiltonianOperator( prob );
+
+   std::vector< CTensorT ** > krylovBasisVectors;
+   std::vector< SyBookkeeper * > krylovBasisVectorBookkeepers;
+
+   // Step 1
+   krylovBasisVectors.push_back( mpsIn );
+   krylovBasisVectorBookkeepers.push_back( bkIn );
+
+   while ( true ) {
+
+      SyBookkeeper * bkTemp = new SyBookkeeper( *bkIn );
+      CTensorT ** mpsTemp   = new CTensorT *[ L ];
+      for ( int index = 0; index < L; index++ ) {
+         mpsTemp[ index ] = new CTensorT( mpsIn[ index ] );
+         mpsTemp[ index ]->random();
+      }
+
+      std::vector< dcomplex > coef;
+      std::vector< CTensorT ** > states;
+      std::vector< SyBookkeeper * > bookkeepers;
+
+      for ( int i = 0; i < krylovBasisVectors.size(); i++ ) {
+         dcomplex nrm = overlap( krylovBasisVectors[ i ], krylovBasisVectors[ i ] );
+         dcomplex mat = op->Overlap( krylovBasisVectors[ i ], krylovBasisVectorBookkeepers[ i ], krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back() );
+         coef.push_back( -mat / nrm );
+         states.push_back( krylovBasisVectors[ i ] );
+         bookkeepers.push_back( krylovBasisVectorBookkeepers[ i ] );
+      }
+
+      op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
+                         states.size(), &coef[ 0 ], &states[ 0 ], &bookkeepers[ 0 ],
+                         mpsTemp, bkTemp,
+                         scheme->get_max_sweeps( currentInstruction ) );
+
+      krylovBasisVectors.push_back( mpsTemp );
+      krylovBasisVectorBookkeepers.push_back( bkTemp );
+
+      if ( krylovBasisVectors.size() > 5 ) {
+         break;
+      }
+   }
+
+   int krylovSpaceDimension = krylovBasisVectors.size();
+
+   dcomplex * krylovHamiltonian = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+      for ( int j = 0; j < krylovSpaceDimension; j++ ) {
+         krylovHamiltonian[ i + krylovSpaceDimension * j ] = step * op->Overlap( krylovBasisVectors[ i ], krylovBasisVectorBookkeepers[ i ], krylovBasisVectors[ j ], krylovBasisVectorBookkeepers[ j ] ) / overlap( krylovBasisVectors[ i ], krylovBasisVectors[ i ] );
+      }
+   }
+
+   int deg        = 6;
+   double bla     = 1.0;
+   int lwsp       = 4 * krylovSpaceDimension * krylovSpaceDimension + deg + 1;
+   dcomplex * wsp = new dcomplex[ lwsp ];
+   int * ipiv     = new int[ krylovSpaceDimension ];
+   int iexph      = 0;
+   int ns         = 0;
+   int info;
+
+   zgpadm_( &deg, &krylovSpaceDimension, &bla, krylovHamiltonian, &krylovSpaceDimension,
+            wsp, &lwsp, ipiv, &iexph, &ns, &info );
+
+   dcomplex * exph = &wsp[ iexph - 1];
+
+   dcomplex * result = new dcomplex[ krylovSpaceDimension ];
+   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+      result[i] = exph[ i + krylovSpaceDimension * 0 ];
+   }
+   
+   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
+
+   delete op;
+}
+
 void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+
+   // dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
+
+   // HamiltonianOperator * op = new HamiltonianOperator( prob );
+
+   // std::vector< CTensorT ** > krylovBasisVectors;
+   // std::vector< SyBookkeeper * > krylovBasisVectorBookkeepers;
+   // std::vector< dcomplex > krylovHamiltonianDiagonal;
+   // std::vector< dcomplex > krylovHamiltonianOffDiagonal;
+
+   // // Step 1
+   // krylovBasisVectors.push_back( mpsIn );
+   // krylovBasisVectorBookkeepers.push_back( bkIn );
+   // krylovHamiltonianDiagonal.push_back( op->ExpectationValue( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back() ) );
+
+   // while ( true ) {
+
+   //    SyBookkeeper * bkTemp = new SyBookkeeper( *bkIn );
+   //    CTensorT ** mpsTemp   = new CTensorT *[ L ];
+   //    for ( int index = 0; index < L; index++ ) {
+   //       mpsTemp[ index ] = new CTensorT( mpsIn[ index ] );
+   //       mpsTemp[ index ]->random();
+   //    }
+
+   //    if ( krylovBasisVectors.size() == 1 ) {
+   //       dcomplex coef[]              = {-krylovHamiltonianDiagonal.back()};
+   //       CTensorT ** states[]         = {krylovBasisVectors.back()};
+   //       SyBookkeeper * bookkeepers[] = {krylovBasisVectorBookkeepers.back()};
+
+   //       op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
+   //                          1, coef, states, bookkeepers,
+   //                          mpsTemp, bkTemp,
+   //                          scheme->get_max_sweeps( currentInstruction ) );
+   //    } else {
+   //       // dcomplex coef[]              = {-krylovHamiltonianOffDiagonal.back(), -krylovHamiltonianDiagonal.back()};
+   //       // CTensorT ** states[]         = {krylovBasisVectors.end()[ -2 ], krylovBasisVectors.back()};
+   //       // SyBookkeeper * bookkeepers[] = {krylovBasisVectorBookkeepers.end()[ -2 ], krylovBasisVectorBookkeepers.back()};
+
+   //       // op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
+   //       //                    2, coef, states, bookkeepers,
+   //       //                    mpsTemp, bkTemp,
+   //       //                    scheme->get_max_sweeps( currentInstruction ) );
+
+   //       std::vector< dcomplex > coef;
+   //       std::vector< CTensorT ** > states;
+   //       std::vector< SyBookkeeper * > bookkeepers;
+
+   //       coef.push_back( -krylovHamiltonianOffDiagonal.back() );
+   //       states.push_back( krylovBasisVectors.end()[ -2 ] );
+   //       bookkeepers.push_back( krylovBasisVectorBookkeepers.end()[ -2 ] );
+
+   //       for ( int i = 0; i < krylovBasisVectors.size(); i++ ) {
+   //          coef.push_back( -op->Overlap( krylovBasisVectors[ i ], krylovBasisVectorBookkeepers[ i ], krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back() ) );
+   //          states.push_back( krylovBasisVectors[ i ] );
+   //          bookkeepers.push_back( krylovBasisVectorBookkeepers[ i ] );
+   //       }
+
+   //       coef.erase( coef.begin() + 1 );
+   //       states.erase( states.begin() + 1 );
+   //       bookkeepers.erase( bookkeepers.begin() + 1 );
+
+   //       // coef.push_back( -op->Overlap( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(), krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back() ) );
+   //       //             states.push_back( krylovBasisVectors.back() );
+   //       //             bookkeepers.push_back( krylovBasisVectorBookkeepers.back() );
+
+   //       op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
+   //                          states.size(), &coef[ 0 ], &states[ 0 ], &bookkeepers[ 0 ],
+   //                          mpsTemp, bkTemp,
+   //                          scheme->get_max_sweeps( currentInstruction ) );
+   //    }
+
+   //    dcomplex beta = norm( mpsTemp );
+   //    std::cout << "beta: " << beta << std::endl;
+   //    if ( abs( beta ) < 1e-10 || krylovBasisVectors.size() > 20 ) {
+   //       break;
+   //    }
+   //    krylovHamiltonianOffDiagonal.push_back( beta );
+   //    mpsTemp[ 0 ]->number_operator( 0.0, 1.0 / beta );
+   //    krylovBasisVectors.push_back( mpsTemp );
+   //    krylovBasisVectorBookkeepers.push_back( bkTemp );
+   //    std::cout << std::real( op->Overlap( krylovBasisVectors[ 1 ], krylovBasisVectorBookkeepers[ 1 ], krylovBasisVectors[ 1 ], krylovBasisVectorBookkeepers[ 1 ] ) ) << std::endl;
+   //    std::cout << std::real( op->Overlap( krylovBasisVectors[ 1 ], krylovBasisVectorBookkeepers[ 1 ], krylovBasisVectors[ 1 ], krylovBasisVectorBookkeepers[ 1 ] ) ) << std::endl;
+   //    krylovHamiltonianDiagonal.push_back( op->ExpectationValue( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back() ) );
+   //    std::cout << "alpha: " << krylovHamiltonianDiagonal.back() << std::endl;
+   // }
+
+   // int krylovSpaceDimension = krylovBasisVectors.size();
+
+   // // std::cout << std::endl;
+   // // for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+   // //    for ( int j = 0; j < krylovSpaceDimension; j++ ) {
+   // //       std::cout << std::real( overlap( krylovBasisVectors[ i ], krylovBasisVectors[ j ] ) ) << " ";
+   // //    }
+   // //    std::cout << std::endl;
+   // // }
+   // // std::cout << std::endl;
+
+   // // std::cout << std::endl;
+   // // for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+   // //    for ( int j = 0; j < krylovSpaceDimension; j++ ) {
+   // //       std::cout << std::real( op->Overlap( krylovBasisVectors[ i ], krylovBasisVectorBookkeepers[ i ], krylovBasisVectors[ j ], krylovBasisVectorBookkeepers[ j ] ) ) << " ";
+   // //    }
+   // //    std::cout << std::endl;
+   // // }
+   // // std::cout << std::endl;
+
+   // dcomplex * krylovHamiltonian = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   // for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+   //    for ( int j = 0; j < krylovSpaceDimension; j++ ) {
+   //       if ( i == j ) {
+   //          krylovHamiltonian[ i + krylovSpaceDimension * j ] = krylovHamiltonianDiagonal[ i ];
+   //       } else if ( i == j - 1 ) {
+   //          krylovHamiltonian[ i + krylovSpaceDimension * j ] = krylovHamiltonianOffDiagonal[ i ];
+   //       } else if ( i == j + 1 ) {
+   //          krylovHamiltonian[ i + krylovSpaceDimension * j ] = krylovHamiltonianOffDiagonal[ j ];
+   //       } else {
+   //          krylovHamiltonian[ i + krylovSpaceDimension * j ] = 0.0;
+   //       }
+   //    }
+   // }
+
+   // std::cout << std::endl;
+   // for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+   //    for ( int j = 0; j < krylovSpaceDimension; j++ ) {
+   //       std::cout << std::real( krylovHamiltonian[ i + krylovSpaceDimension * j ] ) << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
+   // std::cout << std::endl;
+
+   // char jobz       = 'V';
+   // char uplo       = 'U';
+   // double * evals  = new double[ krylovSpaceDimension ];
+   // int lwork       = 2 * krylovSpaceDimension - 1;
+   // dcomplex * work = new dcomplex[ lwork ];
+   // double * rwork  = new double[ 3 * krylovSpaceDimension - 2 ];
+   // int info;
+
+   // zheev_( &jobz, &uplo, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, evals, work, &lwork, rwork, &info );
+
+   // dcomplex * firstVec = new dcomplex[ krylovSpaceDimension ];
+   // for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+   //    firstVec[ i ] = exp( evals[ i ] * step ) * krylovHamiltonian[ krylovSpaceDimension * i ];
+   // }
+
+   // char notrans      = 'N';
+   // int onedim        = 1;
+   // dcomplex one      = 1.0;
+   // dcomplex zero     = 0.0;
+   // dcomplex * result = new dcomplex[ krylovSpaceDimension ];
+   // zgemm_( &notrans, &notrans, &krylovSpaceDimension, &onedim, &krylovSpaceDimension,
+   //         &one, krylovHamiltonian, &krylovSpaceDimension,
+   //         firstVec, &krylovSpaceDimension, &zero, result, &krylovSpaceDimension );
+
+   // op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
+
+   // delete op;
 
    dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
 
@@ -1554,8 +1791,9 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          }
 
          //    doStep_taylor_1( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
-         // doStep_taylor_1site( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
-         doStep_krylov( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
+         //    doStep_taylor_1site( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
+         // doStep_krylov( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
+         doStep_arnoldi( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
          //    doStep_euler_g( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
 
          for ( int site = 0; site < L; site++ ) {

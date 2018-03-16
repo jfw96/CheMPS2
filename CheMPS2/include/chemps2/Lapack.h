@@ -57,5 +57,7 @@ dcomplex zdotc_( int * n, dcomplex * x, int * incx, dcomplex * y, int * incy );
 dcomplex zdotu_( int * n, dcomplex * x, int * incx, dcomplex * y, int * incy );
 void zgesdd_( char * JOBZ, int * M, int * N, dcomplex * A, int * LDA, double * S, dcomplex * U, int * LDU, dcomplex * VT, int * LDVT, dcomplex * WORK, int * LWORK, double * RWORK, int * IWORK, int * INFO );
 void zheev_( char * JOBZ, char * UPLO, int * N, dcomplex * A, int * LDA, double * W, dcomplex * WORK, int * LWORK, double * RWORK, int * INFO );
+void zgeev_( char * JOBVL, char * JOBVR, int * N, dcomplex * A, int * LDA, dcomplex * W, dcomplex * VL, int *LDVL, dcomplex* VR, int* LDVR, dcomplex * WORK, int * LWORK, double * RWORK, int * INFO );
+void zgpadm_( int * ideg, int * m, double * t, dcomplex * H, int * ldh, dcomplex * wsp, int * lwsp, int * ipiv, int * iexph, int * ns, int * iflag);
 }
 #endif

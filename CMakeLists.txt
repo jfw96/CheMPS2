@@ -119,6 +119,9 @@ if (MKL)
     add_definitions (-DCHEMPS2_MKL)
 endif ()
 
+# <<< Find ExpoKit >>>
+find_package (TargetEXPOKIT REQUIRED)
+
 # <<<  Find HDF5  >>>
 
 find_package (TargetHDF5 REQUIRED)
