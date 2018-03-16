@@ -1074,7 +1074,7 @@ void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bo
       SyBookkeeper * bkTemp = new SyBookkeeper( *bkIn );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
       for ( int index = 0; index < L; index++ ) {
-         mpsTemp[ index ] = new CTensorT( mpsIn[ index ] );
+         mpsTemp[ index ] = new CTensorT( index, bkTemp );
          mpsTemp[ index ]->random();
       }
 
@@ -1090,6 +1090,10 @@ void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bo
          bookkeepers.push_back( krylovBasisVectorBookkeepers[ i ] );
       }
 
+      for ( int index = 0; index < L; index++ ) {
+         mpsTemp[ index ] = new CTensorT( mpsIn[ index ] );
+         mpsTemp[ index ]->random();
+      }
       op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
                          states.size(), &coef[ 0 ], &states[ 0 ], &bookkeepers[ 0 ],
                          mpsTemp, bkTemp,
@@ -1098,7 +1102,7 @@ void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bo
       krylovBasisVectors.push_back( mpsTemp );
       krylovBasisVectorBookkeepers.push_back( bkTemp );
 
-      if ( krylovBasisVectors.size() > 5 ) {
+      if ( krylovBasisVectors.size() > 10 ) {
          break;
       }
    }
@@ -1124,13 +1128,13 @@ void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bo
    zgpadm_( &deg, &krylovSpaceDimension, &bla, krylovHamiltonian, &krylovSpaceDimension,
             wsp, &lwsp, ipiv, &iexph, &ns, &info );
 
-   dcomplex * exph = &wsp[ iexph - 1];
+   dcomplex * exph = &wsp[ iexph - 1 ];
 
    dcomplex * result = new dcomplex[ krylovSpaceDimension ];
    for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-      result[i] = exph[ i + krylovSpaceDimension * 0 ];
+      result[ i ] = exph[ i + krylovSpaceDimension * 0 ];
    }
-   
+
    op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
 
    delete op;
@@ -1680,7 +1684,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          ( *logger ) << "\n";
          ( *logger ) << "   ";
          for ( int i = 0; i < L + 1; i++ ) {
-            fcidims[ i ] = MPSBK->gFCIDimAtBound( i );
+            fcidims[ i ] = MPSBK->gTotDimAtBound( i );
             ( *logger ) << std::setw( 5 ) << fcidims[ i ];
          }
          H5LTmake_dataset( dataPointID, "MPSDims", 1, &Lposize, H5T_STD_I32LE, fcidims );

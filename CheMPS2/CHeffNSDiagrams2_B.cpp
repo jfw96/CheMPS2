@@ -167,37 +167,37 @@ void CheMPS2::CHeffNS::addDiagram2a2spin0( const int ikappa, dcomplex * memHeff,
 
    } else {
 
-      for ( int l_gamma = theindex + 2; l_gamma < Prob->gL(); l_gamma++ ) {
-         for ( int l_delta = l_gamma; l_delta < Prob->gL(); l_delta++ ) {
+            for ( int l_gamma = theindex + 2; l_gamma < Prob->gL(); l_gamma++ ) {
+               for ( int l_delta = l_gamma; l_delta < Prob->gL(); l_delta++ ) {
 
-#ifdef CHEMPS2_MPI_COMPILATION
-            if ( MPIchemps2::owner_absigma( l_gamma, l_delta ) == MPIRANK )
-#endif
-            {
-               int ILdown    = Irreps::directProd( IL, Atensors[ theindex - 1 ][ l_delta - l_gamma ][ l_gamma - theindex ]->get_irrep() );
-               int IRdown    = Irreps::directProd( IR, S0tensors[ theindex + 1 ][ l_delta - l_gamma ][ l_gamma - theindex - 2 ]->get_irrep() );
-               int memSkappa = denS->gKappa( NL + 2, TwoSL, ILdown, N1, N2, TwoJ, NR + 2, TwoSR, IRdown );
+      #ifdef CHEMPS2_MPI_COMPILATION
+                  if ( MPIchemps2::owner_absigma( l_gamma, l_delta ) == MPIRANK )
+      #endif
+                  {
+                     int ILdown    = Irreps::directProd( IL, Atensors[ theindex - 1 ][ l_delta - l_gamma ][ l_gamma - theindex ]->get_irrep() );
+                     int IRdown    = Irreps::directProd( IR, S0tensors[ theindex + 1 ][ l_delta - l_gamma ][ l_gamma - theindex - 2 ]->get_irrep() );
+                     int memSkappa = denS->gKappa( NL + 2, TwoSL, ILdown, N1, N2, TwoJ, NR + 2, TwoSR, IRdown );
 
-               if ( memSkappa != -1 ) {
+                     if ( memSkappa != -1 ) {
 
-                  int dimLdown = bk_down->gCurrentDim( theindex, NL + 2, TwoSL, ILdown );
-                  int dimRdown = bk_down->gCurrentDim( theindex + 2, NR + 2, TwoSR, IRdown );
+                        int dimLdown = bk_down->gCurrentDim( theindex, NL + 2, TwoSL, ILdown );
+                        int dimRdown = bk_down->gCurrentDim( theindex + 2, NR + 2, TwoSR, IRdown );
 
-                  dcomplex * BlockA  = Atensors[ theindex - 1 ][ l_delta - l_gamma ][ l_gamma - theindex ]->gStorage( NL, TwoSL, IL, NL + 2, TwoSL, ILdown );
-                  dcomplex * BlockS0 = S0tensors[ theindex + 1 ][ l_delta - l_gamma ][ l_gamma - theindex - 2 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
-                  dcomplex * BlockS  = denS->gStorage() + denS->gKappa2index( memSkappa );
+                        dcomplex * BlockA  = Atensors[ theindex - 1 ][ l_delta - l_gamma ][ l_gamma - theindex ]->gStorage( NL, TwoSL, IL, NL + 2, TwoSL, ILdown );
+                        dcomplex * BlockS0 = S0tensors[ theindex + 1 ][ l_delta - l_gamma ][ l_gamma - theindex - 2 ]->gStorage( NR, TwoSR, IR, NR + 2, TwoSR, IRdown );
+                        dcomplex * BlockS  = denS->gStorage() + denS->gKappa2index( memSkappa );
 
-                  dcomplex alpha = 1.0;
-                  dcomplex beta  = 0.0;
+                        dcomplex alpha = 1.0;
+                        dcomplex beta  = 0.0;
 
-                  zgemm_( &notrans, &notrans, &dimL, &dimRdown, &dimLdown, &alpha, BlockA, &dimL, BlockS, &dimLdown, &beta, workspace, &dimL );
+                        zgemm_( &notrans, &notrans, &dimL, &dimRdown, &dimLdown, &alpha, BlockA, &dimL, BlockS, &dimLdown, &beta, workspace, &dimL );
 
-                  beta = 1.0;
-                  zgemm_( &notrans, &cotrans, &dimL, &dimR, &dimRdown, &alpha, workspace, &dimL, BlockS0, &dimR, &beta, memHeff, &dimL );
+                        beta = 1.0;
+                        zgemm_( &notrans, &cotrans, &dimL, &dimR, &dimRdown, &alpha, workspace, &dimL, BlockS0, &dimR, &beta, memHeff, &dimL );
+                     }
+                  }
                }
             }
-         }
-      }
    }
 }
 

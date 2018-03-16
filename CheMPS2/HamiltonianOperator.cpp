@@ -188,6 +188,7 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                overlaps[ st ][ site - 1 ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site ] );
             }
          }
+         std::cout << i << " " << site << " " << overlap( mpsOut, mpsOut ) << std::endl;
       }
 
       for ( int site = 0; site < L - 1; site++ ) {
@@ -236,6 +237,7 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                overlaps[ st ][ site ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site - 1 ] );
             }
          }
+         std::cout << i << " " << site << " " << overlap( mpsOut, mpsOut ) << std::endl;
       }
    }
 }
@@ -329,7 +331,7 @@ void CheMPS2::HamiltonianOperator::SSSum( int statesToAdd,
 void CheMPS2::HamiltonianOperator::DSApply( CTensorT ** mpsA, SyBookkeeper * bkA,
                                             CTensorT ** mpsOut, SyBookkeeper * bkOut,
                                             int numberOfSweeps ) {
-   DSApplyAndAdd(mpsA, bkA, 0, NULL, NULL, NULL, mpsOut, bkOut, numberOfSweeps);                                                  
+   DSApplyAndAdd( mpsA, bkA, 0, NULL, NULL, NULL, mpsOut, bkOut, numberOfSweeps );
 }
 
 void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
@@ -394,7 +396,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 
          applied->Add( 1.0, fromAdded );
          delete fromAdded;
-         double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 50, 0.0, false, false );
+         double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 500, 0.0, false, true );
 
          delete applied;
          delete heff;
@@ -444,7 +446,8 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          delete heff;
 
          applied->Add( 1.0, fromAdded );
-         double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 50, 0, true, false );
+         double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 500, 0, true, true );
+
          delete fromAdded;
          delete applied;
 
