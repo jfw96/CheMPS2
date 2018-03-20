@@ -397,7 +397,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 
          applied->Add( 1.0, fromAdded );
          delete fromAdded;
-         double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 500, 0.0, false, true );
+         double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 500, 0.0, false, false );
 
          delete applied;
          delete heff;
@@ -447,7 +447,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          delete heff;
 
          applied->Add( 1.0, fromAdded );
-         double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 500, 0, true, true );
+         double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 500, 0, true, false );
 
          delete fromAdded;
          delete applied;
