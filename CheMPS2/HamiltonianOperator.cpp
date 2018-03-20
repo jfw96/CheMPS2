@@ -341,6 +341,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                                                   SyBookkeeper ** bookkeepers,
                                                   CTensorT ** mpsOut, SyBookkeeper * bkOut,
                                                   int numberOfSweeps ) {
+   deleteAllBoundaryOperators();
 
    for ( int index = 0; index < L - 2; index++ ) {
       left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
@@ -470,7 +471,7 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
                                           dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
                                           CTensorT ** mpsOut, SyBookkeeper * bkOut,
                                           int numberOfSweeps ) {
-
+   deleteAllBoundaryOperators();
    for ( int index = 0; index < L - 1; index++ ) {
       left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
    }
