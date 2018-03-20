@@ -188,7 +188,6 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                overlaps[ st ][ site - 1 ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site ] );
             }
          }
-         std::cout << i << " " << site << " " << overlap( mpsOut, mpsOut ) << std::endl;
       }
 
       for ( int site = 0; site < L - 1; site++ ) {
@@ -237,7 +236,6 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                overlaps[ st ][ site ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site - 1 ] );
             }
          }
-         std::cout << i << " " << site << " " << overlap( mpsOut, mpsOut ) << std::endl;
       }
    }
 }
