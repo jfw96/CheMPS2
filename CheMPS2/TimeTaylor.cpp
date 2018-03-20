@@ -1069,7 +1069,7 @@ void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bo
    krylovBasisVectors.push_back( mpsIn );
    krylovBasisVectorBookkeepers.push_back( bkIn );
 
-   while ( true ) {
+   while ( krylovBasisVectors.size() <= 1 ) {
 
       SyBookkeeper * bkTemp = new SyBookkeeper( *bkIn );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
@@ -1101,10 +1101,6 @@ void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bo
 
       krylovBasisVectors.push_back( mpsTemp );
       krylovBasisVectorBookkeepers.push_back( bkTemp );
-
-      if ( krylovBasisVectors.size() > 10 ) {
-         break;
-      }
    }
 
    int krylovSpaceDimension = krylovBasisVectors.size();
@@ -1135,7 +1131,7 @@ void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bo
       result[ i ] = exph[ i + krylovSpaceDimension * 0 ];
    }
 
-   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
+   op->SSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
 
    delete op;
 }
@@ -1740,49 +1736,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          delete theodm;
          delete[] oedmre;
          delete[] oedmim;
-
-         //    CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
-         //    CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
-         //    tdmbuilder->Build2RDM( the2DM );
-         // CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
-         // CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
-
-         // tdmbuilder->Build2RDM( the2DM );
-         //    ( *logger ) << "   energy " << the2DM->energy() << "\n";
-
-         //    ( *logger ) << "   tr(TwoDM) = " << std::real( the2DM->trace() ) << "\n";
-         //    ( *logger ) << "   N(N-1)    = " << prob->gN() * ( prob->gN() - 1.0 ) << "\n";
-         //    ( *logger ) << "\n";
-         //    ( *logger ) << "  occupation numbers of molecular orbitals:\n";
-         //    ( *logger ) << "   ";
-         //    for ( int i = 0; i < L; i++ ) {
-         //       ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( i, i ) );
-         //    }
-
-         //    ( *logger ) << "\n";
-         //    ( *logger ) << "   ";
-         //    ( *logger ) << "\n";
-         //    ( *logger ) << "   real part one body reduced density matrix:\n";
-         //    ( *logger ) << "\n";
-         //    for ( int irow = 0; irow < L; irow++ ) {
-         //       for ( int icol = 0; icol < L; icol++ ) {
-         //          ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( irow, icol ) );
-         //       }
-         //       ( *logger ) << "\n";
-         //    }
-         //    ( *logger ) << "\n";
-
-         //    ( *logger ) << "   imaginary part one body reduced density matrix:\n";
-         //    ( *logger ) << "\n";
-         //    for ( int irow = 0; irow < L; irow++ ) {
-         //       for ( int icol = 0; icol < L; icol++ ) {
-         //          ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::imag( the2DM->get1RDM_DMRG( irow, icol ) );
-         //       }
-         //       ( *logger ) << "\n";
-         //    }
-         //    delete the2DM;
-         //    delete tdmbuilder;
-
+         
          ( *logger ) << "\n";
 
          deleteAllBoundaryOperators();
