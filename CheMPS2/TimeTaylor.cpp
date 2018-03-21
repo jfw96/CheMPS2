@@ -1069,7 +1069,7 @@ void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bo
    krylovBasisVectors.push_back( mpsIn );
    krylovBasisVectorBookkeepers.push_back( bkIn );
 
-   while ( krylovBasisVectors.size() <= 1 ) {
+   while ( krylovBasisVectors.size() <= scheme->get_krylov_dimension( currentInstruction ) ) {
 
       SyBookkeeper * bkTemp = new SyBookkeeper( *bkIn );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
@@ -1094,7 +1094,7 @@ void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bo
          mpsTemp[ index ] = new CTensorT( mpsIn[ index ] );
          mpsTemp[ index ]->random();
       }
-      op->SSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
+      op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
                          states.size(), &coef[ 0 ], &states[ 0 ], &bookkeepers[ 0 ],
                          mpsTemp, bkTemp,
                          scheme->get_max_sweeps( currentInstruction ) );
@@ -1131,7 +1131,7 @@ void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bo
       result[ i ] = exph[ i + krylovSpaceDimension * 0 ];
    }
 
-   op->SSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
+   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
 
    delete op;
 }
@@ -1736,7 +1736,9 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          delete theodm;
          delete[] oedmre;
          delete[] oedmim;
-
+         printFCITensor( prob, MPS );
+         // std::cout << *MPS[0] << std::endl;
+         // std::cout << *MPS[1] << std::endl;
          std::cout << "\n";
 
          deleteAllBoundaryOperators();
@@ -1749,7 +1751,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          }
 
          //    doStep_taylor_1( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
-         //    doStep_taylor_1site( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
+         // doStep_taylor_1site( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
          // doStep_krylov( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
          doStep_arnoldi( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
          //    doStep_euler_g( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
