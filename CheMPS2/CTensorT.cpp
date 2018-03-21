@@ -641,7 +641,12 @@ std::ostream & CheMPS2::operator<<( std::ostream & os, const CheMPS2::CTensorT &
    return os;
 }
 
-void recusion( CheMPS2::Problem * prob, CheMPS2::CTensorT ** mps, std::vector< int > alphas, std::vector< int > betas, int L ) {
+void recusion( CheMPS2::Problem * prob, CheMPS2::CTensorT ** mps,
+               std::vector< int > alphas, std::vector< int > betas, int L,
+               std::vector< std::vector< int > > & alphasOut,
+               std::vector< std::vector< int > > & betasOut,
+               std::vector< double > & coefsRealOut,
+               std::vector< double > & coefsImagOut ) {
 
    int sumAlpha = 0;
    int sumBeta  = 0;
@@ -657,37 +662,68 @@ void recusion( CheMPS2::Problem * prob, CheMPS2::CTensorT ** mps, std::vector< i
 
    if ( alphas.size() == L && betas.size() == L ) {
       if ( sumAlpha + sumBeta == prob->gN() ) {
-         for ( int i = 0; i < L; i++ ) {
-            std::cout << alphas[ i ] << " ";
-         }
-         for ( int i = 0; i < L; i++ ) {
-            std::cout << betas[ i ] << " ";
-         }
-         dcomplex coef = getFCICoefficient( prob, mps, &alphas[ 0 ], &betas[ 0 ] );
-         std::cout << std::real( coef ) << " " << std::imag( coef ) << std::endl;
+         // for ( int i = 0; i < L; i++ ) {
+         //    std::cout << alphas[ i ] << " ";
+         // }
+         // for ( int i = 0; i < L; i++ ) {
+         //    std::cout << betas[ i ] << " ";
+         // }
+         // dcomplex coef = getFCICoefficient( prob, mps, &alphas[ 0 ], &betas[ 0 ] );
+         alphasOut.push_back( alphas );
+         betasOut.push_back( betas );
+         coefsRealOut.push_back( std::real(getFCICoefficient( prob, mps, &alphas[ 0 ], &betas[ 0 ] )) );
+         coefsImagOut.push_back( std::imag(getFCICoefficient( prob, mps, &alphas[ 0 ], &betas[ 0 ] )) );
+         // std::cout << std::real( coef ) << " " << std::imag( coef ) << std::endl;
       }
    } else if ( alphas.size() == L ) {
       std::vector< int > caseA = betas;
       caseA.push_back( 0 );
-      recusion( prob, mps, alphas, caseA, L );
+      recusion( prob, mps, alphas, caseA, L, alphasOut, betasOut, coefsRealOut, coefsImagOut );
       std::vector< int > caseB = betas;
       caseB.push_back( 1 );
-      recusion( prob, mps, alphas, caseB, L );
+      recusion( prob, mps, alphas, caseB, L, alphasOut, betasOut, coefsRealOut, coefsImagOut );
    } else {
       std::vector< int > caseA = alphas;
       caseA.push_back( 0 );
-      recusion( prob, mps, caseA, betas, L );
+      recusion( prob, mps, caseA, betas, L, alphasOut, betasOut, coefsRealOut, coefsImagOut );
       std::vector< int > caseB = alphas;
       caseB.push_back( 1 );
-      recusion( prob, mps, caseB, betas, L );
+      recusion( prob, mps, caseB, betas, L, alphasOut, betasOut, coefsRealOut, coefsImagOut );
    }
+}
+
+void CheMPS2::getFCITensor( Problem * prob, CTensorT ** mps, 
+                            std::vector< std::vector< int > >& alphasOut,
+                            std::vector< std::vector< int > >& betasOut,
+                            std::vector< double >& coefsRealOut,
+                            std::vector< double >& coefsImagOut) {
+
+   std::vector< int > alphas;
+   std::vector< int > betas;
+
+   recusion( prob, mps, alphas, betas, prob->gL(), alphasOut, betasOut, coefsRealOut, coefsImagOut );
 }
 
 void CheMPS2::printFCITensor( Problem * prob, CTensorT ** mps ) {
 
    std::vector< int > alphas;
    std::vector< int > betas;
-   recusion( prob, mps, alphas, betas, 4 );
+   std::vector< std::vector< int > > alphasOut;
+   std::vector< std::vector< int > > betasOut;
+   std::vector< double > coefsRealOut;
+   std::vector< double > coefsImagOut;
+
+   recusion( prob, mps, alphas, betas, prob->gL(), alphasOut, betasOut, coefsRealOut, coefsImagOut );
+
+   for ( int coef = 0; coef < coefsRealOut.size(); coef++ ) {
+      for ( int i = 0; i < prob->gL(); i++ ) {
+         std::cout << alphasOut[coef][ i ] << " ";
+      }
+      for ( int i = 0; i < prob->gL(); i++ ) {
+         std::cout << betasOut[coef][ i ] << " ";
+      }
+      std::cout << coefsRealOut[coef] << " " <<  coefsImagOut[coef] << std::endl;
+   }
 }
 
 dcomplex CheMPS2::getFCICoefficient( Problem * prob, CTensorT ** mps, int * alpha, int * beta ) {

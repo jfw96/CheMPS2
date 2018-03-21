@@ -17,9 +17,9 @@
 #include "CTensorX.h"
 #include "ConvergenceScheme.h"
 #include "Logger.h"
+#include "MyHDF5.h"
 #include "Problem.h"
 #include "SyBookkeeper.h"
-#include "MyHDF5.h"
 #include "hdf5_hl.h"
 
 namespace CheMPS2 {
@@ -32,7 +32,7 @@ namespace CheMPS2 {
 
       ~TimeTaylor();
 
-      void Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary = false );
+      void Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary = false, const bool doDumpFCI = false );
 
       void fitApplyH( dcomplex factor, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut, const int nSweeps = 5, const int D = 100, const double cut_off = 1e-10 );
 
@@ -122,7 +122,6 @@ namespace CheMPS2 {
       void doStep_rk_4( const int currentInstruction, const bool doImaginary, const double offset );
       void doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
       void doStep_arnoldi( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
-
    };
 } // namespace CheMPS2
 

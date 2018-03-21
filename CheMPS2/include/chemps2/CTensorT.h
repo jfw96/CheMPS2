@@ -190,6 +190,12 @@ namespace CheMPS2 {
 
    dcomplex getFCICoefficient( Problem * prob, CTensorT ** mps, int * alpha, int * beta );
 
+   void getFCITensor( Problem * prob, CTensorT ** mps, 
+                      std::vector< std::vector< int > >& alphasOut,
+                      std::vector< std::vector< int > >& betasOut,
+                      std::vector< double >& coefsRealOut,
+                      std::vector< double >& coefsImagOut);
+
    void left_normalize( CTensorT * left_mps, CTensorT * right_mps );
 
    void right_normalize( CTensorT * left_mps, CTensorT * right_mps );

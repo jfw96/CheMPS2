@@ -1635,7 +1635,7 @@ void CheMPS2::TimeTaylor::doStep_taylor_1( const int currentInstruction, const b
    }
 }
 
-void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary ) {
+void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary, const bool doDumpFCI ) {
 
    hid_t outputID    = H5Gcreate( HDF5FILEID, "/Output", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
    hsize_t dimarray1 = 1;
@@ -1654,9 +1654,9 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
    for ( int inst = 0; inst < scheme->get_number(); inst++ ) {
 
       for ( ; t < scheme->get_max_time( inst ); t += scheme->get_time_step( inst ) ) {
-         char str[ 1024 ];
-         sprintf( str, "/Output/DataPoint%.5f", t );
-         hid_t dataPointID = H5Gcreate( HDF5FILEID, str, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+         char dataPointname[ 1024 ];
+         sprintf( dataPointname, "/Output/DataPoint%.5f", t );
+         hid_t dataPointID = H5Gcreate( HDF5FILEID, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
 
          std::cout << hashline;
          std::cout << "\n";
@@ -1739,9 +1739,28 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          delete theodm;
          delete[] oedmre;
          delete[] oedmim;
-         printFCITensor( prob, MPS );
-         // std::cout << *MPS[0] << std::endl;
-         // std::cout << *MPS[1] << std::endl;
+         if ( doDumpFCI ) {
+            std::vector< std::vector< int > > alphasOut;
+            std::vector< std::vector< int > > betasOut;
+            std::vector< double > coefsRealOut;
+            std::vector< double > coefsImagOut;
+            hsize_t Lsize = L;
+            getFCITensor( prob, MPS, alphasOut, betasOut, coefsRealOut, coefsImagOut );
+
+            char dataFCIName[ 1024 ];
+            sprintf( dataFCIName, "%s/FCICOEF", dataPointname );
+            hid_t FCIID = H5Gcreate( HDF5FILEID, dataFCIName, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+
+            for ( int l = 0; l < alphasOut.size(); l++ ) {
+               char dataFCINameN[ 1024 ];
+               sprintf( dataFCINameN, "%s/FCICOEF/%i", dataPointname, l );
+               hid_t FCIID = H5Gcreate( HDF5FILEID, dataFCINameN, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+               H5LTmake_dataset( FCIID, "FCI_ALPHAS", 1, &Lsize, H5T_NATIVE_INT, &alphasOut[ l ][ 0 ] );
+               H5LTmake_dataset( FCIID, "FCI_BETAS", 1, &Lsize, H5T_NATIVE_INT, &betasOut[ l ][ 0 ] );
+               H5LTmake_dataset( FCIID, "FCI_REAL", 1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsRealOut[ l ] );
+               H5LTmake_dataset( FCIID, "FCI_IMAG", 1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsImagOut[ l ] );
+            }
+         }
          std::cout << "\n";
 
          SyBookkeeper * MPSBKDT = new SyBookkeeper( prob, scheme->get_D( inst ) );
