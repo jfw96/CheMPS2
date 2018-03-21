@@ -12,19 +12,17 @@
 #include "CTwoDMBuilder.h"
 #include "HamiltonianOperator.h"
 #include "Lapack.h"
-#include "MyHDF5.h"
 #include "Special.h"
 #include "TwoDMBuilder.h"
-#include "hdf5_hl.h"
 
-CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn, Logger * loggerIn )
-    : prob( probIn ), scheme( schemeIn ), logger( loggerIn ), L( probIn->gL() ) {
+CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn, hid_t HDF5FILEIDIN )
+    : prob( probIn ), scheme( schemeIn ), HDF5FILEID( HDF5FILEIDIN ), L( probIn->gL() ) {
    assert( probIn->checkConsistency() );
 
    prob->construct_mxelem();
 
-   logger->TextWithDate( "Starting to run a time evolution calculation", time( NULL ) );
-   std::cout << hashline;
+   // logger->TextWithDate( "Starting to run a time evolution calculation", time( NULL ) );
+   // std::cout << hashline;
 
    Ltensors    = new CTensorL **[ L - 1 ];
    LtensorsT   = new CTensorLT **[ L - 1 ];
@@ -53,6 +51,75 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
    for ( int cnt = 0; cnt < L - 1; cnt++ ) {
       isAllocated[ cnt ] = 0;
    }
+
+   hid_t inputGroupID             = H5Gcreate( HDF5FILEID, "/Input", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+   hid_t systemPropertiesID       = H5Gcreate( HDF5FILEID, "/Input/SystemProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+   hid_t waveFunctionPropertiesID = H5Gcreate( HDF5FILEID, "/Input/WaveFunctionProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+   hsize_t dimarray1              = 1;
+
+   std::cout << "\n";
+   std::cout << "   Starting to propagate MPS\n";
+   std::cout << "\n";
+
+   std::cout << "\n";
+   std::cout << "   L = " << L << "\n";
+   H5LTmake_dataset( systemPropertiesID, "L", 1, &dimarray1, H5T_STD_I32LE, &L );
+
+   int Sy = prob->gSy();
+   std::cout << "   Sy = " << Sy << "\n";
+   H5LTmake_dataset( systemPropertiesID, "Sy", 1, &dimarray1, H5T_STD_I32LE, &Sy );
+
+   std::cout << "   Irreps =";
+   int * irreps = new int[ L ];
+   for ( int i = 0; i < L; i++ ) {
+      irreps[ i ] = prob->gIrrep( i );
+      std::cout << std::setw( 5 ) << irreps[ i ];
+   }
+   std::cout << "\n";
+   hsize_t Lsize = L;
+   H5LTmake_dataset( systemPropertiesID, "Irrep", 1, &Lsize, H5T_STD_I32LE, irreps );
+   delete[] irreps;
+
+   double Econst = prob->gEconst();
+   H5LTmake_dataset( systemPropertiesID, "Econst", 1, &dimarray1, H5T_NATIVE_DOUBLE, &Econst );
+
+   std::cout << "\n";
+
+   int N = prob->gN();
+   std::cout << "   N = " << N << "\n";
+   H5LTmake_dataset( waveFunctionPropertiesID, "N", 1, &dimarray1, H5T_STD_I32LE, &N );
+
+   int TwoS = prob->gTwoS();
+   std::cout << "   TwoS = " << TwoS << "\n";
+   H5LTmake_dataset( waveFunctionPropertiesID, "TwoS", 1, &dimarray1, H5T_STD_I32LE, &TwoS );
+
+   int I = prob->gIrrep();
+   std::cout << "   I = " << I << "\n";
+   H5LTmake_dataset( waveFunctionPropertiesID, "I", 1, &dimarray1, H5T_STD_I32LE, &I );
+
+   std::cout << "\n";
+
+   std::cout << "   full ci matrix product state dimensions:\n";
+   std::cout << "   ";
+   for ( int i = 0; i < L + 1; i++ ) {
+      std::cout << std::setw( 5 ) << i;
+   }
+   std::cout << "\n";
+   std::cout << "   ";
+
+   CheMPS2::SyBookkeeper * tempBK = new CheMPS2::SyBookkeeper( prob, 0 );
+   int * fcidims                  = new int[ L + 1 ];
+   for ( int i = 0; i < L + 1; i++ ) {
+      fcidims[ i ] = tempBK->gFCIDimAtBound( i );
+      std::cout << std::setw( 5 ) << fcidims[ i ];
+   }
+   std::cout << "\n";
+   hsize_t Lposize = L + 1;
+   H5LTmake_dataset( waveFunctionPropertiesID, "FCIDims", 1, &Lposize, H5T_STD_I32LE, fcidims );
+   delete[] fcidims;
+   delete tempBK;
+   std::cout << "\n";
+   std::cout << hashline;
 }
 
 CheMPS2::TimeTaylor::~TimeTaylor() {
@@ -83,8 +150,8 @@ CheMPS2::TimeTaylor::~TimeTaylor() {
    delete[] Otensors;
    delete[] isAllocated;
 
-   logger->TextWithDate( "Finished to run a time evolution calculation", time( NULL ) );
-   std::cout << hashline;
+   // logger->TextWithDate( "Finished to run a time evolution calculation", time( NULL ) );
+   // std::cout << hashline;
 }
 
 void CheMPS2::TimeTaylor::updateMovingLeftSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown ) {
@@ -1570,12 +1637,7 @@ void CheMPS2::TimeTaylor::doStep_taylor_1( const int currentInstruction, const b
 
 void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary ) {
 
-   hid_t fileID                   = H5Fcreate( "test.hdf5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
-   hid_t inputGroupID             = H5Gcreate( fileID, "/Input", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
-   hid_t systemPropertiesID       = H5Gcreate( fileID, "/Input/SystemProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
-   hid_t waveFunctionPropertiesID = H5Gcreate( fileID, "/Input/WaveFunctionProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
-   hid_t outputID                 = H5Gcreate( fileID, "/Output", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
-
+   hid_t outputID    = H5Gcreate( HDF5FILEID, "/Output", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
    hsize_t dimarray1 = 1;
 
    HamiltonianOperator * hamOp = new HamiltonianOperator( prob );
@@ -1589,74 +1651,12 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
    double t           = 0.0;
    double firstEnergy = 0;
 
-   std::cout << "\n";
-   std::cout << "   Starting to propagate MPS\n";
-   std::cout << "\n";
-
-   std::cout << "\n";
-   std::cout << "   L = " << L << "\n";
-   H5LTmake_dataset( systemPropertiesID, "L", 1, &dimarray1, H5T_STD_I32LE, &L );
-
-   int Sy = prob->gSy();
-   std::cout << "   Sy = " << Sy << "\n";
-   H5LTmake_dataset( systemPropertiesID, "Sy", 1, &dimarray1, H5T_STD_I32LE, &Sy );
-
-   std::cout << "   Irreps =";
-   int * irreps = new int[ L ];
-   for ( int i = 0; i < L; i++ ) {
-      irreps[ i ] = prob->gIrrep( i );
-      std::cout << std::setw( 5 ) << irreps[ i ];
-   }
-   std::cout << "\n";
-   hsize_t Lsize = L;
-   H5LTmake_dataset( systemPropertiesID, "Irrep", 1, &Lsize, H5T_STD_I32LE, irreps );
-   delete[] irreps;
-
-   double Econst = prob->gEconst();
-   H5LTmake_dataset( systemPropertiesID, "Econst", 1, &dimarray1, H5T_NATIVE_DOUBLE, &Econst );
-
-   std::cout << "\n";
-
-   int N = prob->gN();
-   std::cout << "   N = " << N << "\n";
-   H5LTmake_dataset( waveFunctionPropertiesID, "N", 1, &dimarray1, H5T_STD_I32LE, &N );
-
-   int TwoS = prob->gTwoS();
-   std::cout << "   TwoS = " << TwoS << "\n";
-   H5LTmake_dataset( waveFunctionPropertiesID, "TwoS", 1, &dimarray1, H5T_STD_I32LE, &TwoS );
-
-   int I = prob->gIrrep();
-   std::cout << "   I = " << I << "\n";
-   H5LTmake_dataset( waveFunctionPropertiesID, "I", 1, &dimarray1, H5T_STD_I32LE, &I );
-
-   std::cout << "\n";
-
-   std::cout << "   full ci matrix product state dimensions:\n";
-   std::cout << "   ";
-   for ( int i = 0; i < L + 1; i++ ) {
-      std::cout << std::setw( 5 ) << i;
-   }
-   std::cout << "\n";
-   std::cout << "   ";
-
-   int * fcidims = new int[ L + 1 ];
-   for ( int i = 0; i < L + 1; i++ ) {
-      fcidims[ i ] = MPSBK->gFCIDimAtBound( i );
-      std::cout << std::setw( 5 ) << fcidims[ i ];
-   }
-   std::cout << "\n";
-   hsize_t Lposize = L + 1;
-   H5LTmake_dataset( waveFunctionPropertiesID, "FCIDims", 1, &Lposize, H5T_STD_I32LE, fcidims );
-
-   std::cout << "\n";
-   std::cout << hashline;
-
    for ( int inst = 0; inst < scheme->get_number(); inst++ ) {
 
       for ( ; t < scheme->get_max_time( inst ); t += scheme->get_time_step( inst ) ) {
          char str[ 1024 ];
          sprintf( str, "/Output/DataPoint%.5f", t );
-         hid_t dataPointID = H5Gcreate( fileID, str, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+         hid_t dataPointID = H5Gcreate( HDF5FILEID, str, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
 
          std::cout << hashline;
          std::cout << "\n";
@@ -1679,13 +1679,16 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          }
          std::cout << "\n";
          std::cout << "   ";
+         int * actdims = new int[ L + 1 ];
          for ( int i = 0; i < L + 1; i++ ) {
-            fcidims[ i ] = MPSBK->gTotDimAtBound( i );
-            std::cout << std::setw( 5 ) << fcidims[ i ];
+            actdims[ i ] = MPSBK->gTotDimAtBound( i );
+            std::cout << std::setw( 5 ) << actdims[ i ];
          }
-         H5LTmake_dataset( dataPointID, "MPSDims", 1, &Lposize, H5T_STD_I32LE, fcidims );
-
          std::cout << "\n";
+         hsize_t Lposize = L + 1;
+         H5LTmake_dataset( dataPointID, "MPSDims", 1, &Lposize, H5T_STD_I32LE, actdims );
+         delete[] actdims;
+
          std::cout << "\n";
 
          int MaxM = scheme->get_D( inst );
@@ -1741,8 +1744,6 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          // std::cout << *MPS[1] << std::endl;
          std::cout << "\n";
 
-         deleteAllBoundaryOperators();
-
          SyBookkeeper * MPSBKDT = new SyBookkeeper( prob, scheme->get_D( inst ) );
          CTensorT ** MPSDT      = new CTensorT *[ L ];
          for ( int index = 0; index < L; index++ ) {
@@ -1750,11 +1751,8 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
             MPSDT[ index ]->random();
          }
 
-         //    doStep_taylor_1( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
-         // doStep_taylor_1site( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
          // doStep_krylov( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
          doStep_arnoldi( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
-         //    doStep_euler_g( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
 
          for ( int site = 0; site < L; site++ ) {
             delete MPS[ site ];
@@ -1773,7 +1771,6 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          std::cout << hashline;
       }
    }
-   delete[] fcidims;
 
    for ( int site = 0; site < L; site++ ) {
       delete MPS[ site ];
@@ -1781,6 +1778,4 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
    delete[] MPS;
    delete MPSBK;
    delete hamOp;
-
-   H5Fclose( fileID );
 }

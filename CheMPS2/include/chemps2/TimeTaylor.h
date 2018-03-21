@@ -19,6 +19,8 @@
 #include "Logger.h"
 #include "Problem.h"
 #include "SyBookkeeper.h"
+#include "MyHDF5.h"
+#include "hdf5_hl.h"
 
 namespace CheMPS2 {
 
@@ -26,7 +28,7 @@ namespace CheMPS2 {
       public:
       //! Constructor
       /** \param Problem to problem to be solved*/
-      TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn, Logger * loggerIn );
+      TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn, hid_t HDF5FILEIDIN );
 
       ~TimeTaylor();
 
@@ -49,7 +51,7 @@ namespace CheMPS2 {
 
       ConvergenceScheme * scheme;
 
-      Logger * logger;
+      hid_t HDF5FILEID;
 
       // CTensorT ** MPS;
       // CTensorT ** MPSDT;
