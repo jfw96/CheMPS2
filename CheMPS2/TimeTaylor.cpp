@@ -1123,7 +1123,7 @@ void CheMPS2::TimeTaylor::doStep_rk_4( const int currentInstruction, const bool 
    abort();
 }
 
-void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
    dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
 
@@ -1136,7 +1136,8 @@ void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bo
    krylovBasisVectors.push_back( mpsIn );
    krylovBasisVectorBookkeepers.push_back( bkIn );
 
-   while ( krylovBasisVectors.size() <= scheme->get_krylov_dimension( currentInstruction ) ) {
+   while ( krylovBasisVectors.size() < scheme->get_krylov_dimension( currentInstruction ) &&
+           norm( krylovBasisVectors.back() ) > 1e-5 ) {
 
       SyBookkeeper * bkTemp = new SyBookkeeper( *bkIn );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
@@ -1201,6 +1202,8 @@ void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bo
    op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
 
    delete op;
+
+   return krylovSpaceDimension;
 }
 
 void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
@@ -1648,8 +1651,9 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
       MPS[ index ] = new CTensorT( initMPS[ index ] );
    }
 
-   double t           = 0.0;
-   double firstEnergy = 0;
+   double t                 = 0.0;
+   double firstEnergy       = 0;
+   int krylovSpaceDimension = 0;
 
    for ( int inst = 0; inst < scheme->get_number(); inst++ ) {
 
@@ -1669,8 +1673,12 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
 
          double dt = scheme->get_time_step( inst );
          std::cout << "   dt = " << dt << "\n";
-         std::cout << "\n";
          H5LTmake_dataset( dataPointID, "dt", 1, &dimarray1, H5T_NATIVE_DOUBLE, &dt );
+
+         std::cout << "   KryS = " << krylovSpaceDimension << "\n";
+         H5LTmake_dataset( dataPointID, "KryS", 1, &dimarray1, H5T_STD_I32LE, &krylovSpaceDimension );
+
+         std::cout << "\n";
 
          std::cout << "   matrix product state dimensions:\n";
          std::cout << "   ";
@@ -1771,7 +1779,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          }
 
          // doStep_krylov( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
-         doStep_arnoldi( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
+         krylovSpaceDimension = doStep_arnoldi( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
 
          for ( int site = 0; site < L; site++ ) {
             delete MPS[ site ];
