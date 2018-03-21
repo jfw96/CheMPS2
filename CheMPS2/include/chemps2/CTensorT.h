@@ -186,6 +186,10 @@ namespace CheMPS2 {
 
    std::ostream & operator<<( std::ostream & os, const CheMPS2::CTensorT & tns );
 
+   void printFCITensor( Problem * prob, CTensorT ** mps );
+
+   dcomplex getFCICoefficient( Problem * prob, CTensorT ** mps, int * alpha, int * beta );
+
    void left_normalize( CTensorT * left_mps, CTensorT * right_mps );
 
    void right_normalize( CTensorT * left_mps, CTensorT * right_mps );
