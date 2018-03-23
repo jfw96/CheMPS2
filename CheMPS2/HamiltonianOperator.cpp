@@ -87,21 +87,7 @@ CheMPS2::HamiltonianOperator::~HamiltonianOperator() {
 }
 
 dcomplex CheMPS2::HamiltonianOperator::ExpectationValue( CTensorT ** mps, SyBookkeeper * bk ) {
-<<<<<<< HEAD
-   // return Overlap( mps, bk, mps, bk ) + prob->gEconst();
    return Overlap( mps, bk, mps, bk );
-   // deleteAllBoundaryOperators();
-   // SyBookkeeper * DUMMYBK = new SyBookkeeper( *bk );
-   // CTensorT ** DUMMY      = new CTensorT *[ L ];
-   // for ( int index = 0; index < L; index++ ) {
-   //    DUMMY[ index ] = new CTensorT( index, DUMMYBK );
-   //    DUMMY[ index ]->random();
-   // }
-   // DSApply(mps, bk, DUMMY, DUMMYBK);
-   // return overlap(mps, DUMMY);
-=======
-   return Overlap( mps, bk, mps, bk );
->>>>>>> 883d47ce637d13168b39ad2f9514ed32877b4d07
 }
 
 dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeeper * bkLeft, CTensorT ** mpsRight, SyBookkeeper * bkRight ) {
@@ -124,20 +110,7 @@ dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeepe
                  CtensorsT[ L - 1 - 1 ][ 0 ][ 0 ], DtensorsT[ L - 1 - 1 ][ 0 ][ 0 ] );
    dcomplex item = last->trace();
 
-<<<<<<< HEAD
-   return item;
-
-   // SyBookkeeper * DUMMYBK = new SyBookkeeper( *bkRight );
-   // CTensorT ** DUMMY      = new CTensorT *[ L ];
-   // for ( int index = 0; index < L; index++ ) {
-   //    DUMMY[ index ] = new CTensorT( index, DUMMYBK );
-   //    DUMMY[ index ]->random();
-   // }
-   // DSApply( mpsRight, bkRight, DUMMY, DUMMYBK, 10 );
-   // return overlap( mpsLeft, DUMMY );
-=======
    return item + lastOverlap->trace() * prob->gEconst();
->>>>>>> 883d47ce637d13168b39ad2f9514ed32877b4d07
 }
 
 void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
@@ -362,14 +335,7 @@ void CheMPS2::HamiltonianOperator::SSSum( int statesToAdd,
 void CheMPS2::HamiltonianOperator::DSApply( CTensorT ** mpsA, SyBookkeeper * bkA,
                                             CTensorT ** mpsOut, SyBookkeeper * bkOut,
                                             int numberOfSweeps ) {
-<<<<<<< HEAD
-   dcomplex coef[]              = {};
-   CTensorT ** states[]         = {};
-   SyBookkeeper * bookkeepers[] = {};
-   DSApplyAndAdd( mpsA, bkA, 0, coef, states, bookkeepers, mpsOut, bkOut, numberOfSweeps );
-=======
    DSApplyAndAdd( mpsA, bkA, 0, NULL, NULL, NULL, mpsOut, bkOut, numberOfSweeps );
->>>>>>> 883d47ce637d13168b39ad2f9514ed32877b4d07
 }
 
 void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
@@ -380,10 +346,6 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                                                   CTensorT ** mpsOut, SyBookkeeper * bkOut,
                                                   int numberOfSweeps ) {
    deleteAllBoundaryOperators();
-<<<<<<< HEAD
-=======
-
->>>>>>> 883d47ce637d13168b39ad2f9514ed32877b4d07
    for ( int index = 0; index < L - 2; index++ ) {
       left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
    }
