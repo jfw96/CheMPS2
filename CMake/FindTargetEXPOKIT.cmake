@@ -9,10 +9,6 @@
 #   TargetEXPOKIT_MESSAGE - status message with BLAS/LAPACK library path list
 #
 
-
-
-message( " Hi from EXPOKIT ")
-
 # 1st precedence - libraries passed in through -DEXPOKIT_LIBRARY
 
 if (EXPOKIT_LIBRARY)
