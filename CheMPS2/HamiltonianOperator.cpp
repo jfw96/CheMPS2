@@ -87,7 +87,7 @@ CheMPS2::HamiltonianOperator::~HamiltonianOperator() {
 }
 
 dcomplex CheMPS2::HamiltonianOperator::ExpectationValue( CTensorT ** mps, SyBookkeeper * bk ) {
-   return Overlap( mps, bk, mps, bk ) + prob->gEconst();
+   return Overlap( mps, bk, mps, bk );
 }
 
 dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeeper * bkLeft, CTensorT ** mpsRight, SyBookkeeper * bkRight ) {
@@ -96,6 +96,10 @@ dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeepe
    for ( int cnt = 0; cnt < L - 1; cnt++ ) {
       updateMovingRightSafe( cnt, mpsLeft, bkLeft, mpsRight, bkRight );
    }
+
+   CTensorO * lastOverlap = new CTensorO( L, true, bkLeft, bkRight );
+   lastOverlap->update_ownmem( mpsLeft[ L - 1 ], mpsRight[ L - 1 ], Otensors[ L - 1 - 1 ] );
+
    CTensorX * last = new CTensorX( L, true, bkLeft, bkRight, prob );
    last->update( mpsLeft[ L - 1 ], mpsRight[ L - 1 ],
                  Otensors[ L - 1 - 1 ],
@@ -106,7 +110,7 @@ dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeepe
                  CtensorsT[ L - 1 - 1 ][ 0 ][ 0 ], DtensorsT[ L - 1 - 1 ][ 0 ][ 0 ] );
    dcomplex item = last->trace();
 
-   return item;
+   return item + lastOverlap->trace() * prob->gEconst();
 }
 
 void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,

@@ -11,6 +11,29 @@
 #include "MPIchemps2.h"
 #include "Wigner.h"
 
+void CheMPS2::CHeffNS_1S::addDiagram0A( const int ikappa, dcomplex * memHeff, CTensorT * in, CTensorT * out, dcomplex off_set ) {
+   const int index = in->gIndex();
+
+   const int NL    = out->gNL( ikappa );
+   const int TwoSL = out->gTwoSL( ikappa );
+   const int IL    = out->gIL( ikappa );
+
+   const int NR    = out->gNR( ikappa );
+   const int TwoSR = out->gTwoSR( ikappa );
+   const int IR    = out->gIR( ikappa );
+
+   const int dimLD = bk_down->gCurrentDim( index, NL, TwoSL, IL );
+   const int dimRD = bk_down->gCurrentDim( index + 1, NR, TwoSR, IR );
+
+   if ( dimLD > 0 && dimRD > 0 ) {
+      int inc          = 1;
+      dcomplex fac     = off_set;
+      int dim          = dimLD * dimRD;
+      dcomplex * block = in->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+      zaxpy_( &dim, &fac, block, &inc, memHeff, &inc );
+   }
+}
+
 void CheMPS2::CHeffNS_1S::addDiagram1A( const int ikappa, dcomplex * memHeff, CTensorT * in, CTensorT * out, CTensorX * Xleft ) {
    const int index = in->gIndex();
 

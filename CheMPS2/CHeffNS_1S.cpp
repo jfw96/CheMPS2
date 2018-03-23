@@ -75,6 +75,7 @@ void CheMPS2::CHeffNS_1S::Apply( CTensorT * in, CTensorT * out,
          for ( int cnt = 0; cnt < dimLD * dimRD; cnt++ ) {
             memLDxRD[ cnt ] = 0.0;
          }
+         addDiagram0A( ikappa, memLDxRD, in, out, Prob->gEconst() );
          addDiagram1C( ikappa, memLDxRD, in, out, Prob->gMxElement( index, index, index, index ) );
 
          if ( !atLeft ) {

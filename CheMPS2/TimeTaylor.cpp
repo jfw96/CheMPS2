@@ -1125,7 +1125,7 @@ void CheMPS2::TimeTaylor::doStep_rk_4( const int currentInstruction, const bool 
 
 int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
-   dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
+   dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * scheme->get_time_step( currentInstruction ) );
 
    HamiltonianOperator * op = new HamiltonianOperator( prob );
 
