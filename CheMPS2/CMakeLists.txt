@@ -112,7 +112,7 @@ if (NOT STATIC_ONLY)
     target_link_libraries (chemps2-shared PRIVATE ${LIBC_INTERJECT}
                                                   tgt::lapack
                                                   tgt::hdf5
-                                                  "/afs/physnet.uni-hamburg.de/users/th1_km/lfrahm/Downloads/expokit/fortran/libexpokit.so"
+                                                  tgt::expokit
                                                   )
                                                   
     set_target_properties (chemps2-shared PROPERTIES SOVERSION ${CheMPS2_LIB_SOVERSION}
@@ -126,7 +126,7 @@ if (NOT SHARED_ONLY)
     target_link_libraries (chemps2-static PRIVATE ${LIBC_INTERJECT}
                                                   tgt::lapack
                                                   tgt::hdf5
-                                                  "/afs/physnet.uni-hamburg.de/users/th1_km/lfrahm/Downloads/expokit/fortran/libexpokit.so")
+                                                  tgt::expokit)
     set_target_properties (chemps2-static PROPERTIES SOVERSION ${CheMPS2_LIB_SOVERSION}
                                                      MACOSX_RPATH ON
                                                      OUTPUT_NAME "chemps2"

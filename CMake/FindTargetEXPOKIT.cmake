@@ -9,4 +9,19 @@
 #   TargetEXPOKIT_MESSAGE - status message with BLAS/LAPACK library path list
 #
 
+
+
 message( " Hi from EXPOKIT ")
+
+# 1st precedence - libraries passed in through -DEXPOKIT_LIBRARY
+
+if (EXPOKIT_LIBRARY)
+    if (NOT ${PN}_FIND_QUIETLY)
+        message (STATUS "LAPACK detection suppressed.")
+    endif()
+
+    add_library (tgt::expokit INTERFACE IMPORTED)
+    set_property (TARGET tgt::expokit PROPERTY INTERFACE_LINK_LIBRARIES ${EXPOKIT_LIBRARY})
+else()
+    message( FATAL_ERROR "You need to specify -DEXPOKIT_LIBRARY to proceed.")
+endif()  
