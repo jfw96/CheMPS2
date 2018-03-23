@@ -100,6 +100,7 @@ namespace CheMPS2 {
 
       // //The diagrams: Type 0/5
       // void addDiagram0A( const int ikappa, dcomplex * memHeff, CSobject * denS, CSobject * denP, dcomplex Helem_links );
+      void addDiagram0A( const int ikappa, dcomplex * memHeff, CTensorT * in, CTensorT * out, dcomplex off_set );
 
       // //The diagrams: Type 1/5
       void addDiagram1A( const int ikappa, dcomplex * memHeff, CTensorT * in, CTensorT * out, CTensorX * Xleft );

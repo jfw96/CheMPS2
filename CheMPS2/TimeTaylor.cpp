@@ -12,19 +12,17 @@
 #include "CTwoDMBuilder.h"
 #include "HamiltonianOperator.h"
 #include "Lapack.h"
-#include "MyHDF5.h"
 #include "Special.h"
 #include "TwoDMBuilder.h"
-#include "hdf5_hl.h"
 
-CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn, Logger * loggerIn )
-    : prob( probIn ), scheme( schemeIn ), logger( loggerIn ), L( probIn->gL() ) {
+CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn, hid_t HDF5FILEIDIN )
+    : prob( probIn ), scheme( schemeIn ), HDF5FILEID( HDF5FILEIDIN ), L( probIn->gL() ) {
    assert( probIn->checkConsistency() );
 
    prob->construct_mxelem();
 
-   logger->TextWithDate( "Starting to run a time evolution calculation", time( NULL ) );
-   ( *logger ) << hashline;
+   // logger->TextWithDate( "Starting to run a time evolution calculation", time( NULL ) );
+   // std::cout << hashline;
 
    Ltensors    = new CTensorL **[ L - 1 ];
    LtensorsT   = new CTensorLT **[ L - 1 ];
@@ -53,6 +51,75 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
    for ( int cnt = 0; cnt < L - 1; cnt++ ) {
       isAllocated[ cnt ] = 0;
    }
+
+   hid_t inputGroupID             = H5Gcreate( HDF5FILEID, "/Input", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+   hid_t systemPropertiesID       = H5Gcreate( HDF5FILEID, "/Input/SystemProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+   hid_t waveFunctionPropertiesID = H5Gcreate( HDF5FILEID, "/Input/WaveFunctionProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+   hsize_t dimarray1              = 1;
+
+   std::cout << "\n";
+   std::cout << "   Starting to propagate MPS\n";
+   std::cout << "\n";
+
+   std::cout << "\n";
+   std::cout << "   L = " << L << "\n";
+   H5LTmake_dataset( systemPropertiesID, "L", 1, &dimarray1, H5T_STD_I32LE, &L );
+
+   int Sy = prob->gSy();
+   std::cout << "   Sy = " << Sy << "\n";
+   H5LTmake_dataset( systemPropertiesID, "Sy", 1, &dimarray1, H5T_STD_I32LE, &Sy );
+
+   std::cout << "   Irreps =";
+   int * irreps = new int[ L ];
+   for ( int i = 0; i < L; i++ ) {
+      irreps[ i ] = prob->gIrrep( i );
+      std::cout << std::setw( 5 ) << irreps[ i ];
+   }
+   std::cout << "\n";
+   hsize_t Lsize = L;
+   H5LTmake_dataset( systemPropertiesID, "Irrep", 1, &Lsize, H5T_STD_I32LE, irreps );
+   delete[] irreps;
+
+   double Econst = prob->gEconst();
+   H5LTmake_dataset( systemPropertiesID, "Econst", 1, &dimarray1, H5T_NATIVE_DOUBLE, &Econst );
+
+   std::cout << "\n";
+
+   int N = prob->gN();
+   std::cout << "   N = " << N << "\n";
+   H5LTmake_dataset( waveFunctionPropertiesID, "N", 1, &dimarray1, H5T_STD_I32LE, &N );
+
+   int TwoS = prob->gTwoS();
+   std::cout << "   TwoS = " << TwoS << "\n";
+   H5LTmake_dataset( waveFunctionPropertiesID, "TwoS", 1, &dimarray1, H5T_STD_I32LE, &TwoS );
+
+   int I = prob->gIrrep();
+   std::cout << "   I = " << I << "\n";
+   H5LTmake_dataset( waveFunctionPropertiesID, "I", 1, &dimarray1, H5T_STD_I32LE, &I );
+
+   std::cout << "\n";
+
+   std::cout << "   full ci matrix product state dimensions:\n";
+   std::cout << "   ";
+   for ( int i = 0; i < L + 1; i++ ) {
+      std::cout << std::setw( 5 ) << i;
+   }
+   std::cout << "\n";
+   std::cout << "   ";
+
+   CheMPS2::SyBookkeeper * tempBK = new CheMPS2::SyBookkeeper( prob, 0 );
+   int * fcidims                  = new int[ L + 1 ];
+   for ( int i = 0; i < L + 1; i++ ) {
+      fcidims[ i ] = tempBK->gFCIDimAtBound( i );
+      std::cout << std::setw( 5 ) << fcidims[ i ];
+   }
+   std::cout << "\n";
+   hsize_t Lposize = L + 1;
+   H5LTmake_dataset( waveFunctionPropertiesID, "FCIDims", 1, &Lposize, H5T_STD_I32LE, fcidims );
+   delete[] fcidims;
+   delete tempBK;
+   std::cout << "\n";
+   std::cout << hashline;
 }
 
 CheMPS2::TimeTaylor::~TimeTaylor() {
@@ -83,8 +150,8 @@ CheMPS2::TimeTaylor::~TimeTaylor() {
    delete[] Otensors;
    delete[] isAllocated;
 
-   logger->TextWithDate( "Finished to run a time evolution calculation", time( NULL ) );
-   ( *logger ) << hashline;
+   // logger->TextWithDate( "Finished to run a time evolution calculation", time( NULL ) );
+   // std::cout << hashline;
 }
 
 void CheMPS2::TimeTaylor::updateMovingLeftSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown ) {
@@ -1056,29 +1123,27 @@ void CheMPS2::TimeTaylor::doStep_rk_4( const int currentInstruction, const bool 
    abort();
 }
 
-void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
-   dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
+   dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * scheme->get_time_step( currentInstruction ) );
 
    HamiltonianOperator * op = new HamiltonianOperator( prob );
 
    std::vector< CTensorT ** > krylovBasisVectors;
    std::vector< SyBookkeeper * > krylovBasisVectorBookkeepers;
-   // std::vector< dcomplex > krylovHamiltonianDiagonal;
-   // std::vector< dcomplex > krylovHamiltonianOffDiagonal;
 
    // Step 1
    krylovBasisVectors.push_back( mpsIn );
    krylovBasisVectorBookkeepers.push_back( bkIn );
-   // krylovHamiltonianDiagonal.push_back( op->ExpectationValue( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back() ) );
 
-   while ( true ) {
+   while ( krylovBasisVectors.size() < scheme->get_krylov_dimension( currentInstruction ) &&
+           norm( krylovBasisVectors.back() ) > 1e-5 ) {
 
       SyBookkeeper * bkTemp = new SyBookkeeper( *bkIn );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
       for ( int index = 0; index < L; index++ ) {
-         mpsTemp[ index ] = new CTensorT( mpsIn[ index ] );
-         // mpsTemp[ index ]->random();
+         mpsTemp[ index ] = new CTensorT( index, bkTemp );
+         mpsTemp[ index ]->random();
       }
 
       std::vector< dcomplex > coef;
@@ -1088,66 +1153,167 @@ void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bo
       for ( int i = 0; i < krylovBasisVectors.size(); i++ ) {
          dcomplex nrm = overlap( krylovBasisVectors[ i ], krylovBasisVectors[ i ] );
          dcomplex mat = op->Overlap( krylovBasisVectors[ i ], krylovBasisVectorBookkeepers[ i ], krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back() );
-         // std::cout << i << " " << nrm << std::endl;
-         // std::cout << i << " " << mat << std::endl;
          coef.push_back( -mat / nrm );
          states.push_back( krylovBasisVectors[ i ] );
          bookkeepers.push_back( krylovBasisVectorBookkeepers[ i ] );
       }
 
-      // op->DSApply( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
-      //              mpsTemp, bkTemp,
-      //              scheme->get_max_sweeps( currentInstruction ) );
-      op->SSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
-                         0, NULL, NULL, NULL,  
-                   mpsTemp, bkTemp,
-                   scheme->get_max_sweeps( currentInstruction ) );
-      std::cout << "abc0" << overlap(mpsTemp, mpsTemp) << std::endl;
-
       for ( int index = 0; index < L; index++ ) {
          mpsTemp[ index ] = new CTensorT( mpsIn[ index ] );
          mpsTemp[ index ]->random();
       }
-
-      op->SSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
+      op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
                          states.size(), &coef[ 0 ], &states[ 0 ], &bookkeepers[ 0 ],
                          mpsTemp, bkTemp,
                          scheme->get_max_sweeps( currentInstruction ) );
 
-
-
-      std::cout << "abc" << overlap(mpsTemp, mpsTemp) << std::endl;
       krylovBasisVectors.push_back( mpsTemp );
       krylovBasisVectorBookkeepers.push_back( bkTemp );
-      
-      if ( krylovBasisVectors.size() > 1 ) {
-         break;
-      }
    }
 
    int krylovSpaceDimension = krylovBasisVectors.size();
 
-   std::cout << std::endl;
-   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-      for ( int j = 0; j < krylovSpaceDimension; j++ ) {
-         std::cout << std::real( overlap( krylovBasisVectors[ i ], krylovBasisVectors[ j ] ) ) << " ";
-      }
-      std::cout << std::endl;
-   }
-   std::cout << std::endl;
-
-   std::cout << std::endl;
-   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-      for ( int j = 0; j < krylovSpaceDimension; j++ ) {
-         std::cout << std::real( op->Overlap( krylovBasisVectors[ i ], krylovBasisVectorBookkeepers[ i ], krylovBasisVectors[ j ], krylovBasisVectorBookkeepers[ j ] ) ) << " ";
-      }
-      std::cout << std::endl;
-   }
-   std::cout << std::endl;
-
-   abort();
-
    dcomplex * krylovHamiltonian = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+      for ( int j = 0; j < krylovSpaceDimension; j++ ) {
+         krylovHamiltonian[ i + krylovSpaceDimension * j ] = step * op->Overlap( krylovBasisVectors[ i ], krylovBasisVectorBookkeepers[ i ], krylovBasisVectors[ j ], krylovBasisVectorBookkeepers[ j ] ) / overlap( krylovBasisVectors[ i ], krylovBasisVectors[ i ] );
+      }
+   }
+
+   int deg        = 6;
+   double bla     = 1.0;
+   int lwsp       = 4 * krylovSpaceDimension * krylovSpaceDimension + deg + 1;
+   dcomplex * wsp = new dcomplex[ lwsp ];
+   int * ipiv     = new int[ krylovSpaceDimension ];
+   int iexph      = 0;
+   int ns         = 0;
+   int info;
+
+   zgpadm_( &deg, &krylovSpaceDimension, &bla, krylovHamiltonian, &krylovSpaceDimension,
+            wsp, &lwsp, ipiv, &iexph, &ns, &info );
+
+   dcomplex * exph = &wsp[ iexph - 1 ];
+
+   dcomplex * result = new dcomplex[ krylovSpaceDimension ];
+   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+      result[ i ] = exph[ i + krylovSpaceDimension * 0 ];
+   }
+
+   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
+
+   delete op;
+
+   return krylovSpaceDimension;
+}
+
+void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+
+   // dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
+
+   // HamiltonianOperator * op = new HamiltonianOperator( prob );
+
+   // std::vector< CTensorT ** > krylovBasisVectors;
+   // std::vector< SyBookkeeper * > krylovBasisVectorBookkeepers;
+   // std::vector< dcomplex > krylovHamiltonianDiagonal;
+   // std::vector< dcomplex > krylovHamiltonianOffDiagonal;
+
+   // // Step 1
+   // krylovBasisVectors.push_back( mpsIn );
+   // krylovBasisVectorBookkeepers.push_back( bkIn );
+   // krylovHamiltonianDiagonal.push_back( op->ExpectationValue( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back() ) );
+
+   // while ( true ) {
+
+   //    SyBookkeeper * bkTemp = new SyBookkeeper( *bkIn );
+   //    CTensorT ** mpsTemp   = new CTensorT *[ L ];
+   //    for ( int index = 0; index < L; index++ ) {
+   //       mpsTemp[ index ] = new CTensorT( mpsIn[ index ] );
+   //       mpsTemp[ index ]->random();
+   //    }
+
+   //    if ( krylovBasisVectors.size() == 1 ) {
+   //       dcomplex coef[]              = {-krylovHamiltonianDiagonal.back()};
+   //       CTensorT ** states[]         = {krylovBasisVectors.back()};
+   //       SyBookkeeper * bookkeepers[] = {krylovBasisVectorBookkeepers.back()};
+
+   //       op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
+   //                          1, coef, states, bookkeepers,
+   //                          mpsTemp, bkTemp,
+   //                          scheme->get_max_sweeps( currentInstruction ) );
+   //    } else {
+   //       // dcomplex coef[]              = {-krylovHamiltonianOffDiagonal.back(), -krylovHamiltonianDiagonal.back()};
+   //       // CTensorT ** states[]         = {krylovBasisVectors.end()[ -2 ], krylovBasisVectors.back()};
+   //       // SyBookkeeper * bookkeepers[] = {krylovBasisVectorBookkeepers.end()[ -2 ], krylovBasisVectorBookkeepers.back()};
+
+   //       // op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
+   //       //                    2, coef, states, bookkeepers,
+   //       //                    mpsTemp, bkTemp,
+   //       //                    scheme->get_max_sweeps( currentInstruction ) );
+
+   //       std::vector< dcomplex > coef;
+   //       std::vector< CTensorT ** > states;
+   //       std::vector< SyBookkeeper * > bookkeepers;
+
+   //       coef.push_back( -krylovHamiltonianOffDiagonal.back() );
+   //       states.push_back( krylovBasisVectors.end()[ -2 ] );
+   //       bookkeepers.push_back( krylovBasisVectorBookkeepers.end()[ -2 ] );
+
+   //       for ( int i = 0; i < krylovBasisVectors.size(); i++ ) {
+   //          coef.push_back( -op->Overlap( krylovBasisVectors[ i ], krylovBasisVectorBookkeepers[ i ], krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back() ) );
+   //          states.push_back( krylovBasisVectors[ i ] );
+   //          bookkeepers.push_back( krylovBasisVectorBookkeepers[ i ] );
+   //       }
+
+   //       coef.erase( coef.begin() + 1 );
+   //       states.erase( states.begin() + 1 );
+   //       bookkeepers.erase( bookkeepers.begin() + 1 );
+
+   //       // coef.push_back( -op->Overlap( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(), krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back() ) );
+   //       //             states.push_back( krylovBasisVectors.back() );
+   //       //             bookkeepers.push_back( krylovBasisVectorBookkeepers.back() );
+
+   //       op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
+   //                          states.size(), &coef[ 0 ], &states[ 0 ], &bookkeepers[ 0 ],
+   //                          mpsTemp, bkTemp,
+   //                          scheme->get_max_sweeps( currentInstruction ) );
+   //    }
+
+   //    dcomplex beta = norm( mpsTemp );
+   //    std::cout << "beta: " << beta << std::endl;
+   //    if ( abs( beta ) < 1e-10 || krylovBasisVectors.size() > 20 ) {
+   //       break;
+   //    }
+   //    krylovHamiltonianOffDiagonal.push_back( beta );
+   //    mpsTemp[ 0 ]->number_operator( 0.0, 1.0 / beta );
+   //    krylovBasisVectors.push_back( mpsTemp );
+   //    krylovBasisVectorBookkeepers.push_back( bkTemp );
+   //    std::cout << std::real( op->Overlap( krylovBasisVectors[ 1 ], krylovBasisVectorBookkeepers[ 1 ], krylovBasisVectors[ 1 ], krylovBasisVectorBookkeepers[ 1 ] ) ) << std::endl;
+   //    std::cout << std::real( op->Overlap( krylovBasisVectors[ 1 ], krylovBasisVectorBookkeepers[ 1 ], krylovBasisVectors[ 1 ], krylovBasisVectorBookkeepers[ 1 ] ) ) << std::endl;
+   //    krylovHamiltonianDiagonal.push_back( op->ExpectationValue( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back() ) );
+   //    std::cout << "alpha: " << krylovHamiltonianDiagonal.back() << std::endl;
+   // }
+
+   // int krylovSpaceDimension = krylovBasisVectors.size();
+
+   // // std::cout << std::endl;
+   // // for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+   // //    for ( int j = 0; j < krylovSpaceDimension; j++ ) {
+   // //       std::cout << std::real( overlap( krylovBasisVectors[ i ], krylovBasisVectors[ j ] ) ) << " ";
+   // //    }
+   // //    std::cout << std::endl;
+   // // }
+   // // std::cout << std::endl;
+
+   // // std::cout << std::endl;
+   // // for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+   // //    for ( int j = 0; j < krylovSpaceDimension; j++ ) {
+   // //       std::cout << std::real( op->Overlap( krylovBasisVectors[ i ], krylovBasisVectorBookkeepers[ i ], krylovBasisVectors[ j ], krylovBasisVectorBookkeepers[ j ] ) ) << " ";
+   // //    }
+   // //    std::cout << std::endl;
+   // // }
+   // // std::cout << std::endl;
+
+   // dcomplex * krylovHamiltonian = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
    // for ( int i = 0; i < krylovSpaceDimension; i++ ) {
    //    for ( int j = 0; j < krylovSpaceDimension; j++ ) {
    //       if ( i == j ) {
@@ -1162,45 +1328,42 @@ void CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bo
    //    }
    // }
 
-   std::cout << std::endl;
-   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-      for ( int j = 0; j < krylovSpaceDimension; j++ ) {
-         std::cout << std::real( krylovHamiltonian[ i + krylovSpaceDimension * j ] ) << " ";
-      }
-      std::cout << std::endl;
-   }
-   std::cout << std::endl;
+   // std::cout << std::endl;
+   // for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+   //    for ( int j = 0; j < krylovSpaceDimension; j++ ) {
+   //       std::cout << std::real( krylovHamiltonian[ i + krylovSpaceDimension * j ] ) << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
+   // std::cout << std::endl;
 
-   char jobz       = 'V';
-   char uplo       = 'U';
-   double * evals  = new double[ krylovSpaceDimension ];
-   int lwork       = 2 * krylovSpaceDimension - 1;
-   dcomplex * work = new dcomplex[ lwork ];
-   double * rwork  = new double[ 3 * krylovSpaceDimension - 2 ];
-   int info;
+   // char jobz       = 'V';
+   // char uplo       = 'U';
+   // double * evals  = new double[ krylovSpaceDimension ];
+   // int lwork       = 2 * krylovSpaceDimension - 1;
+   // dcomplex * work = new dcomplex[ lwork ];
+   // double * rwork  = new double[ 3 * krylovSpaceDimension - 2 ];
+   // int info;
 
-   zheev_( &jobz, &uplo, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, evals, work, &lwork, rwork, &info );
+   // zheev_( &jobz, &uplo, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, evals, work, &lwork, rwork, &info );
 
-   dcomplex * firstVec = new dcomplex[ krylovSpaceDimension ];
-   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-      firstVec[ i ] = exp( evals[ i ] * step ) * krylovHamiltonian[ krylovSpaceDimension * i ];
-   }
+   // dcomplex * firstVec = new dcomplex[ krylovSpaceDimension ];
+   // for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+   //    firstVec[ i ] = exp( evals[ i ] * step ) * krylovHamiltonian[ krylovSpaceDimension * i ];
+   // }
 
-   char notrans      = 'N';
-   int onedim        = 1;
-   dcomplex one      = 1.0;
-   dcomplex zero     = 0.0;
-   dcomplex * result = new dcomplex[ krylovSpaceDimension ];
-   zgemm_( &notrans, &notrans, &krylovSpaceDimension, &onedim, &krylovSpaceDimension,
-           &one, krylovHamiltonian, &krylovSpaceDimension,
-           firstVec, &krylovSpaceDimension, &zero, result, &krylovSpaceDimension );
+   // char notrans      = 'N';
+   // int onedim        = 1;
+   // dcomplex one      = 1.0;
+   // dcomplex zero     = 0.0;
+   // dcomplex * result = new dcomplex[ krylovSpaceDimension ];
+   // zgemm_( &notrans, &notrans, &krylovSpaceDimension, &onedim, &krylovSpaceDimension,
+   //         &one, krylovHamiltonian, &krylovSpaceDimension,
+   //         firstVec, &krylovSpaceDimension, &zero, result, &krylovSpaceDimension );
 
-   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
+   // op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
 
-   delete op;
-}
-
-void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+   // delete op;
 
    dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
 
@@ -1532,14 +1695,9 @@ void CheMPS2::TimeTaylor::doStep_taylor_1( const int currentInstruction, const b
    }
 }
 
-void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary ) {
+void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary, const bool doDumpFCI ) {
 
-   hid_t fileID                   = H5Fcreate( "test.hdf5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
-   hid_t inputGroupID             = H5Gcreate( fileID, "/Input", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
-   hid_t systemPropertiesID       = H5Gcreate( fileID, "/Input/SystemProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
-   hid_t waveFunctionPropertiesID = H5Gcreate( fileID, "/Input/WaveFunctionProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
-   hid_t outputID                 = H5Gcreate( fileID, "/Output", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
-
+   hid_t outputID    = H5Gcreate( HDF5FILEID, "/Output", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
    hsize_t dimarray1 = 1;
 
    HamiltonianOperator * hamOp = new HamiltonianOperator( prob );
@@ -1550,128 +1708,74 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
       MPS[ index ] = new CTensorT( initMPS[ index ] );
    }
 
-   double t           = 0.0;
-   double firstEnergy = 0;
-
-   ( *logger ) << "\n";
-   ( *logger ) << "   Starting to propagate MPS\n";
-   ( *logger ) << "\n";
-
-   ( *logger ) << "\n";
-   ( *logger ) << "   L = " << L << "\n";
-   H5LTmake_dataset( systemPropertiesID, "L", 1, &dimarray1, H5T_STD_I32LE, &L );
-
-   int Sy = prob->gSy();
-   ( *logger ) << "   Sy = " << Sy << "\n";
-   H5LTmake_dataset( systemPropertiesID, "Sy", 1, &dimarray1, H5T_STD_I32LE, &Sy );
-
-   ( *logger ) << "   Irreps =";
-   int * irreps = new int[ L ];
-   for ( int i = 0; i < L; i++ ) {
-      irreps[ i ] = prob->gIrrep( i );
-      ( *logger ) << std::setw( 5 ) << irreps[ i ];
-   }
-   ( *logger ) << "\n";
-   hsize_t Lsize = L;
-   H5LTmake_dataset( systemPropertiesID, "Irrep", 1, &Lsize, H5T_STD_I32LE, irreps );
-   delete[] irreps;
-
-   double Econst = prob->gEconst();
-   H5LTmake_dataset( systemPropertiesID, "Econst", 1, &dimarray1, H5T_NATIVE_DOUBLE, &Econst );
-
-   ( *logger ) << "\n";
-
-   int N = prob->gN();
-   ( *logger ) << "   N = " << N << "\n";
-   H5LTmake_dataset( waveFunctionPropertiesID, "N", 1, &dimarray1, H5T_STD_I32LE, &N );
-
-   int TwoS = prob->gTwoS();
-   ( *logger ) << "   TwoS = " << TwoS << "\n";
-   H5LTmake_dataset( waveFunctionPropertiesID, "TwoS", 1, &dimarray1, H5T_STD_I32LE, &TwoS );
-
-   int I = prob->gIrrep();
-   ( *logger ) << "   I = " << I << "\n";
-   H5LTmake_dataset( waveFunctionPropertiesID, "I", 1, &dimarray1, H5T_STD_I32LE, &I );
-
-   ( *logger ) << "\n";
-
-   ( *logger ) << "   full ci matrix product state dimensions:\n";
-   ( *logger ) << "   ";
-   for ( int i = 0; i < L + 1; i++ ) {
-      ( *logger ) << std::setw( 5 ) << i;
-   }
-   ( *logger ) << "\n";
-   ( *logger ) << "   ";
-
-   int * fcidims = new int[ L + 1 ];
-   for ( int i = 0; i < L + 1; i++ ) {
-      fcidims[ i ] = MPSBK->gFCIDimAtBound( i );
-      ( *logger ) << std::setw( 5 ) << fcidims[ i ];
-   }
-   ( *logger ) << "\n";
-   hsize_t Lposize = L + 1;
-   H5LTmake_dataset( waveFunctionPropertiesID, "FCIDims", 1, &Lposize, H5T_STD_I32LE, fcidims );
-
-   ( *logger ) << "\n";
-   ( *logger ) << hashline;
+   double t                 = 0.0;
+   double firstEnergy       = 0;
+   int krylovSpaceDimension = 0;
 
    for ( int inst = 0; inst < scheme->get_number(); inst++ ) {
 
       for ( ; t < scheme->get_max_time( inst ); t += scheme->get_time_step( inst ) ) {
-         char str[ 1024 ];
-         sprintf( str, "/Output/DataPoint%.5f", t );
-         hid_t dataPointID = H5Gcreate( fileID, str, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+         char dataPointname[ 1024 ];
+         sprintf( dataPointname, "/Output/DataPoint%.5f", t );
+         hid_t dataPointID = H5Gcreate( HDF5FILEID, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
 
-         ( *logger ) << hashline;
-         ( *logger ) << "\n";
-         ( *logger ) << "   t = " << t << "\n";
+         std::cout << hashline;
+         std::cout << "\n";
+         std::cout << "   t = " << t << "\n";
          H5LTmake_dataset( dataPointID, "t", 1, &dimarray1, H5T_NATIVE_DOUBLE, &t );
 
          double Tmax = scheme->get_max_time( inst );
-         ( *logger ) << "   Tmax = " << Tmax << "\n";
+         std::cout << "   Tmax = " << Tmax << "\n";
          H5LTmake_dataset( dataPointID, "Tmax", 1, &dimarray1, H5T_NATIVE_DOUBLE, &Tmax );
 
          double dt = scheme->get_time_step( inst );
-         ( *logger ) << "   dt = " << dt << "\n";
-         ( *logger ) << "\n";
+         std::cout << "   dt = " << dt << "\n";
          H5LTmake_dataset( dataPointID, "dt", 1, &dimarray1, H5T_NATIVE_DOUBLE, &dt );
 
-         ( *logger ) << "   matrix product state dimensions:\n";
-         ( *logger ) << "   ";
-         for ( int i = 0; i < L + 1; i++ ) {
-            ( *logger ) << std::setw( 5 ) << i;
-         }
-         ( *logger ) << "\n";
-         ( *logger ) << "   ";
-         for ( int i = 0; i < L + 1; i++ ) {
-            fcidims[ i ] = MPSBK->gFCIDimAtBound( i );
-            ( *logger ) << std::setw( 5 ) << fcidims[ i ];
-         }
-         H5LTmake_dataset( dataPointID, "MPSDims", 1, &Lposize, H5T_STD_I32LE, fcidims );
+         std::cout << "   KryS = " << krylovSpaceDimension << "\n";
+         H5LTmake_dataset( dataPointID, "KryS", 1, &dimarray1, H5T_STD_I32LE, &krylovSpaceDimension );
 
-         ( *logger ) << "\n";
-         ( *logger ) << "\n";
+         std::cout << "\n";
+
+         std::cout << "   matrix product state dimensions:\n";
+         std::cout << "   ";
+         for ( int i = 0; i < L + 1; i++ ) {
+            std::cout << std::setw( 5 ) << i;
+         }
+         std::cout << "\n";
+         std::cout << "   ";
+         int * actdims = new int[ L + 1 ];
+         for ( int i = 0; i < L + 1; i++ ) {
+            actdims[ i ] = MPSBK->gTotDimAtBound( i );
+            std::cout << std::setw( 5 ) << actdims[ i ];
+         }
+         std::cout << "\n";
+         hsize_t Lposize = L + 1;
+         H5LTmake_dataset( dataPointID, "MPSDims", 1, &Lposize, H5T_STD_I32LE, actdims );
+         delete[] actdims;
+
+         std::cout << "\n";
 
          int MaxM = scheme->get_D( inst );
-         ( *logger ) << "   MaxM = " << MaxM << "\n";
+         std::cout << "   MaxM = " << MaxM << "\n";
          H5LTmake_dataset( dataPointID, "MaxM", 1, &dimarray1, H5T_STD_I32LE, &MaxM );
 
          double CutO = scheme->get_cut_off( inst );
-         ( *logger ) << "   CutO = " << CutO << "\n";
+         std::cout << "   CutO = " << CutO << "\n";
          H5LTmake_dataset( dataPointID, "CutO", 1, &dimarray1, H5T_NATIVE_DOUBLE, &CutO );
 
          int NSwe = scheme->get_max_sweeps( inst );
-         ( *logger ) << "   NSwe = " << NSwe << "\n";
+         std::cout << "   NSwe = " << NSwe << "\n";
          H5LTmake_dataset( dataPointID, "NSwe", 1, &dimarray1, H5T_STD_I32LE, &NSwe );
 
-         ( *logger ) << "\n";
+         std::cout << "\n";
 
          double normOfMPS = norm( MPS );
-         ( *logger ) << "   Norm      = " << normOfMPS << "\n";
+         std::cout << "   Norm      = " << normOfMPS << "\n";
          H5LTmake_dataset( dataPointID, "Norm", 1, &dimarray1, H5T_NATIVE_DOUBLE, &normOfMPS );
 
          double energy = std::real( hamOp->ExpectationValue( MPS, MPSBK ) );
-         ( *logger ) << "   Energy    = " << energy << "\n";
+         std::cout << "   Energy    = " << energy << "\n";
          H5LTmake_dataset( dataPointID, "Energy", 1, &dimarray1, H5T_NATIVE_DOUBLE, &energy );
 
          if ( t == 0.0 ) {
@@ -1687,65 +1791,42 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          theodm->gOEDMRe( oedmre );
          theodm->gOEDMIm( oedmim );
 
-         ( *logger ) << "\n";
-         ( *logger ) << "  occupation numbers of molecular orbitals:\n";
-         ( *logger ) << "   ";
+         std::cout << "\n";
+         std::cout << "  occupation numbers of molecular orbitals:\n";
+         std::cout << "   ";
          for ( int i = 0; i < L; i++ ) {
-            ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << oedmre[ i + L * i ];
+            std::cout << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << oedmre[ i + L * i ];
          }
-         ( *logger ) << "\n";
+         std::cout << "\n";
 
          H5LTmake_dataset( dataPointID, "OEDM_REAL", 2, Lsq, H5T_NATIVE_DOUBLE, oedmre );
          H5LTmake_dataset( dataPointID, "OEDM_IMAG", 2, Lsq, H5T_NATIVE_DOUBLE, oedmim );
          delete theodm;
          delete[] oedmre;
          delete[] oedmim;
+         if ( doDumpFCI ) {
+            std::vector< std::vector< int > > alphasOut;
+            std::vector< std::vector< int > > betasOut;
+            std::vector< double > coefsRealOut;
+            std::vector< double > coefsImagOut;
+            hsize_t Lsize = L;
+            getFCITensor( prob, MPS, alphasOut, betasOut, coefsRealOut, coefsImagOut );
 
-         //    CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
-         //    CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
-         //    tdmbuilder->Build2RDM( the2DM );
-         // CTwoDM * the2DM            = new CTwoDM( MPSBK, prob );
-         // CTwoDMBuilder * tdmbuilder = new CTwoDMBuilder( logger, prob, MPS, MPSBK );
+            char dataFCIName[ 1024 ];
+            sprintf( dataFCIName, "%s/FCICOEF", dataPointname );
+            hid_t FCIID = H5Gcreate( HDF5FILEID, dataFCIName, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
 
-         // tdmbuilder->Build2RDM( the2DM );
-         //    ( *logger ) << "   energy " << the2DM->energy() << "\n";
-
-         //    ( *logger ) << "   tr(TwoDM) = " << std::real( the2DM->trace() ) << "\n";
-         //    ( *logger ) << "   N(N-1)    = " << prob->gN() * ( prob->gN() - 1.0 ) << "\n";
-         //    ( *logger ) << "\n";
-         //    ( *logger ) << "  occupation numbers of molecular orbitals:\n";
-         //    ( *logger ) << "   ";
-         //    for ( int i = 0; i < L; i++ ) {
-         //       ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( i, i ) );
-         //    }
-
-         //    ( *logger ) << "\n";
-         //    ( *logger ) << "   ";
-         //    ( *logger ) << "\n";
-         //    ( *logger ) << "   real part one body reduced density matrix:\n";
-         //    ( *logger ) << "\n";
-         //    for ( int irow = 0; irow < L; irow++ ) {
-         //       for ( int icol = 0; icol < L; icol++ ) {
-         //          ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::real( the2DM->get1RDM_DMRG( irow, icol ) );
-         //       }
-         //       ( *logger ) << "\n";
-         //    }
-         //    ( *logger ) << "\n";
-
-         //    ( *logger ) << "   imaginary part one body reduced density matrix:\n";
-         //    ( *logger ) << "\n";
-         //    for ( int irow = 0; irow < L; irow++ ) {
-         //       for ( int icol = 0; icol < L; icol++ ) {
-         //          ( *logger ) << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << std::imag( the2DM->get1RDM_DMRG( irow, icol ) );
-         //       }
-         //       ( *logger ) << "\n";
-         //    }
-         //    delete the2DM;
-         //    delete tdmbuilder;
-
-         ( *logger ) << "\n";
-
-         deleteAllBoundaryOperators();
+            for ( int l = 0; l < alphasOut.size(); l++ ) {
+               char dataFCINameN[ 1024 ];
+               sprintf( dataFCINameN, "%s/FCICOEF/%i", dataPointname, l );
+               hid_t FCIID = H5Gcreate( HDF5FILEID, dataFCINameN, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+               H5LTmake_dataset( FCIID, "FCI_ALPHAS", 1, &Lsize, H5T_NATIVE_INT, &alphasOut[ l ][ 0 ] );
+               H5LTmake_dataset( FCIID, "FCI_BETAS", 1, &Lsize, H5T_NATIVE_INT, &betasOut[ l ][ 0 ] );
+               H5LTmake_dataset( FCIID, "FCI_REAL", 1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsRealOut[ l ] );
+               H5LTmake_dataset( FCIID, "FCI_IMAG", 1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsImagOut[ l ] );
+            }
+         }
+         std::cout << "\n";
 
          SyBookkeeper * MPSBKDT = new SyBookkeeper( prob, scheme->get_D( inst ) );
          CTensorT ** MPSDT      = new CTensorT *[ L ];
@@ -1754,11 +1835,8 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
             MPSDT[ index ]->random();
          }
 
-         //    doStep_taylor_1( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
-         //    doStep_taylor_1site( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
          // doStep_krylov( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
-         doStep_arnoldi( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
-         //    doStep_euler_g( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
+         krylovSpaceDimension = doStep_arnoldi( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
 
          for ( int site = 0; site < L; site++ ) {
             delete MPS[ site ];
@@ -1774,10 +1852,9 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
             MPS[ 0 ]->number_operator( 0.0, 1.0 / normDT );
          }
 
-         ( *logger ) << hashline;
+         std::cout << hashline;
       }
    }
-   delete[] fcidims;
 
    for ( int site = 0; site < L; site++ ) {
       delete MPS[ site ];
@@ -1785,6 +1862,4 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
    delete[] MPS;
    delete MPSBK;
    delete hamOp;
-
-   H5Fclose( fileID );
 }

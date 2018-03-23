@@ -87,6 +87,7 @@ CheMPS2::HamiltonianOperator::~HamiltonianOperator() {
 }
 
 dcomplex CheMPS2::HamiltonianOperator::ExpectationValue( CTensorT ** mps, SyBookkeeper * bk ) {
+<<<<<<< HEAD
    // return Overlap( mps, bk, mps, bk ) + prob->gEconst();
    return Overlap( mps, bk, mps, bk );
    // deleteAllBoundaryOperators();
@@ -98,6 +99,9 @@ dcomplex CheMPS2::HamiltonianOperator::ExpectationValue( CTensorT ** mps, SyBook
    // }
    // DSApply(mps, bk, DUMMY, DUMMYBK);
    // return overlap(mps, DUMMY);
+=======
+   return Overlap( mps, bk, mps, bk );
+>>>>>>> 883d47ce637d13168b39ad2f9514ed32877b4d07
 }
 
 dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeeper * bkLeft, CTensorT ** mpsRight, SyBookkeeper * bkRight ) {
@@ -106,6 +110,10 @@ dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeepe
    for ( int cnt = 0; cnt < L - 1; cnt++ ) {
       updateMovingRightSafe( cnt, mpsLeft, bkLeft, mpsRight, bkRight );
    }
+
+   CTensorO * lastOverlap = new CTensorO( L, true, bkLeft, bkRight );
+   lastOverlap->update_ownmem( mpsLeft[ L - 1 ], mpsRight[ L - 1 ], Otensors[ L - 1 - 1 ] );
+
    CTensorX * last = new CTensorX( L, true, bkLeft, bkRight, prob );
    last->update( mpsLeft[ L - 1 ], mpsRight[ L - 1 ],
                  Otensors[ L - 1 - 1 ],
@@ -116,6 +124,7 @@ dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeepe
                  CtensorsT[ L - 1 - 1 ][ 0 ][ 0 ], DtensorsT[ L - 1 - 1 ][ 0 ][ 0 ] );
    dcomplex item = last->trace();
 
+<<<<<<< HEAD
    return item;
 
    // SyBookkeeper * DUMMYBK = new SyBookkeeper( *bkRight );
@@ -126,6 +135,9 @@ dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeepe
    // }
    // DSApply( mpsRight, bkRight, DUMMY, DUMMYBK, 10 );
    // return overlap( mpsLeft, DUMMY );
+=======
+   return item + lastOverlap->trace() * prob->gEconst();
+>>>>>>> 883d47ce637d13168b39ad2f9514ed32877b4d07
 }
 
 void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
@@ -350,10 +362,14 @@ void CheMPS2::HamiltonianOperator::SSSum( int statesToAdd,
 void CheMPS2::HamiltonianOperator::DSApply( CTensorT ** mpsA, SyBookkeeper * bkA,
                                             CTensorT ** mpsOut, SyBookkeeper * bkOut,
                                             int numberOfSweeps ) {
+<<<<<<< HEAD
    dcomplex coef[]              = {};
    CTensorT ** states[]         = {};
    SyBookkeeper * bookkeepers[] = {};
    DSApplyAndAdd( mpsA, bkA, 0, coef, states, bookkeepers, mpsOut, bkOut, numberOfSweeps );
+=======
+   DSApplyAndAdd( mpsA, bkA, 0, NULL, NULL, NULL, mpsOut, bkOut, numberOfSweeps );
+>>>>>>> 883d47ce637d13168b39ad2f9514ed32877b4d07
 }
 
 void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
@@ -364,6 +380,10 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                                                   CTensorT ** mpsOut, SyBookkeeper * bkOut,
                                                   int numberOfSweeps ) {
    deleteAllBoundaryOperators();
+<<<<<<< HEAD
+=======
+
+>>>>>>> 883d47ce637d13168b39ad2f9514ed32877b4d07
    for ( int index = 0; index < L - 2; index++ ) {
       left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
    }
@@ -418,7 +438,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 
          applied->Add( 1.0, fromAdded );
          delete fromAdded;
-         double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 50, 0.0, false, false );
+         double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 500, 0.0, false, false );
 
          delete applied;
          delete heff;
@@ -469,7 +489,8 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          delete heff;
 
          applied->Add( 1.0, fromAdded );
-         double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 50, 0, true, false );
+         double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 500, 0, true, false );
+
          delete fromAdded;
          delete applied;
 

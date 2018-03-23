@@ -99,7 +99,7 @@ set (CHEMPS2LIB_SOURCE_FILES "CASPT2.cpp"
                              "TwoIndex.cpp"
                              "Wigner.cpp")
 
-add_library (chemps2-base OBJECT ${CHEMPS2LIB_SOURCE_FILES})
+add_library (chemps2-base OBJECT ${CHEMPS2LIB_SOURCE_FILES} )
 target_include_directories (chemps2-base PRIVATE ${CheMPS2_SOURCE_DIR}/CheMPS2/include/chemps2
                                                  $<TARGET_PROPERTY:tgt::hdf5,INTERFACE_INCLUDE_DIRECTORIES>)
 
@@ -111,7 +111,9 @@ if (NOT STATIC_ONLY)
     add_library           (chemps2-shared SHARED  $<TARGET_OBJECTS:chemps2-base>)
     target_link_libraries (chemps2-shared PRIVATE ${LIBC_INTERJECT}
                                                   tgt::lapack
-                                                  tgt::hdf5)
+                                                  tgt::hdf5
+                                                  "/afs/physnet.uni-hamburg.de/users/th1_km/lfrahm/Downloads/expokit/fortran/libexpokit.so"
+                                                  )
                                                   
     set_target_properties (chemps2-shared PROPERTIES SOVERSION ${CheMPS2_LIB_SOVERSION}
                                                      MACOSX_RPATH ON
@@ -123,7 +125,8 @@ if (NOT SHARED_ONLY)
     add_library           (chemps2-static STATIC  $<TARGET_OBJECTS:chemps2-base>)
     target_link_libraries (chemps2-static PRIVATE ${LIBC_INTERJECT}
                                                   tgt::lapack
-                                                  tgt::hdf5)
+                                                  tgt::hdf5
+                                                  "/afs/physnet.uni-hamburg.de/users/th1_km/lfrahm/Downloads/expokit/fortran/libexpokit.so")
     set_target_properties (chemps2-static PROPERTIES SOVERSION ${CheMPS2_LIB_SOVERSION}
                                                      MACOSX_RPATH ON
                                                      OUTPUT_NAME "chemps2"
