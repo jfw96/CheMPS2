@@ -952,7 +952,7 @@ int main( int argc, char ** argv ){
       cout << "   TIME_EVOLU         = " << (( time_evolu     ) ? "TRUE" : "FALSE" ) << endl;
       if ( time_evolu ){
          cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < n_orbs; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
-         cout << "   TIME_HDF5OUTPUT    = " << molcas_2rdm << endl;
+         cout << "   TIME_HDF5OUTPUT    = " << time_hdf5output << endl;
       }
       cout << "   PRINT_CORR         = " << (( print_corr     ) ? "TRUE" : "FALSE" ) << endl;
       cout << "   TMP_FOLDER         = " << tmp_folder << endl;
