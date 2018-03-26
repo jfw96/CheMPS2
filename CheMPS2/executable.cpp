@@ -32,6 +32,7 @@
 #include "Molden.h"
 #include "MPIchemps2.h"
 #include "EdmistonRuedenberg.h"
+#include "TimeTaylor.h"
 
 using namespace std;
 
@@ -313,6 +314,21 @@ cout << "\n"
 "       SWEEP_DVDSON_RTOL = flt, flt, flt\n"
 "              Set the residual norm tolerance for the Davidson algorithm for the successive sweep instructions (positive floats).\n"
 "\n"
+"       SWEEP_TIME_STEP = flt, flt, flt\n"
+"              Set the time step size for the time propagation. Neccessary when TIME_EVOLU = TRUE (positive floats).\n"
+"\n"
+"       SWEEP_TIME_FINAL = flt, flt, flt\n"
+"              Set the final time to propgate to. Neccessary when TIME_EVOLU = TRUE (positive floats).\n"
+"\n"
+"       SWEEP_TIME_KRYSIZ = int, int, int\n"
+"              Set the maximum Krylov space dimension of a time propagation step. Neccessary when TIME_EVOLU = TRUE (positive integers).\n"
+"\n"
+"       SWEEP_TIME_KRYCUT = flt, flt, flt\n"
+"              Set the cut off parameter for the Krylov space generation. Neccessary when TIME_EVOLU = TRUE (positive integers).\n"
+"\n"
+"       SWEEP_TIME_MAXSWE = int, int, int\n"
+"              Set the maximum number of sweeps for the variational algorithms in the propagation algorithm. Neccessary when TIME_EVOLU = TRUE (positive integers).\n"
+"\n"
 "       NOCC = int, int, int, int\n"
 "              Set the number of occupied (external core) orbitals per irrep (psi4 irrep ordering).\n"
 "\n"
@@ -382,6 +398,15 @@ cout << "\n"
 "       CASPT2_CUMUL = bool\n"
 "              Use a cumulant approximation for the CASPT2 4-RDM and overwrite CASPT2_CHECKPT to FALSE (TRUE or FALSE; default FALSE).\n"
 "\n"
+"       TIME_EVOLU = bool\n"
+"              Perfrom a time evolution calculation.\n"
+"\n"
+"       TIME_NINIT = int, int, int\n"
+"              Set the occupation numbers for the inital state. Neccessary when TIME_EVOLU = TRUE (positive integers).\n"
+"\n"
+"       TIME_HDF5OUTPUT = /path/to/hdf5/destination\n"
+"              Set the file path for the HDF5 output when specified (default unspecified).\n"
+"\n"
 "       PRINT_CORR = bool\n"
 "              Print correlation functions (TRUE or FALSE; default FALSE).\n"
 "\n"
@@ -422,11 +447,16 @@ int main( int argc, char ** argv ){
    int irrep        = -1;
    int excitation   = 0;
 
-   string sweep_states = "";
-   string sweep_econv  = "";
-   string sweep_maxit  = "";
-   string sweep_noise  = "";
-   string sweep_rtol   = "";
+   string sweep_states      = "";
+   string sweep_econv       = "";
+   string sweep_maxit       = "";
+   string sweep_noise       = "";
+   string sweep_rtol        = "";
+   string sweep_time_step   = "";
+   string sweep_time_final  = "";
+   string sweep_time_krysiz = "";
+   string sweep_time_krycut = "";
+   string sweep_time_maxswe = "";
 
    string nocc = "";
    string nact = "";
@@ -454,6 +484,10 @@ int main( int argc, char ** argv ){
    double caspt2_imag    = 0.0;
    bool   caspt2_checkpt = false;
    bool   caspt2_cumul   = false;
+
+   bool time_evolu        = false;
+   string time_ninit      = "";
+   string time_hdf5output = "";
 
    bool   print_corr = false;
    string tmp_folder = "/tmp";
@@ -543,6 +577,12 @@ int main( int argc, char ** argv ){
          if ( file_exists( tmp_folder, "TMP_FOLDER" ) == false ){ return clean_exit( -1 ); }
       }
 
+      if ( line.find( "TIME_HDF5OUTPUT" ) != string::npos ){
+         const int pos   = line.find( "=" ) + 1;
+         time_hdf5output = line.substr( pos, line.length() - pos );
+         time_hdf5output.erase( remove( time_hdf5output.begin(), time_hdf5output.end(), ' ' ), time_hdf5output.end() );
+      }
+
       if ( find_integer( &group,        line, "GROUP",        true, 0, true,   7 ) == false ){ return clean_exit( -1 ); }
       if ( find_integer( &multiplicity, line, "MULTIPLICITY", true, 1, false, -1 ) == false ){ return clean_exit( -1 ); }
       if ( find_integer( &nelectrons,   line, "NELECTRONS",   true, 2, false, -1 ) == false ){ return clean_exit( -1 ); }
@@ -567,6 +607,7 @@ int main( int argc, char ** argv ){
       if ( find_boolean( &caspt2_calc,      line, "CASPT2_CALC"      ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &caspt2_checkpt,   line, "CASPT2_CHECKPT"   ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &caspt2_cumul,     line, "CASPT2_CUMUL"     ) == false ){ return clean_exit( -1 ); }
+      if ( find_boolean( &time_evolu,       line, "TIME_EVOLU"       ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &print_corr,       line, "PRINT_CORR"       ) == false ){ return clean_exit( -1 ); }
 
       if ( line.find( "SWEEP_STATES" ) != string::npos ){
@@ -594,6 +635,31 @@ int main( int argc, char ** argv ){
          sweep_rtol = line.substr( pos, line.length() - pos );
       }
 
+      if ( line.find( "SWEEP_TIME_STEP" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         sweep_time_step = line.substr( pos, line.length() - pos );
+      }
+
+      if ( line.find( "SWEEP_TIME_FINAL" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         sweep_time_final = line.substr( pos, line.length() - pos );
+      }
+
+      if ( line.find( "SWEEP_TIME_KRYSIZ" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         sweep_time_krysiz = line.substr( pos, line.length() - pos );
+      }
+
+      if ( line.find( "SWEEP_TIME_KRYCUT" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         sweep_time_krycut = line.substr( pos, line.length() - pos );
+      }
+
+      if ( line.find( "SWEEP_TIME_MAXSWE" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         sweep_time_maxswe = line.substr( pos, line.length() - pos );
+      }
+
       if ( line.find( "NOCC" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
          nocc = line.substr( pos, line.length() - pos );
@@ -617,6 +683,11 @@ int main( int argc, char ** argv ){
       if ( line.find( "MOLCAS_REORDER" ) != string::npos ){
          if ( am_i_master ){ cerr << "MOLCAS_REORDER is deprecated. Please use MOLCAS_ORDER and/or MOLCAS_FIEDLER." << endl; }
          return clean_exit( -1 );
+      }
+
+      if ( line.find( "TIME_NINIT" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         time_ninit = line.substr( pos, line.length() - pos );
       }
 
    }
@@ -681,24 +752,51 @@ int main( int argc, char ** argv ){
       if ( am_i_master ){ cerr << "SWEEP_* are mandatory options!" << endl; }
       return clean_exit( -1 );
    }
+
+   if ( time_evolu && ((sweep_time_final.length() == 0) || (sweep_time_step.length() == 0) ||  (sweep_time_krysiz.length() == 0) || (sweep_time_krycut.length() == 0) ||  (sweep_time_maxswe.length() == 0) ) ){
+      if ( am_i_master ){ cerr << "SWEEP_TIME_* are mandatory options when TIME_EVOLU = TRUE !" << endl; }
+      return clean_exit( -1 );
+   }   
+   
    const int ni_d     = count( sweep_states.begin(), sweep_states.end(), ',' ) + 1;
    const int ni_econv = count( sweep_econv.begin(),  sweep_econv.end(),  ',' ) + 1;
    const int ni_maxit = count( sweep_maxit.begin(),  sweep_maxit.end(),  ',' ) + 1;
    const int ni_noise = count( sweep_noise.begin(),  sweep_noise.end(),  ',' ) + 1;
    const int ni_rtol  = count( sweep_rtol.begin(),   sweep_rtol.end(),   ',' ) + 1;
-   const bool num_eq  = (( ni_d == ni_econv ) && ( ni_d == ni_maxit ) && ( ni_d == ni_noise ) && ( ni_d == ni_rtol ));
+
+   bool num_eq  = (( ni_d == ni_econv ) && ( ni_d == ni_maxit ) && ( ni_d == ni_noise ) && ( ni_d == ni_rtol ));
+   if ( time_evolu ){
+      const int ni_step   = count( sweep_time_step.begin(),      sweep_time_step.end(),     ',' ) + 1;
+      const int ni_final  = count( sweep_time_final.begin(),     sweep_time_final.end(),    ',' ) + 1;
+      const int ni_krysiz  = count( sweep_time_krysiz.begin(),   sweep_time_krysiz.end(),   ',' ) + 1;
+      const int ni_krycut  = count( sweep_time_krycut.begin(),   sweep_time_krycut.end(),   ',' ) + 1;
+      const int ni_maxswe  = count( sweep_time_maxswe.begin(),   sweep_time_maxswe.end(),   ',' ) + 1;
+      num_eq = num_eq && ( ni_d == ni_step ) && ( ni_d == ni_final ) && ( ni_d == ni_krysiz ) && ( ni_d == ni_krycut ) && ( ni_d == ni_maxswe );
+   }
 
    if ( num_eq == false ){
       if ( am_i_master ){ cerr << "The number of instructions in SWEEP_* should be equal!" << endl; }
       return clean_exit( -1 );
    }
 
-   int    * value_states = new int   [ ni_d ];    fetch_ints( sweep_states, value_states, ni_d );
-   double * value_econv  = new double[ ni_d ]; fetch_doubles( sweep_econv,  value_econv,  ni_d );
-   int    * value_maxit  = new int   [ ni_d ];    fetch_ints( sweep_maxit,  value_maxit,  ni_d );
-   double * value_noise  = new double[ ni_d ]; fetch_doubles( sweep_noise,  value_noise,  ni_d );
-   double * value_rtol   = new double[ ni_d ]; fetch_doubles( sweep_rtol,   value_rtol,   ni_d );
+   int    * value_states     = new int   [ ni_d ];    fetch_ints( sweep_states, value_states, ni_d );
+   double * value_econv      = new double[ ni_d ]; fetch_doubles( sweep_econv,  value_econv,  ni_d );
+   int    * value_maxit      = new int   [ ni_d ];    fetch_ints( sweep_maxit,  value_maxit,  ni_d );
+   double * value_noise      = new double[ ni_d ]; fetch_doubles( sweep_noise,  value_noise,  ni_d );
+   double * value_rtol       = new double[ ni_d ]; fetch_doubles( sweep_rtol,   value_rtol,   ni_d );
 
+   double * value_time_step   = new double[ ni_d ];
+   double * value_time_final  = new double[ ni_d ];
+   int * value_time_krysiz    = new int[ ni_d ];
+   double * value_time_krycut = new double[ ni_d ];
+   int * value_time_maxswe    = new int[ ni_d ];
+   if ( time_evolu ){
+      fetch_doubles( sweep_time_step,     value_time_step,     ni_d );
+      fetch_doubles( sweep_time_final,    value_time_final,    ni_d );
+         fetch_ints( sweep_time_krysiz,   value_time_krysiz,   ni_d );
+      fetch_doubles( sweep_time_krycut,   value_time_krycut,   ni_d );
+         fetch_ints( sweep_time_maxswe,   value_time_maxswe,   ni_d );
+   }
    /*****************************************
    *  Check the active space specification  *
    ******************************************/
@@ -759,6 +857,42 @@ int main( int argc, char ** argv ){
       fetch_ints( molcas_order, dmrg2ham, fcidump_norb );
    }
 
+   int n_orbs        = 0;
+   for ( int cnt = 0; cnt < num_irreps; cnt++ ) { n_orbs += nocc_parsed[ cnt ] + nact_parsed[ cnt ] + nvir_parsed[ cnt ]; }
+   int * time_ninit_parsed = new int[ n_orbs ];
+
+   if ( time_evolu ){
+
+      if ( time_ninit.length() == 0 ){
+         if ( am_i_master ){ cerr << "TIME_NINIT is mandatory options when TIME_EVOLU = TRUE !" << endl; }
+         return clean_exit( -1 );
+      }
+
+      const int ni_ini  = count( time_ninit.begin(), time_ninit.end(), ',' ) + 1;
+      const bool init_ok = ( n_orbs == ni_ini );
+
+      if ( init_ok == false ){
+         if ( am_i_master ){ cerr << "There should be " << n_orbs << " numbers in TIME_NINIT when TIME_EVOLU = TRUE !" << endl; }
+         return clean_exit( -1 );
+      }
+
+      fetch_ints( time_ninit, time_ninit_parsed, n_orbs );
+
+      for ( int cnt = 0; cnt < n_orbs; cnt ++ ){
+         if ( time_ninit_parsed[ cnt ] < 0 || time_ninit_parsed[ cnt ] > 2 ){
+            if ( am_i_master ) { cerr << "The occupation number in TIME_NINIT has to be 0, 1 or 2 !" << endl; }
+            return clean_exit( - 1 );
+         }
+      }
+
+      int elec_sum = 0; for ( int cnt = 0; cnt < n_orbs; cnt++ ) { elec_sum += time_ninit_parsed[ cnt ];  }
+      if ( elec_sum != nelectrons ){
+         if ( am_i_master ) { cerr << "There should be " << nelectrons << " distributed over the molecular orbitals in TIME_NINIT !" << endl; }
+         return clean_exit( - 1 );
+      }
+
+   }
+
    /**********************
    *  Print the options  *
    ***********************/
@@ -776,37 +910,50 @@ int main( int argc, char ** argv ){
       cout << "   SWEEP_MAX_SWEEPS   = [ " << value_maxit [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_maxit [ cnt ]; } cout << " ]" << endl;
       cout << "   SWEEP_NOISE_PREFAC = [ " << value_noise [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_noise [ cnt ]; } cout << " ]" << endl;
       cout << "   SWEEP_DVDSON_RTOL  = [ " << value_rtol  [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_rtol  [ cnt ]; } cout << " ]" << endl;
+      if ( time_evolu ){
+         cout << "   SWEEP_TIME_STEP    = [ " << value_time_step    [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_time_step   [ cnt ]; } cout << " ]" << endl;
+         cout << "   SWEEP_TIME_FINAL   = [ " << value_time_final   [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_time_final  [ cnt ]; } cout << " ]" << endl;
+         cout << "   SWEEP_TIME_KRYSIZ  = [ " << value_time_krysiz  [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_time_krysiz [ cnt ]; } cout << " ]" << endl;
+         cout << "   SWEEP_TIME_KRYCUT  = [ " << value_time_krycut  [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_time_krycut [ cnt ]; } cout << " ]" << endl;
+         cout << "   SWEEP_TIME_MAXSWE  = [ " << value_time_maxswe  [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_time_maxswe [ cnt ]; } cout << " ]" << endl;
+      }
+      
       cout << "   NOCC               = [ " << nocc_parsed[ 0 ]; for ( int cnt = 1; cnt < num_irreps; cnt++ ){ cout << " ; " << nocc_parsed[ cnt ]; } cout << " ]" << endl;
       cout << "   NACT               = [ " << nact_parsed[ 0 ]; for ( int cnt = 1; cnt < num_irreps; cnt++ ){ cout << " ; " << nact_parsed[ cnt ]; } cout << " ]" << endl;
       cout << "   NVIR               = [ " << nvir_parsed[ 0 ]; for ( int cnt = 1; cnt < num_irreps; cnt++ ){ cout << " ; " << nvir_parsed[ cnt ]; } cout << " ]" << endl;
-   if ( full_active_space_calculation ){
-      cout << "   MOLCAS_2RDM        = " << molcas_2rdm << endl;
-      cout << "   MOLCAS_3RDM        = " << molcas_3rdm << endl;
-      cout << "   MOLCAS_F4RDM       = " << molcas_f4rdm << endl;
-      cout << "   MOLCAS_FOCK        = " << molcas_fock << endl;
-   if ( molcas_order.length() > 0 ){
-      cout << "   MOLCAS_ORDER       = [ " << dmrg2ham[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << dmrg2ham[ cnt ]; } cout << " ]" << endl;
-   } else {
-      cout << "   MOLCAS_FIEDLER     = " << (( molcas_fiedler ) ? "TRUE" : "FALSE" ) << endl;
-   }
-      cout << "   MOLCAS_MPS         = " << (( molcas_mps ) ? "TRUE" : "FALSE" ) << endl;
-      cout << "   MOLCAS_STATE_AVG   = " << (( molcas_state_avg ) ? "TRUE" : "FALSE" ) << endl;
-   } else {
-      cout << "   SCF_STATE_AVG      = " << (( scf_state_avg ) ? "TRUE" : "FALSE" ) << endl;
-      cout << "   SCF_DIIS_THR       = " << scf_diis_thr << endl;
-      cout << "   SCF_GRAD_THR       = " << scf_grad_thr << endl;
-      cout << "   SCF_MAX_ITER       = " << scf_max_iter << endl;
-      cout << "   SCF_ACTIVE_SPACE   = " << (( scf_active_space == 'I' ) ? "I : no additional rotations" :
-                                            (( scf_active_space == 'N' ) ? "N : natural orbitals" :
-                                            (( scf_active_space == 'L' ) ? "L : localized and ordered orbitals" : "F : ordered orbitals only" ))) << endl;
-      cout << "   SCF_MOLDEN         = " << scf_molden << endl;
-      cout << "   CASPT2_CALC        = " << (( caspt2_calc ) ? "TRUE" : "FALSE" ) << endl;
-      cout << "   CASPT2_ORBS        = " << (( caspt2_orbs == 'A' ) ? "A : as specified in SCF_ACTIVE_SPACE" : "P : pseudocanonical orbitals" ) << endl;
-      cout << "   CASPT2_IPEA        = " << caspt2_ipea << endl;
-      cout << "   CASPT2_IMAG        = " << caspt2_imag << endl;
-      cout << "   CASPT2_CHECKPT     = " << (( caspt2_checkpt ) ? "TRUE" : "FALSE" ) << endl;
-      cout << "   CASPT2_CUMUL       = " << (( caspt2_cumul   ) ? "TRUE" : "FALSE" ) << endl;
-   }
+      if ( full_active_space_calculation and time_evolu == false ){
+         cout << "   MOLCAS_2RDM        = " << molcas_2rdm << endl;
+         cout << "   MOLCAS_3RDM        = " << molcas_3rdm << endl;
+         cout << "   MOLCAS_F4RDM       = " << molcas_f4rdm << endl;
+         cout << "   MOLCAS_FOCK        = " << molcas_fock << endl;
+         if ( molcas_order.length() > 0 ){
+            cout << "   MOLCAS_ORDER       = [ " << dmrg2ham[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << dmrg2ham[ cnt ]; } cout << " ]" << endl;
+         } else {
+            cout << "   MOLCAS_FIEDLER     = " << (( molcas_fiedler ) ? "TRUE" : "FALSE" ) << endl;
+         }
+         cout << "   MOLCAS_MPS         = " << (( molcas_mps ) ? "TRUE" : "FALSE" ) << endl;
+         cout << "   MOLCAS_STATE_AVG   = " << (( molcas_state_avg ) ? "TRUE" : "FALSE" ) << endl;
+      } else if ( time_evolu == false ) {
+         cout << "   SCF_STATE_AVG      = " << (( scf_state_avg ) ? "TRUE" : "FALSE" ) << endl;
+         cout << "   SCF_DIIS_THR       = " << scf_diis_thr << endl;
+         cout << "   SCF_GRAD_THR       = " << scf_grad_thr << endl;
+         cout << "   SCF_MAX_ITER       = " << scf_max_iter << endl;
+         cout << "   SCF_ACTIVE_SPACE   = " << (( scf_active_space == 'I' ) ? "I : no additional rotations" :
+                                             (( scf_active_space == 'N' ) ? "N : natural orbitals" :
+                                             (( scf_active_space == 'L' ) ? "L : localized and ordered orbitals" : "F : ordered orbitals only" ))) << endl;
+         cout << "   SCF_MOLDEN         = " << scf_molden << endl;
+         cout << "   CASPT2_CALC        = " << (( caspt2_calc ) ? "TRUE" : "FALSE" ) << endl;
+         cout << "   CASPT2_ORBS        = " << (( caspt2_orbs == 'A' ) ? "A : as specified in SCF_ACTIVE_SPACE" : "P : pseudocanonical orbitals" ) << endl;
+         cout << "   CASPT2_IPEA        = " << caspt2_ipea << endl;
+         cout << "   CASPT2_IMAG        = " << caspt2_imag << endl;
+         cout << "   CASPT2_CHECKPT     = " << (( caspt2_checkpt ) ? "TRUE" : "FALSE" ) << endl;
+         cout << "   CASPT2_CUMUL       = " << (( caspt2_cumul   ) ? "TRUE" : "FALSE" ) << endl;
+      }
+      cout << "   TIME_EVOLU         = " << (( time_evolu     ) ? "TRUE" : "FALSE" ) << endl;
+      if ( time_evolu ){
+         cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < n_orbs; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
+         cout << "   TIME_HDF5OUTPUT    = " << molcas_2rdm << endl;
+      }
       cout << "   PRINT_CORR         = " << (( print_corr     ) ? "TRUE" : "FALSE" ) << endl;
       cout << "   TMP_FOLDER         = " << tmp_folder << endl;
       cout << " " << endl;
@@ -820,19 +967,35 @@ int main( int argc, char ** argv ){
    CheMPS2::Hamiltonian * ham = new CheMPS2::Hamiltonian( fcidump, group );
    CheMPS2::ConvergenceScheme * opt_scheme = new CheMPS2::ConvergenceScheme( ni_d );
    for ( int count = 0; count < ni_d; count++ ){
-      opt_scheme->set_instruction( count, value_states[ count ],
-                                          value_econv [ count ],
-                                          value_maxit [ count ],
-                                          value_noise [ count ],
-                                          value_rtol  [ count ] );
+      if ( !time_evolu ){
+         opt_scheme->set_instruction( count, value_states[ count ],
+                                             value_econv [ count ],
+                                             value_maxit [ count ],
+                                             value_noise [ count ],
+                                             value_rtol  [ count ] );
+
+      } else {
+         opt_scheme->set_instruction( count, value_states[ count ],
+                                             value_time_step[ count ],
+                                             value_time_final[ count ],
+                                             value_time_krysiz[ count ],
+                                             value_time_krycut[ count ],
+                                             value_time_maxswe[ count ],
+                                             0.0);
+      }
    }
    delete [] value_states;
    delete [] value_econv;
    delete [] value_maxit;
    delete [] value_noise;
    delete [] value_rtol;
+   delete [] value_time_step;
+   delete [] value_time_final;
+   delete [] value_time_krysiz;
+   delete [] value_time_krycut;
+   delete [] value_time_maxswe;
 
-   if ( full_active_space_calculation ){
+   if ( full_active_space_calculation && !time_evolu ){
 
       CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
 
@@ -922,6 +1085,52 @@ int main( int argc, char ** argv ){
       delete dmrgsolver;
       delete prob;
 
+   } else if ( time_evolu ) {
+      CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
+
+      CheMPS2::SyBookkeeper * initBK = new CheMPS2::SyBookkeeper( prob, opt_scheme->get_D( 0 ) );
+
+      CheMPS2::CTensorT ** initMPS   = new CheMPS2::CTensorT *[ prob->gL() ];
+      for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
+         initMPS[ cnt ] = new CheMPS2::CTensorT( cnt, initBK );
+      }
+
+      int Nelec = 0;
+      for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
+         int ni = time_ninit_parsed[ cnt ];
+         initMPS[ cnt ]->Clear();
+         for ( int ikappa = 0; ikappa < initMPS[ cnt ]->gNKappa(); ikappa++ ) {
+            if ( initMPS[ cnt ]->gNL( ikappa ) == Nelec && initMPS[ cnt ]->gNR( ikappa ) == Nelec + ni ) {
+               dcomplex * data                                = initMPS[ cnt ]->gStorage();
+               data[ initMPS[ cnt ]->gKappa2index( ikappa ) ] = 1.0;
+            }
+         }
+         Nelec += ni;
+      }
+
+      double normDT2 = norm( initMPS );
+      initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
+
+      hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
+      if ( time_hdf5output.length() > 0){
+         fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+      }
+
+      CheMPS2::TimeTaylor * taylor = new CheMPS2::TimeTaylor( prob, opt_scheme, fileID );
+
+      taylor->Propagate( initBK, initMPS, false, true );
+      if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){
+         H5Fclose( fileID );
+      }
+
+      delete taylor;
+
+      for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
+         delete initMPS[ cnt ];
+      }
+      delete [] initMPS;
+      delete initBK;
+      delete prob;
    } else {
 
       CheMPS2::CASSCF koekoek( ham, NULL, NULL, nocc_parsed, nact_parsed, nvir_parsed, tmp_folder );
@@ -972,6 +1181,7 @@ int main( int argc, char ** argv ){
    delete [] nocc_parsed;
    delete [] nact_parsed;
    delete [] nvir_parsed;
+   delete [] time_ninit_parsed;
    delete opt_scheme;
    delete ham;
 

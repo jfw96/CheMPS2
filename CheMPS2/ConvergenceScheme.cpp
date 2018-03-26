@@ -42,10 +42,11 @@ CheMPS2::ConvergenceScheme::~ConvergenceScheme() {
 
    delete[] num_D;
    delete[] time_steps;
-   delete[] num_max_sweeps;
+   delete[] max_times;
+   delete[] krylov_dimensions;
    delete[] energy_convergence;
    delete[] cut_offs;
-   delete[] max_times;
+   delete[] num_max_sweeps;
    delete[] noise_prefac;
    delete[] dvdson_rtol;
 }

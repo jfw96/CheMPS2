@@ -22,6 +22,7 @@ CheMPS2::COneDM::COneDM( CTensorT ** mpsIn, const SyBookkeeper * denBKIn )
    for ( int cnt = 0; cnt < L - 1; cnt++ ) {
       isAllocated[ cnt ] = 0;
    }
+
    for ( int cnt = 0; cnt < L; cnt++ ) {
       updateMovingRightSafe( cnt );
    }
@@ -35,10 +36,19 @@ CheMPS2::COneDM::COneDM( CTensorT ** mpsIn, const SyBookkeeper * denBKIn )
 }
 
 CheMPS2::COneDM::~COneDM() {
+   deleteAllBoundaryOperators();
+
    delete[] matrix;
    delete[] Ltensors;
    delete[] F0tensors;
    delete[] F1tensors;
+   delete[] Otensors;   
+   delete[] isAllocated;   
+
+   for ( int site = 0; site < L; site++ ) {
+      delete mps[ site ];
+   }
+   delete[] mps;
 }
 
 void CheMPS2::COneDM::gOEDMRe( double * array ) {
@@ -54,7 +64,6 @@ void CheMPS2::COneDM::gOEDMIm( double * array ) {
 }
 
 void CheMPS2::COneDM::updateMovingRightSafe( const int cnt ) {
-
    allocateTensors( cnt );
    isAllocated[ cnt ] = 1;
    updateMovingRight( cnt );
@@ -152,7 +161,7 @@ void CheMPS2::COneDM::allocateTensors( const int index ) {
 
 void CheMPS2::COneDM::deleteAllBoundaryOperators() {
 
-   for ( int cnt = 0; cnt < L - 1; cnt++ ) {
+   for ( int cnt = 0; cnt < L; cnt++ ) {
       if ( isAllocated[ cnt ] == 1 ) { deleteTensors( cnt ); }
       isAllocated[ cnt ] = 0;
    }

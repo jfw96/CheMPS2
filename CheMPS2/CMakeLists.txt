@@ -140,7 +140,7 @@ else ()
 endif()
 
 add_executable             (chemps2-bin executable.cpp)
-target_link_libraries      (chemps2-bin chemps2-lib ${LIBC_INTERJECT})
+target_link_libraries      (chemps2-bin tgt::hdf5 chemps2-lib ${LIBC_INTERJECT})
 set_target_properties      (chemps2-bin PROPERTIES OUTPUT_NAME "chemps2")
 
 # <<<  Install  >>>

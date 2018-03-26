@@ -21,88 +21,71 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
 
    prob->construct_mxelem();
 
-   // logger->TextWithDate( "Starting to run a time evolution calculation", time( NULL ) );
-   // std::cout << hashline;
+   start = time( NULL );
+   tm * tmstart = localtime( &start );
+   std::ostringstream text;
 
-   Ltensors    = new CTensorL **[ L - 1 ];
-   LtensorsT   = new CTensorLT **[ L - 1 ];
-   F0tensors   = new CTensorF0 ***[ L - 1 ];
-   F0tensorsT  = new CTensorF0T ***[ L - 1 ];
-   F1tensors   = new CTensorF1 ***[ L - 1 ];
-   F1tensorsT  = new CTensorF1T ***[ L - 1 ];
-   S0tensors   = new CTensorS0 ***[ L - 1 ];
-   S0tensorsT  = new CTensorS0T ***[ L - 1 ];
-   S1tensors   = new CTensorS1 ***[ L - 1 ];
-   S1tensorsT  = new CTensorS1T ***[ L - 1 ];
-   Atensors    = new CTensorOperator ***[ L - 1 ];
-   AtensorsT   = new CTensorOperator ***[ L - 1 ];
-   Btensors    = new CTensorOperator ***[ L - 1 ];
-   BtensorsT   = new CTensorOperator ***[ L - 1 ];
-   Ctensors    = new CTensorOperator ***[ L - 1 ];
-   CtensorsT   = new CTensorOperator ***[ L - 1 ];
-   Dtensors    = new CTensorOperator ***[ L - 1 ];
-   DtensorsT   = new CTensorOperator ***[ L - 1 ];
-   Qtensors    = new CTensorQ **[ L - 1 ];
-   QtensorsT   = new CTensorQT **[ L - 1 ];
-   Xtensors    = new CTensorX *[ L - 1 ];
-   Otensors    = new CTensorO *[ L - 1 ];
-   isAllocated = new int[ L - 1 ];
+   std::cout << hashline;
+   std::cout << "### " << "Starting to run a time evolution calculation" << " on " << tmstart->tm_year + 1900 << "-";
+   std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_mon + 1 << "-";
+   std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_mday << " ";
+   std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_hour << ":";
+   std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_min << ":";
+   std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_sec << "\n";
 
-   for ( int cnt = 0; cnt < L - 1; cnt++ ) {
-      isAllocated[ cnt ] = 0;
-   }
+   std::cout << hashline;
 
-   hid_t inputGroupID             = H5Gcreate( HDF5FILEID, "/Input", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
-   hid_t systemPropertiesID       = H5Gcreate( HDF5FILEID, "/Input/SystemProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
-   hid_t waveFunctionPropertiesID = H5Gcreate( HDF5FILEID, "/Input/WaveFunctionProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+   hid_t inputGroupID             = (HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT) ? H5Gcreate( HDF5FILEID, "/Input",                        H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
+   hid_t systemPropertiesID       = (HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT) ? H5Gcreate( HDF5FILEID, "/Input/SystemProperties",       H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
+   hid_t waveFunctionPropertiesID = (HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT) ? H5Gcreate( HDF5FILEID, "/Input/WaveFunctionProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
    hsize_t dimarray1              = 1;
 
    std::cout << "\n";
-   std::cout << "   Starting to propagate MPS\n";
+   std::cout << "   System Properties\n";
    std::cout << "\n";
 
    std::cout << "\n";
    std::cout << "   L = " << L << "\n";
-   H5LTmake_dataset( systemPropertiesID, "L", 1, &dimarray1, H5T_STD_I32LE, &L );
+   HDF5_MAKE_DATASET( systemPropertiesID, "L", 1, &dimarray1, H5T_STD_I32LE, &L );
 
    int Sy = prob->gSy();
    std::cout << "   Sy = " << Sy << "\n";
-   H5LTmake_dataset( systemPropertiesID, "Sy", 1, &dimarray1, H5T_STD_I32LE, &Sy );
+   HDF5_MAKE_DATASET( systemPropertiesID, "Sy", 1, &dimarray1, H5T_STD_I32LE, &Sy );
 
    std::cout << "   Irreps =";
    int * irreps = new int[ L ];
    for ( int i = 0; i < L; i++ ) {
       irreps[ i ] = prob->gIrrep( i );
-      std::cout << std::setw( 5 ) << irreps[ i ];
+      std::cout << std::setfill (' ') << std::setw( 10 ) << irreps[ i ];
    }
    std::cout << "\n";
    hsize_t Lsize = L;
-   H5LTmake_dataset( systemPropertiesID, "Irrep", 1, &Lsize, H5T_STD_I32LE, irreps );
+   HDF5_MAKE_DATASET( systemPropertiesID, "Irrep", 1, &Lsize, H5T_STD_I32LE, irreps );
    delete[] irreps;
 
    double Econst = prob->gEconst();
-   H5LTmake_dataset( systemPropertiesID, "Econst", 1, &dimarray1, H5T_NATIVE_DOUBLE, &Econst );
+   HDF5_MAKE_DATASET( systemPropertiesID, "Econst", 1, &dimarray1, H5T_NATIVE_DOUBLE, &Econst );
 
    std::cout << "\n";
 
    int N = prob->gN();
    std::cout << "   N = " << N << "\n";
-   H5LTmake_dataset( waveFunctionPropertiesID, "N", 1, &dimarray1, H5T_STD_I32LE, &N );
+   HDF5_MAKE_DATASET( waveFunctionPropertiesID, "N", 1, &dimarray1, H5T_STD_I32LE, &N );
 
    int TwoS = prob->gTwoS();
    std::cout << "   TwoS = " << TwoS << "\n";
-   H5LTmake_dataset( waveFunctionPropertiesID, "TwoS", 1, &dimarray1, H5T_STD_I32LE, &TwoS );
+   HDF5_MAKE_DATASET( waveFunctionPropertiesID, "TwoS", 1, &dimarray1, H5T_STD_I32LE, &TwoS );
 
    int I = prob->gIrrep();
    std::cout << "   I = " << I << "\n";
-   H5LTmake_dataset( waveFunctionPropertiesID, "I", 1, &dimarray1, H5T_STD_I32LE, &I );
+   HDF5_MAKE_DATASET( waveFunctionPropertiesID, "I", 1, &dimarray1, H5T_STD_I32LE, &I );
 
    std::cout << "\n";
 
    std::cout << "   full ci matrix product state dimensions:\n";
    std::cout << "   ";
    for ( int i = 0; i < L + 1; i++ ) {
-      std::cout << std::setw( 5 ) << i;
+      std::cout << std::setfill (' ') << std::setw( 10 ) << i;
    }
    std::cout << "\n";
    std::cout << "   ";
@@ -111,11 +94,11 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
    int * fcidims                  = new int[ L + 1 ];
    for ( int i = 0; i < L + 1; i++ ) {
       fcidims[ i ] = tempBK->gFCIDimAtBound( i );
-      std::cout << std::setw( 5 ) << fcidims[ i ];
+      std::cout << std::setfill (' ') << std::setw( 10 ) << fcidims[ i ];
    }
    std::cout << "\n";
    hsize_t Lposize = L + 1;
-   H5LTmake_dataset( waveFunctionPropertiesID, "FCIDims", 1, &Lposize, H5T_STD_I32LE, fcidims );
+   HDF5_MAKE_DATASET( waveFunctionPropertiesID, "FCIDims", 1, &Lposize, H5T_STD_I32LE, fcidims );
    delete[] fcidims;
    delete tempBK;
    std::cout << "\n";
@@ -124,34 +107,28 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
 
 CheMPS2::TimeTaylor::~TimeTaylor() {
 
-   deleteAllBoundaryOperators();
+   std::time_t now = time( NULL );
+   tm * tmstart = localtime( &now );
+   std::ostringstream text;
 
-   delete[] Ltensors;
-   delete[] LtensorsT;
-   delete[] F0tensors;
-   delete[] F0tensorsT;
-   delete[] F1tensors;
-   delete[] F1tensorsT;
-   delete[] S0tensors;
-   delete[] S0tensorsT;
-   delete[] S1tensors;
-   delete[] S1tensorsT;
-   delete[] Atensors;
-   delete[] AtensorsT;
-   delete[] Btensors;
-   delete[] BtensorsT;
-   delete[] Ctensors;
-   delete[] CtensorsT;
-   delete[] Dtensors;
-   delete[] DtensorsT;
-   delete[] Qtensors;
-   delete[] QtensorsT;
-   delete[] Xtensors;
-   delete[] Otensors;
-   delete[] isAllocated;
+   std::cout << hashline;
+   std::cout << "### " << "Finished to run a time evolution calculation" << " on " << tmstart->tm_year + 1900 << "-";
+   std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_mon + 1 << "-";
+   std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_mday << " ";
+   std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_hour << ":";
+   std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_min << ":";
+   std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_sec << "\n";
 
-   // logger->TextWithDate( "Finished to run a time evolution calculation", time( NULL ) );
-   // std::cout << hashline;
+   std::cout << "### Calculation took " << ( time( NULL ) - start ) / 60.0 << " minutes\n" << hashline;
+
+   std::cout << hashline;
+
+}
+
+void CheMPS2::TimeTaylor::HDF5_MAKE_DATASET(hid_t setID, const char * name, int rank, const hsize_t *dims, hid_t typeID, const void * data ) {
+   if ( HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ){
+      H5LTmake_dataset( setID, name, rank, dims, typeID, data );
+   }
 }
 
 void CheMPS2::TimeTaylor::updateMovingLeftSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown ) {
@@ -1158,10 +1135,6 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
          bookkeepers.push_back( krylovBasisVectorBookkeepers[ i ] );
       }
 
-      for ( int index = 0; index < L; index++ ) {
-         mpsTemp[ index ] = new CTensorT( mpsIn[ index ] );
-         mpsTemp[ index ]->random();
-      }
       op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
                          states.size(), &coef[ 0 ], &states[ 0 ], &bookkeepers[ 0 ],
                          mpsTemp, bkTemp,
@@ -1200,6 +1173,19 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
    }
 
    op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], mpsOut, bkOut, scheme->get_max_sweeps( currentInstruction ) );
+
+   delete[] result;
+   delete[] wsp;
+   delete[] ipiv;
+   delete[] krylovHamiltonian;
+
+   for ( int cnt = 1; cnt < krylovSpaceDimension; cnt++){
+      for ( int site = 0; site < L; site++ ) {
+         delete krylovBasisVectors[ cnt ][ site ];
+      }
+      delete[] krylovBasisVectors[ cnt ];
+      delete krylovBasisVectorBookkeepers[cnt];
+   }
 
    delete op;
 
@@ -1697,7 +1683,11 @@ void CheMPS2::TimeTaylor::doStep_taylor_1( const int currentInstruction, const b
 
 void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary, const bool doDumpFCI ) {
 
-   hid_t outputID    = H5Gcreate( HDF5FILEID, "/Output", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+   std::cout << "\n";
+   std::cout << "   Starting to propagate MPS\n";
+   std::cout << "\n";
+
+   hid_t outputID    = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, "/Output", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
    hsize_t dimarray1 = 1;
 
    HamiltonianOperator * hamOp = new HamiltonianOperator( prob );
@@ -1711,29 +1701,29 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
    double t                 = 0.0;
    double firstEnergy       = 0;
    int krylovSpaceDimension = 0;
-
+   
    for ( int inst = 0; inst < scheme->get_number(); inst++ ) {
 
       for ( ; t < scheme->get_max_time( inst ); t += scheme->get_time_step( inst ) ) {
          char dataPointname[ 1024 ];
          sprintf( dataPointname, "/Output/DataPoint%.5f", t );
-         hid_t dataPointID = H5Gcreate( HDF5FILEID, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+         hid_t dataPointID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
 
          std::cout << hashline;
          std::cout << "\n";
          std::cout << "   t = " << t << "\n";
-         H5LTmake_dataset( dataPointID, "t", 1, &dimarray1, H5T_NATIVE_DOUBLE, &t );
+         HDF5_MAKE_DATASET( dataPointID, "t", 1, &dimarray1, H5T_NATIVE_DOUBLE, &t );
 
          double Tmax = scheme->get_max_time( inst );
          std::cout << "   Tmax = " << Tmax << "\n";
-         H5LTmake_dataset( dataPointID, "Tmax", 1, &dimarray1, H5T_NATIVE_DOUBLE, &Tmax );
+         HDF5_MAKE_DATASET( dataPointID, "Tmax", 1, &dimarray1, H5T_NATIVE_DOUBLE, &Tmax );
 
          double dt = scheme->get_time_step( inst );
          std::cout << "   dt = " << dt << "\n";
-         H5LTmake_dataset( dataPointID, "dt", 1, &dimarray1, H5T_NATIVE_DOUBLE, &dt );
+         HDF5_MAKE_DATASET( dataPointID, "dt", 1, &dimarray1, H5T_NATIVE_DOUBLE, &dt );
 
          std::cout << "   KryS = " << krylovSpaceDimension << "\n";
-         H5LTmake_dataset( dataPointID, "KryS", 1, &dimarray1, H5T_STD_I32LE, &krylovSpaceDimension );
+         HDF5_MAKE_DATASET( dataPointID, "KryS", 1, &dimarray1, H5T_STD_I32LE, &krylovSpaceDimension );
 
          std::cout << "\n";
 
@@ -1751,32 +1741,32 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          }
          std::cout << "\n";
          hsize_t Lposize = L + 1;
-         H5LTmake_dataset( dataPointID, "MPSDims", 1, &Lposize, H5T_STD_I32LE, actdims );
+         HDF5_MAKE_DATASET( dataPointID, "MPSDims", 1, &Lposize, H5T_STD_I32LE, actdims );
          delete[] actdims;
 
          std::cout << "\n";
 
          int MaxM = scheme->get_D( inst );
          std::cout << "   MaxM = " << MaxM << "\n";
-         H5LTmake_dataset( dataPointID, "MaxM", 1, &dimarray1, H5T_STD_I32LE, &MaxM );
+         HDF5_MAKE_DATASET( dataPointID, "MaxM", 1, &dimarray1, H5T_STD_I32LE, &MaxM );
 
          double CutO = scheme->get_cut_off( inst );
          std::cout << "   CutO = " << CutO << "\n";
-         H5LTmake_dataset( dataPointID, "CutO", 1, &dimarray1, H5T_NATIVE_DOUBLE, &CutO );
+         HDF5_MAKE_DATASET( dataPointID, "CutO", 1, &dimarray1, H5T_NATIVE_DOUBLE, &CutO );
 
          int NSwe = scheme->get_max_sweeps( inst );
          std::cout << "   NSwe = " << NSwe << "\n";
-         H5LTmake_dataset( dataPointID, "NSwe", 1, &dimarray1, H5T_STD_I32LE, &NSwe );
+         HDF5_MAKE_DATASET( dataPointID, "NSwe", 1, &dimarray1, H5T_STD_I32LE, &NSwe );
 
          std::cout << "\n";
 
          double normOfMPS = norm( MPS );
          std::cout << "   Norm      = " << normOfMPS << "\n";
-         H5LTmake_dataset( dataPointID, "Norm", 1, &dimarray1, H5T_NATIVE_DOUBLE, &normOfMPS );
+         HDF5_MAKE_DATASET( dataPointID, "Norm", 1, &dimarray1, H5T_NATIVE_DOUBLE, &normOfMPS );
 
          double energy = std::real( hamOp->ExpectationValue( MPS, MPSBK ) );
          std::cout << "   Energy    = " << energy << "\n";
-         H5LTmake_dataset( dataPointID, "Energy", 1, &dimarray1, H5T_NATIVE_DOUBLE, &energy );
+         HDF5_MAKE_DATASET( dataPointID, "Energy", 1, &dimarray1, H5T_NATIVE_DOUBLE, &energy );
 
          if ( t == 0.0 ) {
             firstEnergy = energy;
@@ -1799,11 +1789,11 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          }
          std::cout << "\n";
 
-         H5LTmake_dataset( dataPointID, "OEDM_REAL", 2, Lsq, H5T_NATIVE_DOUBLE, oedmre );
-         H5LTmake_dataset( dataPointID, "OEDM_IMAG", 2, Lsq, H5T_NATIVE_DOUBLE, oedmim );
-         delete theodm;
+         HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL", 2, Lsq, H5T_NATIVE_DOUBLE, oedmre );
+         HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG", 2, Lsq, H5T_NATIVE_DOUBLE, oedmim );
          delete[] oedmre;
          delete[] oedmim;
+         delete theodm;
          if ( doDumpFCI ) {
             std::vector< std::vector< int > > alphasOut;
             std::vector< std::vector< int > > betasOut;
@@ -1814,16 +1804,16 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
 
             char dataFCIName[ 1024 ];
             sprintf( dataFCIName, "%s/FCICOEF", dataPointname );
-            hid_t FCIID = H5Gcreate( HDF5FILEID, dataFCIName, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+            hid_t FCIID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataFCIName, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
 
             for ( int l = 0; l < alphasOut.size(); l++ ) {
                char dataFCINameN[ 1024 ];
                sprintf( dataFCINameN, "%s/FCICOEF/%i", dataPointname, l );
-               hid_t FCIID = H5Gcreate( HDF5FILEID, dataFCINameN, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
-               H5LTmake_dataset( FCIID, "FCI_ALPHAS", 1, &Lsize, H5T_NATIVE_INT, &alphasOut[ l ][ 0 ] );
-               H5LTmake_dataset( FCIID, "FCI_BETAS", 1, &Lsize, H5T_NATIVE_INT, &betasOut[ l ][ 0 ] );
-               H5LTmake_dataset( FCIID, "FCI_REAL", 1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsRealOut[ l ] );
-               H5LTmake_dataset( FCIID, "FCI_IMAG", 1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsImagOut[ l ] );
+               hid_t FCIID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataFCINameN, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
+               HDF5_MAKE_DATASET( FCIID, "FCI_ALPHAS", 1, &Lsize, H5T_NATIVE_INT, &alphasOut[ l ][ 0 ] );
+               HDF5_MAKE_DATASET( FCIID, "FCI_BETAS", 1, &Lsize, H5T_NATIVE_INT, &betasOut[ l ][ 0 ] );
+               HDF5_MAKE_DATASET( FCIID, "FCI_REAL", 1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsRealOut[ l ] );
+               HDF5_MAKE_DATASET( FCIID, "FCI_IMAG", 1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsImagOut[ l ] );
             }
          }
          std::cout << "\n";

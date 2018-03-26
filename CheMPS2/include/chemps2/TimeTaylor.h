@@ -53,6 +53,7 @@ namespace CheMPS2 {
 
       hid_t HDF5FILEID;
 
+      std::time_t start;
       // CTensorT ** MPS;
       // CTensorT ** MPSDT;
 
@@ -101,6 +102,8 @@ namespace CheMPS2 {
 
       // TensorO's
       CTensorO ** Otensors;
+
+      void HDF5_MAKE_DATASET(hid_t setID, const char * name, int rank, const hsize_t *dims, hid_t typeID, const void * data );
 
       void updateMovingRightSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown );
 

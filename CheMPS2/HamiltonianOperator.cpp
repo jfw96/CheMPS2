@@ -108,9 +108,12 @@ dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeepe
                  Qtensors[ L - 1 - 1 ][ 0 ], QtensorsT[ L - 1 - 1 ][ 0 ],
                  Atensors[ L - 1 - 1 ][ 0 ][ 0 ], AtensorsT[ L - 1 - 1 ][ 0 ][ 0 ],
                  CtensorsT[ L - 1 - 1 ][ 0 ][ 0 ], DtensorsT[ L - 1 - 1 ][ 0 ][ 0 ] );
-   dcomplex item = last->trace();
+   dcomplex result = last->trace() + lastOverlap->trace() * prob->gEconst();
 
-   return item + lastOverlap->trace() * prob->gEconst();
+   delete lastOverlap;
+   delete last;
+
+   return result;
 }
 
 void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
@@ -330,6 +333,15 @@ void CheMPS2::HamiltonianOperator::SSSum( int statesToAdd,
          }
       }
    }
+
+   for ( int st = 0; st < statesToAdd; st++ ) {
+      for ( int cnt = 0; cnt < L - 1; cnt++ ) {
+         delete overlaps[ st ][ cnt ];
+      }
+      delete[] overlaps[ st ];
+   }
+   delete overlaps;
+   deleteAllBoundaryOperators();
 }
 
 void CheMPS2::HamiltonianOperator::DSApply( CTensorT ** mpsA, SyBookkeeper * bkA,
@@ -402,13 +414,15 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          delete fromAdded;
          double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 500, 0.0, false, false );
 
-         delete applied;
          delete heff;
+         delete applied;
+         delete in;
 
          updateMovingLeftSafe( site, mpsOut, bkOut, mpsA, bkA );
 
          // Otensors
          for ( int st = 0; st < statesToAdd; st++ ) {
+            if ( isAllocated[ site ] > 0 ) { delete overlaps[ st ][ site ]; }
             overlaps[ st ][ site ] = new CTensorO( site + 1, false, bkOut, bookkeepers[ st ] );
             if ( site == L - 2 ) {
                overlaps[ st ][ site ]->create( mpsOut[ site + 1 ], states[ st ][ site + 1 ] );
@@ -416,10 +430,10 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                overlaps[ st ][ site ]->update_ownmem( mpsOut[ site + 1 ], states[ st ][ site + 1 ], overlaps[ st ][ site + 1 ] );
             }
          }
-         // std::cout << overlap( mpsOut, mpsOut ) << std::endl;
       }
 
       for ( int site = 0; site < L - 2; site++ ) {
+
          CSobject * fromAdded = new CSobject( site, bkOut );
          fromAdded->Clear();
          for ( int st = 0; st < statesToAdd; st++ ) {
@@ -453,13 +467,15 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          applied->Add( 1.0, fromAdded );
          double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 500, 0, true, false );
 
-         delete fromAdded;
          delete applied;
+         delete in;
+         delete fromAdded;
 
          updateMovingRightSafe( site, mpsOut, bkOut, mpsA, bkA );
 
          // Otensors
          for ( int st = 0; st < statesToAdd; st++ ) {
+            if ( isAllocated[ site ] > 0 ) { delete overlaps[ st ][ site ]; }
             overlaps[ st ][ site ] = new CTensorO( site + 1, true, bkOut, bookkeepers[ st ] );
             if ( site == 0 ) {
                overlaps[ st ][ site ]->create( mpsOut[ site ], states[ st ][ site ] );
@@ -467,9 +483,16 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                overlaps[ st ][ site ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site - 1 ] );
             }
          }
-         // std::cout << overlap( mpsOut, mpsOut ) << std::endl;
       }
    }
+
+   for ( int st = 0; st < statesToAdd; st++ ) {
+      for ( int cnt = 0; cnt < L - 1; cnt++ ) {
+         delete overlaps[ st ][ cnt ];
+      }
+      delete[] overlaps[ st ];
+   }
+   delete[] overlaps;
 }
 
 void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
@@ -477,6 +500,7 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
                                           CTensorT ** mpsOut, SyBookkeeper * bkOut,
                                           int numberOfSweeps ) {
    deleteAllBoundaryOperators();
+
    for ( int index = 0; index < L - 1; index++ ) {
       left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
    }
@@ -511,11 +535,12 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
             added->Add( factors[ st ], add );
             delete add;
          }
-         added->Split( mpsOut[ site ], mpsOut[ site + 1 ], 50, 0.0, false, false );
+         added->Split( mpsOut[ site ], mpsOut[ site + 1 ], 500, 0.0, false, false );
          delete added;
 
          // Otensors
          for ( int st = 0; st < statesToAdd; st++ ) {
+            delete overlaps[ st ][ site ];
             overlaps[ st ][ site ] = new CTensorO( site + 1, false, bkOut, bookkeepers[ st ] );
             if ( site == L - 2 ) {
                overlaps[ st ][ site ]->create( mpsOut[ site + 1 ], states[ st ][ site + 1 ] );
@@ -537,11 +562,12 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
             delete add;
          }
 
-         added->Split( mpsOut[ site ], mpsOut[ site + 1 ], 50, 0.0, true, false );
+         added->Split( mpsOut[ site ], mpsOut[ site + 1 ], 500, 0.0, true, false );
          delete added;
 
          // Otensors
          for ( int st = 0; st < statesToAdd; st++ ) {
+            delete overlaps[ st ][ site ];
             overlaps[ st ][ site ] = new CTensorO( site + 1, true, bkOut, bookkeepers[ st ] );
             if ( site == 0 ) {
                overlaps[ st ][ site ]->create( mpsOut[ site ], states[ st ][ site ] );
@@ -551,6 +577,14 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
          }
       }
    }
+
+   for ( int st = 0; st < statesToAdd; st++ ) {
+      for ( int cnt = 0; cnt < L - 1; cnt++ ) {
+         delete overlaps[ st ][ cnt ];
+      }
+      delete[] overlaps[ st ];
+   }
+   delete[] overlaps;
 }
 
 void CheMPS2::HamiltonianOperator::updateMovingLeftSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown ) {

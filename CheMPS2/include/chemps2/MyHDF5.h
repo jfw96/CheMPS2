@@ -29,6 +29,7 @@
    #define H5Gcreate_vers 2
    #define H5Gopen_vers 2
 
+   #define H5_CHEMPS2_TIME_NO_H5OUT -1
    #include <hdf5.h>
 
 #endif /* HDF5_CHEMPS2_H */
