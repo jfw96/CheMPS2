@@ -21,12 +21,14 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
 
    prob->construct_mxelem();
 
-   start = time( NULL );
+   start        = time( NULL );
    tm * tmstart = localtime( &start );
    std::ostringstream text;
 
    std::cout << hashline;
-   std::cout << "### " << "Starting to run a time evolution calculation" << " on " << tmstart->tm_year + 1900 << "-";
+   std::cout << "### "
+             << "Starting to run a time evolution calculation"
+             << " on " << tmstart->tm_year + 1900 << "-";
    std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_mon + 1 << "-";
    std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_mday << " ";
    std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_hour << ":";
@@ -35,9 +37,9 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
 
    std::cout << hashline;
 
-   hid_t inputGroupID             = (HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT) ? H5Gcreate( HDF5FILEID, "/Input",                        H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
-   hid_t systemPropertiesID       = (HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT) ? H5Gcreate( HDF5FILEID, "/Input/SystemProperties",       H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
-   hid_t waveFunctionPropertiesID = (HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT) ? H5Gcreate( HDF5FILEID, "/Input/WaveFunctionProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
+   hid_t inputGroupID             = ( HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ) ? H5Gcreate( HDF5FILEID, "/Input", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
+   hid_t systemPropertiesID       = ( HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ) ? H5Gcreate( HDF5FILEID, "/Input/SystemProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
+   hid_t waveFunctionPropertiesID = ( HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ) ? H5Gcreate( HDF5FILEID, "/Input/WaveFunctionProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
    hsize_t dimarray1              = 1;
 
    std::cout << "\n";
@@ -56,7 +58,7 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
    int * irreps = new int[ L ];
    for ( int i = 0; i < L; i++ ) {
       irreps[ i ] = prob->gIrrep( i );
-      std::cout << std::setfill (' ') << std::setw( 10 ) << irreps[ i ];
+      std::cout << std::setfill( ' ' ) << std::setw( 10 ) << irreps[ i ];
    }
    std::cout << "\n";
    hsize_t Lsize = L;
@@ -85,7 +87,7 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
    std::cout << "   full ci matrix product state dimensions:\n";
    std::cout << "   ";
    for ( int i = 0; i < L + 1; i++ ) {
-      std::cout << std::setfill (' ') << std::setw( 10 ) << i;
+      std::cout << std::setfill( ' ' ) << std::setw( 10 ) << i;
    }
    std::cout << "\n";
    std::cout << "   ";
@@ -94,7 +96,7 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
    int * fcidims                  = new int[ L + 1 ];
    for ( int i = 0; i < L + 1; i++ ) {
       fcidims[ i ] = tempBK->gFCIDimAtBound( i );
-      std::cout << std::setfill (' ') << std::setw( 10 ) << fcidims[ i ];
+      std::cout << std::setfill( ' ' ) << std::setw( 10 ) << fcidims[ i ];
    }
    std::cout << "\n";
    hsize_t Lposize = L + 1;
@@ -108,25 +110,27 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
 CheMPS2::TimeTaylor::~TimeTaylor() {
 
    std::time_t now = time( NULL );
-   tm * tmstart = localtime( &now );
+   tm * tmstart    = localtime( &now );
    std::ostringstream text;
 
    std::cout << hashline;
-   std::cout << "### " << "Finished to run a time evolution calculation" << " on " << tmstart->tm_year + 1900 << "-";
+   std::cout << "### "
+             << "Finished to run a time evolution calculation"
+             << " on " << tmstart->tm_year + 1900 << "-";
    std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_mon + 1 << "-";
    std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_mday << " ";
    std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_hour << ":";
    std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_min << ":";
    std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_sec << "\n";
 
-   std::cout << "### Calculation took " << ( time( NULL ) - start ) / 60.0 << " minutes\n" << hashline;
+   std::cout << "### Calculation took " << ( time( NULL ) - start ) / 60.0 << " minutes\n"
+             << hashline;
 
    std::cout << hashline;
-
 }
 
-void CheMPS2::TimeTaylor::HDF5_MAKE_DATASET(hid_t setID, const char * name, int rank, const hsize_t *dims, hid_t typeID, const void * data ) {
-   if ( HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ){
+void CheMPS2::TimeTaylor::HDF5_MAKE_DATASET( hid_t setID, const char * name, int rank, const hsize_t * dims, hid_t typeID, const void * data ) {
+   if ( HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ) {
       H5LTmake_dataset( setID, name, rank, dims, typeID, data );
    }
 }
@@ -1138,24 +1142,9 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
       op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
                          states.size(), &coef[ 0 ], &states[ 0 ], &bookkeepers[ 0 ],
                          mpsTemp, bkTemp,
-                         scheme->get_max_sweeps( currentInstruction ), 
-                         scheme->get_D( currentInstruction ), 
+                         scheme->get_max_sweeps( currentInstruction ),
+                         scheme->get_D( currentInstruction ),
                          scheme->get_cut_off( currentInstruction ) );
-
-      // for ( int cnt = 0; cnt < bookkeepers.size(); cnt++ ) {
-      //    std::cout << cnt << " ";
-      //    for ( int i = 0; i < L + 1; i++ ) {
-      //       std::cout << std::setw( 5 ) <<  bookkeepers[ cnt ]->gTotDimAtBound( i );
-      //    }
-      //    std::cout << std::endl;
-      // }
-      //    std::cout << "temp ";
-      //    for ( int i = 0; i < L + 1; i++ ) {
-      //       std::cout << std::setw( 5 ) <<  bkTemp->gTotDimAtBound( i );
-      //    }
-      //    std::cout << std::endl;
-
-
 
       krylovBasisVectors.push_back( mpsTemp );
       krylovBasisVectorBookkeepers.push_back( bkTemp );
@@ -1163,12 +1152,46 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
 
    int krylovSpaceDimension = krylovBasisVectors.size();
 
+   dcomplex * overlaps = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+      for ( int j = 0; j < krylovSpaceDimension; j++ ) {
+            overlaps[ i + krylovSpaceDimension * j ] = overlap( krylovBasisVectors[ i ], krylovBasisVectors[ j ] );
+      }
+   }
+
    dcomplex * krylovHamiltonian = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
    for ( int i = 0; i < krylovSpaceDimension; i++ ) {
       for ( int j = 0; j < krylovSpaceDimension; j++ ) {
-         krylovHamiltonian[ i + krylovSpaceDimension * j ] = step * op->Overlap( krylovBasisVectors[ i ], krylovBasisVectorBookkeepers[ i ], krylovBasisVectors[ j ], krylovBasisVectorBookkeepers[ j ] ) / overlap( krylovBasisVectors[ i ], krylovBasisVectors[ i ] );
+         krylovHamiltonian[ i + krylovSpaceDimension * j ] = step * op->Overlap( krylovBasisVectors[ i ], krylovBasisVectorBookkeepers[ i ], krylovBasisVectors[ j ], krylovBasisVectorBookkeepers[ j ] );
       }
    }
+
+   int one                = 1;
+   int sqr                = krylovSpaceDimension * krylovSpaceDimension;
+   dcomplex * overlaps_inv = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   zcopy_( &sqr, overlaps, &one, overlaps_inv, &one );
+
+   int info_lu;
+   int * piv = new int[ krylovSpaceDimension ];
+   zgetrf_( &krylovSpaceDimension, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, &info_lu );
+
+   dcomplex * work = new dcomplex[ krylovSpaceDimension ];
+   int info_inve;
+
+   zgetri_( &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, work, &krylovSpaceDimension, &info_inve );
+
+   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+      for ( int j = i + 1; j < krylovSpaceDimension; j++ ) {
+         overlaps_inv[ i + krylovSpaceDimension * j ] = overlaps_inv[ j + krylovSpaceDimension * i ];
+      }
+   }
+
+   dcomplex * toExp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   char notrans     = 'N';
+   dcomplex oneC    = 1.0;
+   dcomplex zeroC   = 0.0;
+   zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
+           &oneC, overlaps_inv, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zeroC, toExp, &krylovSpaceDimension );
 
    int deg        = 6;
    double bla     = 1.0;
@@ -1179,7 +1202,7 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
    int ns         = 0;
    int info;
 
-   zgpadm_( &deg, &krylovSpaceDimension, &bla, krylovHamiltonian, &krylovSpaceDimension,
+   zgpadm_( &deg, &krylovSpaceDimension, &bla, toExp, &krylovSpaceDimension,
             wsp, &lwsp, ipiv, &iexph, &ns, &info );
 
    dcomplex * exph = &wsp[ iexph - 1 ];
@@ -1189,27 +1212,31 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
       result[ i ] = exph[ i + krylovSpaceDimension * 0 ];
    }
 
-   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ], 
-              mpsOut, bkOut, 
-              scheme->get_max_sweeps( currentInstruction ), 
-              scheme->get_D( currentInstruction ), 
-              scheme->get_cut_off( currentInstruction )  );
+   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ],
+              mpsOut, bkOut,
+              scheme->get_max_sweeps( currentInstruction ),
+              scheme->get_D( currentInstruction ),
+              scheme->get_cut_off( currentInstruction ) );
 
    delete[] result;
    delete[] wsp;
    delete[] ipiv;
+   delete[] overlaps;
+   delete[] overlaps_inv;
    delete[] krylovHamiltonian;
+   delete[] toExp;
+   delete[] piv;
+   delete[] work;
 
-   for ( int cnt = 1; cnt < krylovSpaceDimension; cnt++){
+   for ( int cnt = 1; cnt < krylovSpaceDimension; cnt++ ) {
       for ( int site = 0; site < L; site++ ) {
          delete krylovBasisVectors[ cnt ][ site ];
       }
       delete[] krylovBasisVectors[ cnt ];
-      delete krylovBasisVectorBookkeepers[cnt];
+      delete krylovBasisVectorBookkeepers[ cnt ];
    }
 
    delete op;
-   // abort();
    return krylovSpaceDimension;
 }
 
@@ -1711,7 +1738,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
    hid_t outputID    = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, "/Output", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
    hsize_t dimarray1 = 1;
 
-   HamiltonianOperator * hamOp = new HamiltonianOperator( prob);
+   HamiltonianOperator * hamOp = new HamiltonianOperator( prob );
 
    SyBookkeeper * MPSBK = new SyBookkeeper( prob, scheme->get_D( 0 ) );
    CTensorT ** MPS      = new CTensorT *[ L ];
@@ -1722,7 +1749,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
    double t                 = 0.0;
    double firstEnergy       = 0;
    int krylovSpaceDimension = 0;
-   
+
    for ( int inst = 0; inst < scheme->get_number(); inst++ ) {
 
       for ( ; t < scheme->get_max_time( inst ); t += scheme->get_time_step( inst ) ) {

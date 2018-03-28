@@ -1118,7 +1118,7 @@ int main( int argc, char ** argv ){
 
       CheMPS2::TimeTaylor * taylor = new CheMPS2::TimeTaylor( prob, opt_scheme, fileID );
 
-      taylor->Propagate( initBK, initMPS, false, true );
+      taylor->Propagate( initBK, initMPS, false, false );
       if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){
          H5Fclose( fileID );
       }

@@ -739,9 +739,9 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
          }
          discardedWeight = discardedSum / totalSum;
 
-         // Clean-up
-         delete[] values;
       }
+      // Clean-up
+      delete[] values;
 
       // Check if there is a sector which differs
       updateSectors = 0;

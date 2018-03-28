@@ -59,5 +59,8 @@ void zgesdd_( char * JOBZ, int * M, int * N, dcomplex * A, int * LDA, double * S
 void zheev_( char * JOBZ, char * UPLO, int * N, dcomplex * A, int * LDA, double * W, dcomplex * WORK, int * LWORK, double * RWORK, int * INFO );
 void zgeev_( char * JOBVL, char * JOBVR, int * N, dcomplex * A, int * LDA, dcomplex * W, dcomplex * VL, int *LDVL, dcomplex* VR, int* LDVR, dcomplex * WORK, int * LWORK, double * RWORK, int * INFO );
 void zgpadm_( int * ideg, int * m, double * t, dcomplex * H, int * ldh, dcomplex * wsp, int * lwsp, int * ipiv, int * iexph, int * ns, int * iflag);
+void zpotri_( char * uplo, int * n, dcomplex * a, int * lda, int * info );
+void zgetri_( int * n, dcomplex * a, int * lda, int * ipiv, dcomplex * work, int * lwork, int * info );
+void zgetrf_( int * m, int * n, dcomplex * a, int * lda, int * ipiv, int * info );
 }
 #endif
