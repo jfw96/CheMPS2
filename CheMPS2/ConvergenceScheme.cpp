@@ -75,7 +75,7 @@ void CheMPS2::ConvergenceScheme::set_instruction( const int instruction, const i
    assert( instruction < num_instructions );
    assert( D > 0 );
    assert( max_time > 0.0 );
-   assert( cut_off > 0.0 );
+   assert( cut_off >= 0.0 );
    assert( max_sweeps > 0 );
 
    num_D[ instruction ]             = D;

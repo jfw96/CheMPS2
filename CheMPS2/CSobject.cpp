@@ -500,7 +500,8 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
    // Get the number of central sectors
    int nCenterSectors = 0;
    for ( int NM = denBK->gNmin( index + 1 ); NM <= denBK->gNmax( index + 1 ); NM++ ) {
-      for ( int TwoSM = denBK->gTwoSmin( index + 1, NM ); TwoSM <= denBK->gTwoSmax( index + 1, NM ); TwoSM += 2 ) {
+      for ( int TwoSM = denBK->gTwoSmin( index + 1, NM );
+            TwoSM <= denBK->gTwoSmax( index + 1, NM ); TwoSM += 2 ) {
          for ( int IM = 0; IM < denBK->getNumberOfIrreps(); IM++ ) {
             const int dimM = denBK->gFCIdim( index + 1, NM, TwoSM, IM ); // FCIdim !! Whether possible hence.
             if ( dimM > 0 ) {
@@ -516,7 +517,8 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
    int * SplitSectIM    = new int[ nCenterSectors ];
    nCenterSectors       = 0;
    for ( int NM = denBK->gNmin( index + 1 ); NM <= denBK->gNmax( index + 1 ); NM++ ) {
-      for ( int TwoSM = denBK->gTwoSmin( index + 1, NM ); TwoSM <= denBK->gTwoSmax( index + 1, NM ); TwoSM += 2 ) {
+      for ( int TwoSM = denBK->gTwoSmin( index + 1, NM );
+            TwoSM <= denBK->gTwoSmax( index + 1, NM ); TwoSM += 2 ) {
          for ( int IM = 0; IM < denBK->getNumberOfIrreps(); IM++ ) {
             const int dimM = denBK->gFCIdim( index + 1, NM, TwoSM, IM ); // FCIdim !! Whether possible hence.
             if ( dimM > 0 ) {
@@ -552,7 +554,8 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
       DimLtotal[ iCenter ] = 0;
       for ( int NL = SplitSectNM[ iCenter ] - 2; NL <= SplitSectNM[ iCenter ]; NL++ ) {
          const int TwoS1 = ( ( NL + 1 == SplitSectNM[ iCenter ] ) ? 1 : 0 );
-         for ( int TwoSL = SplitSectTwoJM[ iCenter ] - TwoS1; TwoSL <= SplitSectTwoJM[ iCenter ] + TwoS1; TwoSL += 2 ) {
+         for ( int TwoSL = SplitSectTwoJM[ iCenter ] - TwoS1;
+               TwoSL <= SplitSectTwoJM[ iCenter ] + TwoS1; TwoSL += 2 ) {
             if ( TwoSL >= 0 ) {
                const int IL   = ( ( TwoS1 == 1 ) ? Irreps::directProd( Ilocal1, SplitSectIM[ iCenter ] ) : SplitSectIM[ iCenter ] );
                const int dimL = denBK->gCurrentDim( index, NL, TwoSL, IL );
@@ -595,19 +598,24 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
          }
 
          int dimLtotal2 = 0;
-         for ( int NL = SplitSectNM[ iCenter ] - 2; NL <= SplitSectNM[ iCenter ]; NL++ ) {
+         for ( int NL = SplitSectNM[ iCenter ] - 2; NL <= SplitSectNM[ iCenter ];
+               NL++ ) {
             const int TwoS1 = ( ( NL + 1 == SplitSectNM[ iCenter ] ) ? 1 : 0 );
-            for ( int TwoSL = SplitSectTwoJM[ iCenter ] - TwoS1; TwoSL <= SplitSectTwoJM[ iCenter ] + TwoS1; TwoSL += 2 ) {
+            for ( int TwoSL = SplitSectTwoJM[ iCenter ] - TwoS1;
+                  TwoSL <= SplitSectTwoJM[ iCenter ] + TwoS1; TwoSL += 2 ) {
                if ( TwoSL >= 0 ) {
                   const int IL   = ( ( TwoS1 == 1 ) ? Irreps::directProd( Ilocal1, SplitSectIM[ iCenter ] ) : SplitSectIM[ iCenter ] );
                   const int dimL = denBK->gCurrentDim( index, NL, TwoSL, IL );
                   if ( dimL > 0 ) {
                      int dimRtotal2 = 0;
-                     for ( int NR = SplitSectNM[ iCenter ]; NR <= SplitSectNM[ iCenter ] + 2; NR++ ) {
+                     for ( int NR = SplitSectNM[ iCenter ];
+                           NR <= SplitSectNM[ iCenter ] + 2; NR++ ) {
                         const int TwoS2 = ( ( NR == SplitSectNM[ iCenter ] + 1 ) ? 1 : 0 );
-                        for ( int TwoSR = SplitSectTwoJM[ iCenter ] - TwoS2; TwoSR <= SplitSectTwoJM[ iCenter ] + TwoS2; TwoSR += 2 ) {
+                        for ( int TwoSR = SplitSectTwoJM[ iCenter ] - TwoS2;
+                              TwoSR <= SplitSectTwoJM[ iCenter ] + TwoS2; TwoSR += 2 ) {
                            if ( TwoSR >= 0 ) {
-                              const int IR   = ( ( TwoS2 == 1 ) ? Irreps::directProd( Ilocal2, SplitSectIM[ iCenter ] ) : SplitSectIM[ iCenter ] );
+                              const int IR = ( ( TwoS2 == 1 ) ? Irreps::directProd( Ilocal2, SplitSectIM[ iCenter ] )
+                                                              : SplitSectIM[ iCenter ] );
                               const int dimR = denBK->gCurrentDim( index + 2, NR, TwoSR, IR );
                               if ( dimR > 0 ) {
                                  // Loop over contributing TwoJ's
@@ -617,13 +625,16 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
                                  for ( int TwoJ = TwoJmin; TwoJ <= TwoJmax; TwoJ += 2 ) {
                                     // Calc prefactor
                                     const dcomplex prefactor = fase * sqrt( 1.0 * ( TwoJ + 1 ) * ( TwoSR + 1 ) ) *
-                                                               Wigner::wigner6j( TwoSL, TwoSR, TwoJ, TwoS2, TwoS1, SplitSectTwoJM[ iCenter ] );
+                                                               Wigner::wigner6j( TwoSL, TwoSR, TwoJ, TwoS2, TwoS1,
+                                                                                 SplitSectTwoJM[ iCenter ] );
 
                                     // Add them to mem --> += because several TwoJ
-                                    dcomplex * Block = gStorage( NL, TwoSL, IL, SplitSectNM[ iCenter ] - NL, NR - SplitSectNM[ iCenter ], TwoJ, NR, TwoSR, IR );
+                                    dcomplex * Block = gStorage( NL, TwoSL, IL, SplitSectNM[ iCenter ] - NL,
+                                                                 NR - SplitSectNM[ iCenter ], TwoJ, NR, TwoSR, IR );
                                     for ( int l = 0; l < dimL; l++ ) {
                                        for ( int r = 0; r < dimR; r++ ) {
-                                          mem[ dimLtotal2 + l + DimLtotal[ iCenter ] * ( dimRtotal2 + r ) ] += prefactor * Block[ l + dimL * r ];
+                                          mem[ dimLtotal2 + l + DimLtotal[ iCenter ] * ( dimRtotal2 + r ) ] +=
+                                              prefactor * Block[ l + dimL * r ];
                                        }
                                     }
                                  }
@@ -640,14 +651,17 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
 
          // Now mem contains sqrt((2jR+1)/(2jM+1)) * (TT)^{jM nM IM) --> SVD per
          // central symmetry
-         char jobz       = 'S'; // M x min(M,N) in U and min(M,N) x N in VT
-         int lwork       = 3 * CenterDims[ iCenter ] + max( max( DimLtotal[ iCenter ], DimRtotal[ iCenter ] ), 4 * CenterDims[ iCenter ] * ( CenterDims[ iCenter ] + 1 ) );
+         char jobz = 'S'; // M x min(M,N) in U and min(M,N) x N in VT
+         int lwork = 3 * CenterDims[ iCenter ] + max( max( DimLtotal[ iCenter ], DimRtotal[ iCenter ] ),
+                                                      4 * CenterDims[ iCenter ] * ( CenterDims[ iCenter ] + 1 ) );
          double * rwork  = new double[ 5 * CenterDims[ iCenter ] * CenterDims[ iCenter ] + 7 * CenterDims[ iCenter ] ];
          dcomplex * work = new dcomplex[ lwork ];
          int * iwork     = new int[ 8 * CenterDims[ iCenter ] ];
          int info;
 
-         // dgesdd is not thread-safe in every implementation ( intel MKL is safe, Atlas is not safe )
+         // dgesdd is not thread-safe in every implementation ( intel MKL is safe,
+         // Atlas
+         // is not safe )
          zgesdd_( &jobz, DimLtotal + iCenter, DimRtotal + iCenter, mem, DimLtotal + iCenter,
                   Lambdas[ iCenter ], Us[ iCenter ], DimLtotal + iCenter, VTs[ iCenter ],
                   CenterDims + iCenter, work, &lwork, rwork, iwork, &info );
@@ -685,37 +699,56 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
       }
 
       // Sort them in decreasing order
-         char ID = 'D';
-         int info;
-         dlasrt_( &ID, &totalDimSVD, values, &info ); // Quicksort
+      char ID = 'D';
+      int info;
+      dlasrt_( &ID, &totalDimSVD, values, &info ); // Quicksort
 
-         // The D+1'th value becomes the lower bound Schmidt value. Every value smaller than or equal to the D+1'th value is thrown out (hence Dactual <= Ddesired).
-         const double lowerBound = values[ virtualdimensionD ];
-         for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ){
-            for ( int cnt = 0; cnt < NewDims[ iCenter ]; cnt++ ){
-               if ( Lambdas[ iCenter ][ cnt ] <= lowerBound ){ NewDims[ iCenter ] = cnt; }
+      int maxD = 0;
+      while ( maxD < totalDimSVD && maxD < virtualdimensionD && cut_off < values[ maxD ] ) {
+         maxD++;
+      }
+
+      // int maxD = virtualdimensionD;
+      // If larger then the required virtualdimensionD, new virtual dimensions
+      // will be set in NewDims.
+      if ( totalDimSVD > maxD ) {
+
+         // The D+1'th value becomes the lower bound Schmidt value. Every value
+         // smaller than or equal to the D+1'th value is thrown out (hence Dactual // <= Ddesired).
+         const double lowerBound = values[ maxD ];
+         for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
+            for ( int cnt = 0; cnt < NewDims[ iCenter ]; cnt++ ) {
+               if ( Lambdas[ iCenter ][ cnt ] <= lowerBound ) {
+                  NewDims[ iCenter ] = cnt;
+               }
             }
          }
 
          // Discarded weight
-         double totalSum = 0.0;
+         double totalSum     = 0.0;
          double discardedSum = 0.0;
-         for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ){
-            for ( int iLocal = 0; iLocal < CenterDims[ iCenter ]; iLocal++ ){
-               double temp = ( SplitSectTwoJM[ iCenter ] + 1 ) * Lambdas[ iCenter ][ iLocal ] * Lambdas[ iCenter ][ iLocal ];
+         for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
+            for ( int iLocal = 0; iLocal < CenterDims[ iCenter ]; iLocal++ ) {
+               double temp = ( SplitSectTwoJM[ iCenter ] + 1 ) *
+                             Lambdas[ iCenter ][ iLocal ] * Lambdas[ iCenter ][ iLocal ];
                totalSum += temp;
-               if ( Lambdas[ iCenter ][ iLocal ] <= lowerBound ){ discardedSum += temp; }
+               if ( Lambdas[ iCenter ][ iLocal ] <= lowerBound ) {
+                  discardedSum += temp;
+               }
             }
          }
          discardedWeight = discardedSum / totalSum;
 
          // Clean-up
-         delete [] values;
+         delete[] values;
+      }
 
       // Check if there is a sector which differs
       updateSectors = 0;
       for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
-         const int MPSdim = denBK->gCurrentDim( index + 1, SplitSectNM[ iCenter ], SplitSectTwoJM[ iCenter ], SplitSectIM[ iCenter ] );
+         const int MPSdim =
+             denBK->gCurrentDim( index + 1, SplitSectNM[ iCenter ],
+                                 SplitSectTwoJM[ iCenter ], SplitSectIM[ iCenter ] );
          if ( NewDims[ iCenter ] != MPSdim ) {
             updateSectors = 1;
          }
@@ -741,14 +774,17 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
       if ( dimM > 0 ) {
          // U-part: copy
          int dimLtotal2 = 0;
-         for ( int NL = SplitSectNM[ iCenter ] - 2; NL <= SplitSectNM[ iCenter ]; NL++ ) {
+         for ( int NL = SplitSectNM[ iCenter ] - 2; NL <= SplitSectNM[ iCenter ];
+               NL++ ) {
             const int TwoS1 = ( ( NL + 1 == SplitSectNM[ iCenter ] ) ? 1 : 0 );
             for ( int TwoSL = SplitSectTwoJM[ iCenter ] - TwoS1; TwoSL <= SplitSectTwoJM[ iCenter ] + TwoS1; TwoSL += 2 ) {
                if ( TwoSL >= 0 ) {
-                  const int IL   = ( ( TwoS1 == 1 ) ? Irreps::directProd( Ilocal1, SplitSectIM[ iCenter ] ) : SplitSectIM[ iCenter ] );
+                  const int IL = ( ( TwoS1 == 1 ) ? Irreps::directProd( Ilocal1, SplitSectIM[ iCenter ] )
+                                                  : SplitSectIM[ iCenter ] );
                   const int dimL = denBK->gCurrentDim( index, NL, TwoSL, IL );
                   if ( dimL > 0 ) {
-                     dcomplex * TleftBlock           = Tleft->gStorage( NL, TwoSL, IL, SplitSectNM[ iCenter ], SplitSectTwoJM[ iCenter ], SplitSectIM[ iCenter ] );
+                     dcomplex * TleftBlock = Tleft->gStorage( NL, TwoSL, IL, SplitSectNM[ iCenter ], SplitSectTwoJM[ iCenter ],
+                                                              SplitSectIM[ iCenter ] );
                      const int dimension_limit_right = min( dimM, CenterDims[ iCenter ] );
                      for ( int r = 0; r < dimension_limit_right; r++ ) {
                         const dcomplex factor = ( ( movingright ) ? 1.0 : Lambdas[ iCenter ][ r ] );
@@ -773,11 +809,12 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
             const int TwoS2 = ( ( NR == SplitSectNM[ iCenter ] + 1 ) ? 1 : 0 );
             for ( int TwoSR = SplitSectTwoJM[ iCenter ] - TwoS2; TwoSR <= SplitSectTwoJM[ iCenter ] + TwoS2; TwoSR += 2 ) {
                if ( TwoSR >= 0 ) {
-                  const int IR   = ( ( TwoS2 == 1 ) ? Irreps::directProd( Ilocal2, SplitSectIM[ iCenter ] )
+                  const int IR = ( ( TwoS2 == 1 ) ? Irreps::directProd( Ilocal2, SplitSectIM[ iCenter ] )
                                                   : SplitSectIM[ iCenter ] );
                   const int dimR = denBK->gCurrentDim( index + 2, NR, TwoSR, IR );
                   if ( dimR > 0 ) {
-                     dcomplex * TrightBlock         = Tright->gStorage( SplitSectNM[ iCenter ], SplitSectTwoJM[ iCenter ], SplitSectIM[ iCenter ], NR, TwoSR, IR );
+                     dcomplex * TrightBlock = Tright->gStorage( SplitSectNM[ iCenter ], SplitSectTwoJM[ iCenter ],
+                                                                SplitSectIM[ iCenter ], NR, TwoSR, IR );
                      const int dimension_limit_left = min( dimM, CenterDims[ iCenter ] );
                      const dcomplex factor_base     = sqrt( ( SplitSectTwoJM[ iCenter ] + 1.0 ) / ( TwoSR + 1 ) );
                      for ( int l = 0; l < dimension_limit_left; l++ ) {
