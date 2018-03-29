@@ -43,6 +43,12 @@ namespace CheMPS2 {
       /** \param tocopy The SyBookkeeper to be copied */
       SyBookkeeper( const SyBookkeeper & tocopy );
 
+      //! Constructor from occupation numbers
+      /** \param Prob The problem to be solved
+             \param occu    The occupation numbers */
+
+      SyBookkeeper( const Problem * Prob, const int * occupation );
+
       //! Destructor
       virtual ~SyBookkeeper();
 

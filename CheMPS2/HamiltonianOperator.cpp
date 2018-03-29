@@ -356,7 +356,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                                                   CTensorT *** states,
                                                   SyBookkeeper ** bookkeepers,
                                                   CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                                                  int numberOfSweeps, int maxM, double cutOff  ) {
+                                                  int numberOfSweeps, int maxM, double cutOff ) {
    deleteAllBoundaryOperators();
    for ( int index = 0; index < L - 2; index++ ) {
       left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
@@ -382,7 +382,6 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 
    for ( int i = 0; i < numberOfSweeps; ++i ) {
       for ( int site = L - 2; site > 0; site-- ) {
-
          CSobject * fromAdded = new CSobject( site, bkOut );
          fromAdded->Clear();
          for ( int st = 0; st < statesToAdd; st++ ) {
@@ -413,7 +412,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          applied->Add( 1.0, fromAdded );
          delete fromAdded;
          double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], maxM, cutOff, false, true );
-         // std::cout << disc << std::endl;
+         
          delete heff;
          delete applied;
          delete in;
@@ -433,7 +432,6 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
       }
 
       for ( int site = 0; site < L - 2; site++ ) {
-
          CSobject * fromAdded = new CSobject( site, bkOut );
          fromAdded->Clear();
          for ( int st = 0; st < statesToAdd; st++ ) {
@@ -466,7 +464,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 
          applied->Add( 1.0, fromAdded );
          double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], maxM, cutOff, true, true );
-         // std::cout << disc << std::endl;
+         
          delete applied;
          delete in;
          delete fromAdded;
@@ -482,7 +480,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
             } else {
                overlaps[ st ][ site ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site - 1 ] );
             }
-         }
+         }        
       }
    }
 
@@ -588,6 +586,10 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
 }
 
 void CheMPS2::HamiltonianOperator::updateMovingLeftSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown ) {
+   if ( isAllocated[ cnt ] == 2 ) {
+      deleteTensors( cnt, false );
+      isAllocated[ cnt ] = 0;
+   }   
    if ( isAllocated[ cnt ] == 1 ) {
       deleteTensors( cnt, true );
       isAllocated[ cnt ] = 0;
@@ -602,6 +604,10 @@ void CheMPS2::HamiltonianOperator::updateMovingLeftSafe( const int cnt, CTensorT
 void CheMPS2::HamiltonianOperator::updateMovingRightSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown ) {
    if ( isAllocated[ cnt ] == 2 ) {
       deleteTensors( cnt, false );
+      isAllocated[ cnt ] = 0;
+   }
+   if ( isAllocated[ cnt ] == 1 ) {
+      deleteTensors( cnt, true );
       isAllocated[ cnt ] = 0;
    }
    if ( isAllocated[ cnt ] == 0 ) {

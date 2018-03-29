@@ -1120,7 +1120,7 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
    while ( krylovBasisVectors.size() < scheme->get_krylov_dimension( currentInstruction ) &&
            norm( krylovBasisVectors.back() ) > 1e-5 ) {
 
-      SyBookkeeper * bkTemp = new SyBookkeeper( prob, scheme->get_D( currentInstruction ) );
+      SyBookkeeper * bkTemp = new SyBookkeeper( *krylovBasisVectorBookkeepers.back() );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
       for ( int index = 0; index < L; index++ ) {
          mpsTemp[ index ] = new CTensorT( index, bkTemp );
@@ -1212,11 +1212,11 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
       result[ i ] = exph[ i + krylovSpaceDimension * 0 ];
    }
 
-   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ],
-              mpsOut, bkOut,
-              scheme->get_max_sweeps( currentInstruction ),
-              scheme->get_D( currentInstruction ),
-              scheme->get_cut_off( currentInstruction ) );
+   // op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ],
+   //            mpsOut, bkOut,
+   //            scheme->get_max_sweeps( currentInstruction ),
+   //            scheme->get_D( currentInstruction ),
+   //            scheme->get_cut_off( currentInstruction ) );
 
    delete[] result;
    delete[] wsp;
@@ -1740,7 +1740,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
 
    HamiltonianOperator * hamOp = new HamiltonianOperator( prob );
 
-   SyBookkeeper * MPSBK = new SyBookkeeper( prob, scheme->get_D( 0 ) );
+   SyBookkeeper * MPSBK = new SyBookkeeper( *initBK );
    CTensorT ** MPS      = new CTensorT *[ L ];
    for ( int index = 0; index < L; index++ ) {
       MPS[ index ] = new CTensorT( initMPS[ index ] );
@@ -1866,7 +1866,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          }
          std::cout << "\n";
 
-         SyBookkeeper * MPSBKDT = new SyBookkeeper( prob, scheme->get_D( inst ) );
+         SyBookkeeper * MPSBKDT = new SyBookkeeper( *MPSBK );
          CTensorT ** MPSDT      = new CTensorT *[ L ];
          for ( int index = 0; index < L; index++ ) {
             MPSDT[ index ] = new CTensorT( index, MPSBKDT );
