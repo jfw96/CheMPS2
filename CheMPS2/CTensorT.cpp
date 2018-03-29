@@ -873,7 +873,7 @@ dcomplex CheMPS2::getFCICoefficient( Problem * prob, CTensorT ** mps, int * alph
 
       theCoeff = arrayL[ 0 ];
 
-      assert( num_SL == 1 );
+      // assert( num_SL == 1 );
       assert( jumpL[ 1 ] == 1 );
       assert( twoSL[ 0 ] == prob->gTwoS() );
       assert( NL == prob->gN() );

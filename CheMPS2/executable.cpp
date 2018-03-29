@@ -1101,7 +1101,8 @@ int main( int argc, char ** argv ){
 
       for ( int index = 0; index < n_orbs; index++ ) {
          initMPS[ index ] = new CheMPS2::CTensorT( index, initBK );
-         initMPS[ index ]->random();
+         initMPS[ index ]->gStorage()[0] = 1.0;
+         // initMPS[ index ]->random();
       }
 
       double normDT2 = norm( initMPS );
