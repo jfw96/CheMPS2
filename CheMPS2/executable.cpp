@@ -1095,33 +1095,15 @@ int main( int argc, char ** argv ){
    } else if ( time_evolu ) {
       CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
 
-      CheMPS2::SyBookkeeper * initBK = new CheMPS2::SyBookkeeper( prob, opt_scheme->get_D( 0 ) );
+      CheMPS2::SyBookkeeper * initBK = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
 
       CheMPS2::CTensorT ** initMPS   = new CheMPS2::CTensorT *[ prob->gL() ];
-      for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
-         initMPS[ cnt ] = new CheMPS2::CTensorT( cnt, initBK );
+
+      for ( int index = 0; index < n_orbs; index++ ) {
+         initMPS[ index ] = new CheMPS2::CTensorT( index, initBK );
+         initMPS[ index ]->gStorage()[0] = 1.0;
+         // initMPS[ index ]->random();
       }
-
-      int Nelec = 0;
-      for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
-         int ni = time_ninit_parsed[ cnt ];
-         initMPS[ cnt ]->Clear();
-         for ( int ikappa = 0; ikappa < initMPS[ cnt ]->gNKappa(); ikappa++ ) {
-            if ( initMPS[ cnt ]->gNL( ikappa ) == Nelec && initMPS[ cnt ]->gNR( ikappa ) == Nelec + ni ) {
-               dcomplex * data                                = initMPS[ cnt ]->gStorage();
-               data[ initMPS[ cnt ]->gKappa2index( ikappa ) ] = 1.0;
-            }
-         }
-         Nelec += ni;
-      }
-
-      // CheMPS2::SyBookkeeper * initBK = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
-      // CheMPS2::CTensorT ** initMPS   = new CheMPS2::CTensorT *[ prob->gL() ];
-
-      // for ( int index = 0; index < n_orbs; index++ ) {
-      //    initMPS[ index ] = new CheMPS2::CTensorT( index, initBK );
-      //    initMPS[ index ]->gStorage()[0] = 1.0;
-      // }
 
       double normDT2 = norm( initMPS );
       initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
