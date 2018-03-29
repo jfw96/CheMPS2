@@ -408,6 +408,9 @@ cout << "\n"
 "       TIME_HDF5OUTPUT = /path/to/hdf5/destination\n"
 "              Set the file path for the HDF5 output when specified (default unspecified).\n"
 "\n"
+"       TIME_DUMPFCI = bool\n"
+"              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_EVOLU = TRUE and TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
+"\n"
 "       PRINT_CORR = bool\n"
 "              Print correlation functions (TRUE or FALSE; default FALSE).\n"
 "\n"
@@ -489,6 +492,7 @@ int main( int argc, char ** argv ){
    bool time_evolu        = false;
    string time_ninit      = "";
    string time_hdf5output = "";
+   bool time_dumpfci      = false;
 
    bool   print_corr = false;
    string tmp_folder = "/tmp";
@@ -609,6 +613,7 @@ int main( int argc, char ** argv ){
       if ( find_boolean( &caspt2_checkpt,   line, "CASPT2_CHECKPT"   ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &caspt2_cumul,     line, "CASPT2_CUMUL"     ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &time_evolu,       line, "TIME_EVOLU"       ) == false ){ return clean_exit( -1 ); }
+      if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"     ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &print_corr,       line, "PRINT_CORR"       ) == false ){ return clean_exit( -1 ); }
 
       if ( line.find( "SWEEP_STATES" ) != string::npos ){
@@ -950,10 +955,11 @@ int main( int argc, char ** argv ){
          cout << "   CASPT2_CHECKPT     = " << (( caspt2_checkpt ) ? "TRUE" : "FALSE" ) << endl;
          cout << "   CASPT2_CUMUL       = " << (( caspt2_cumul   ) ? "TRUE" : "FALSE" ) << endl;
       }
-      cout << "   TIME_EVOLU         = " << (( time_evolu     ) ? "TRUE" : "FALSE" ) << endl;
+      cout << "   TIME_EVOLU         = " << (( time_evolu        ) ? "TRUE" : "FALSE" ) << endl;
       if ( time_evolu ){
          cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < n_orbs; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
          cout << "   TIME_HDF5OUTPUT    = " << time_hdf5output << endl;
+         cout << "   TIME_DUMPFCI       = " << (( time_dumpfci    ) ? "TRUE" : "FALSE" ) << endl;
       }
       cout << "   PRINT_CORR         = " << (( print_corr     ) ? "TRUE" : "FALSE" ) << endl;
       cout << "   TMP_FOLDER         = " << tmp_folder << endl;
@@ -1108,7 +1114,7 @@ int main( int argc, char ** argv ){
 
       CheMPS2::TimeTaylor * taylor = new CheMPS2::TimeTaylor( prob, opt_scheme, fileID );
 
-      taylor->Propagate( initBK, initMPS, false, false );
+      taylor->Propagate( initBK, initMPS, false, time_dumpfci );
       if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){
          H5Fclose( fileID );
       }
