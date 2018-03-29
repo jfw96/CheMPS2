@@ -1102,26 +1102,19 @@ int main( int argc, char ** argv ){
       for ( int index = 0; index < n_orbs; index++ ) {
          initMPS[ index ] = new CheMPS2::CTensorT( index, initBK );
          initMPS[ index ]->gStorage()[0] = 1.0;
-         // initMPS[ index ]->random();
       }
 
-      double normDT2 = norm( initMPS );
-      initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
+      double normDT2 = norm( initMPS ); initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
 
       hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
-      if ( time_hdf5output.length() > 0){
-         fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
-      }
+      if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
 
       CheMPS2::TimeTaylor * taylor = new CheMPS2::TimeTaylor( prob, opt_scheme, fileID );
-
       taylor->Propagate( initBK, initMPS, false, time_dumpfci );
-      if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){
-         H5Fclose( fileID );
-      }
+
+      if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
 
       delete taylor;
-
       for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
          delete initMPS[ cnt ];
       }

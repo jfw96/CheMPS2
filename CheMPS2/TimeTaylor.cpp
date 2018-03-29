@@ -1119,7 +1119,6 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
 
    while ( krylovBasisVectors.size() < scheme->get_krylov_dimension( currentInstruction ) &&
            norm( krylovBasisVectors.back() ) > 1e-5 ) {
-
       SyBookkeeper * bkTemp = new SyBookkeeper( *krylovBasisVectorBookkeepers.back() );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
       for ( int index = 0; index < L; index++ ) {

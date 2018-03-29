@@ -411,6 +411,8 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 
          applied->Add( 1.0, fromAdded );
          delete fromAdded;
+
+         if ( i == 0 ) { applied->addNoise( 1e-10); }
          double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], maxM, cutOff, false, true );
          
          delete heff;
@@ -463,6 +465,8 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          delete heff;
 
          applied->Add( 1.0, fromAdded );
+         
+         if ( i == 0 ) { applied->addNoise( 1e-10); }
          double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], maxM, cutOff, true, true );
          
          delete applied;
@@ -534,6 +538,7 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
             delete add;
          }
          added->Split( mpsOut[ site ], mpsOut[ site + 1 ], maxM, cutOff, false, true );
+         if ( i == 0 ) { added->addNoise( 1e-10); }
          delete added;
 
          // Otensors
@@ -561,6 +566,7 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
          }
 
          added->Split( mpsOut[ site ], mpsOut[ site + 1 ], maxM, cutOff, true, true );
+         if ( i == 0 ) { added->addNoise( 1e-10); }
          delete added;
 
          // Otensors
