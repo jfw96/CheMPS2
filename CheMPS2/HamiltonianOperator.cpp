@@ -412,9 +412,9 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          applied->Add( 1.0, fromAdded );
          delete fromAdded;
 
-         if ( i == 0 ) { applied->addNoise( 1e-10); }
+         if ( i == 0 ) { applied->addNoise( 1e-10 ); }
          double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], maxM, cutOff, false, true );
-         
+
          delete heff;
          delete applied;
          delete in;
@@ -465,10 +465,10 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          delete heff;
 
          applied->Add( 1.0, fromAdded );
-         
-         if ( i == 0 ) { applied->addNoise( 1e-10); }
+
+         if ( i == 0 ) { applied->addNoise( 1e-10 ); }
          double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], maxM, cutOff, true, true );
-         
+
          delete applied;
          delete in;
          delete fromAdded;
@@ -484,7 +484,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
             } else {
                overlaps[ st ][ site ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site - 1 ] );
             }
-         }        
+         }
       }
    }
 
@@ -538,7 +538,7 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
             delete add;
          }
          added->Split( mpsOut[ site ], mpsOut[ site + 1 ], maxM, cutOff, false, true );
-         if ( i == 0 ) { added->addNoise( 1e-10); }
+         if ( i == 0 ) { added->addNoise( 1e-10 ); }
          delete added;
 
          // Otensors
@@ -595,7 +595,7 @@ void CheMPS2::HamiltonianOperator::updateMovingLeftSafe( const int cnt, CTensorT
    if ( isAllocated[ cnt ] == 2 ) {
       deleteTensors( cnt, false );
       isAllocated[ cnt ] = 0;
-   }   
+   }
    if ( isAllocated[ cnt ] == 1 ) {
       deleteTensors( cnt, true );
       isAllocated[ cnt ] = 0;
@@ -643,6 +643,7 @@ void CheMPS2::HamiltonianOperator::updateMovingLeft( const int index, CTensorT *
 #pragma omp parallel
    {
       dcomplex * workmem = new dcomplex[ dimL * dimR ];
+
 // Ltensors_MPSDT_MPS : all processes own all Ltensors_MPSDT_MPS
 #pragma omp for schedule( static ) nowait
       for ( int cnt2 = 0; cnt2 < L - 1 - index; cnt2++ ) {
@@ -664,6 +665,7 @@ void CheMPS2::HamiltonianOperator::updateMovingLeft( const int index, CTensorT *
       const int k1          = L - 1 - index;
       const int upperbound1 = ( k1 * ( k1 + 1 ) ) / 2;
       int result[ 2 ];
+
 // After this parallel region, WAIT because F0,F1,S0,S1[ index ][ cnt2 ][ cnt3
 // == 0 ] is required for the complementary operators
 #pragma omp for schedule( static )
@@ -716,6 +718,7 @@ void CheMPS2::HamiltonianOperator::updateMovingLeft( const int index, CTensorT *
       // complementary two-operator tensors
       const int k2          = index + 1;
       const int upperbound2 = ( k2 * ( k2 + 1 ) ) / 2;
+
 #pragma omp for schedule( static ) nowait
       for ( int global = 0; global < upperbound2; global++ ) {
          Special::invert_triangle_two( global, result );
