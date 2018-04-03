@@ -1137,7 +1137,7 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
       std::vector< SyBookkeeper * > bookkeepers;
 
       for ( int i = 0; i < kry; i++ ) {
-         coef.push_back( -krylovHamiltonian[ i * krylovSpaceDimension + ( kry - 1 ) ] / overlaps[ i * krylovSpaceDimension + i ] );
+         coef.push_back( -krylovHamiltonian[ i + ( kry - 1 ) * krylovSpaceDimension ] / overlaps[ i + i * krylovSpaceDimension ] );
          states.push_back( krylovBasisVectors[ i ] );
          bookkeepers.push_back( krylovBasisSyBookkeepers[ i ] );
       }
