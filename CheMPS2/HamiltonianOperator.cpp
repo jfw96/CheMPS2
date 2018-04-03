@@ -566,7 +566,7 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
          }
 
          added->Split( mpsOut[ site ], mpsOut[ site + 1 ], maxM, cutOff, true, true );
-         if ( i == 0 ) { added->addNoise( 1e-10); }
+         if ( i == 0 ) { added->addNoise( 1e-10 ); }
          delete added;
 
          // Otensors

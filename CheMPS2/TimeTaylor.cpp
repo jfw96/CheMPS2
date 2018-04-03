@@ -1132,22 +1132,26 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
          mpsTemp[ index ]->random();
       }
 
-      std::vector< dcomplex > coef;
-      std::vector< CTensorT ** > states;
-      std::vector< SyBookkeeper * > bookkeepers;
+      dcomplex * coefs            = new dcomplex[ kry ];
+      CTensorT *** states         = new CTensorT **[ kry ];
+      SyBookkeeper ** bookkeepers = new SyBookkeeper *[ kry ];
 
       for ( int i = 0; i < kry; i++ ) {
-         coef.push_back( -krylovHamiltonian[ i + ( kry - 1 ) * krylovSpaceDimension ] / overlaps[ i + i * krylovSpaceDimension ] );
-         states.push_back( krylovBasisVectors[ i ] );
-         bookkeepers.push_back( krylovBasisSyBookkeepers[ i ] );
+         coefs[ i ]       = -krylovHamiltonian[ i + ( kry - 1 ) * krylovSpaceDimension ] / overlaps[ i + i * krylovSpaceDimension ];
+         states[ i ]      = krylovBasisVectors[ i ];
+         bookkeepers[ i ] = krylovBasisSyBookkeepers[ i ];
       }
 
       op->DSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
-                         states.size(), &coef[ 0 ], &states[ 0 ], &bookkeepers[ 0 ],
+                         kry, coefs, states, bookkeepers,
                          mpsTemp, bkTemp,
                          scheme->get_max_sweeps( currentInstruction ),
                          scheme->get_D( currentInstruction ),
                          scheme->get_cut_off( currentInstruction ) );
+
+      delete[] coefs;
+      delete[] states;
+      delete[] bookkeepers;
 
       krylovBasisVectors[ kry ]       = mpsTemp;
       krylovBasisSyBookkeepers[ kry ] = bkTemp;
@@ -1861,28 +1865,30 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          }
          std::cout << "\n";
 
-         SyBookkeeper * MPSBKDT = new SyBookkeeper( *MPSBK );
-         CTensorT ** MPSDT      = new CTensorT *[ L ];
-         for ( int index = 0; index < L; index++ ) {
-            MPSDT[ index ] = new CTensorT( index, MPSBKDT );
-            MPSDT[ index ]->random();
-         }
+         if ( t + scheme->get_time_step( inst ) < scheme->get_max_time( inst ) ) {
+            SyBookkeeper * MPSBKDT = new SyBookkeeper( *MPSBK );
+            CTensorT ** MPSDT      = new CTensorT *[ L ];
+            for ( int index = 0; index < L; index++ ) {
+               MPSDT[ index ] = new CTensorT( index, MPSBKDT );
+               MPSDT[ index ]->random();
+            }
 
-         // doStep_krylov( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
-         krylovSpaceDimension = doStep_arnoldi( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
+            // doStep_krylov( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
+            krylovSpaceDimension = doStep_arnoldi( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
 
-         for ( int site = 0; site < L; site++ ) {
-            delete MPS[ site ];
-         }
-         delete[] MPS;
-         delete MPSBK;
+            for ( int site = 0; site < L; site++ ) {
+               delete MPS[ site ];
+            }
+            delete[] MPS;
+            delete MPSBK;
 
-         MPS   = MPSDT;
-         MPSBK = MPSBKDT;
+            MPS   = MPSDT;
+            MPSBK = MPSBKDT;
 
-         if ( doImaginary ) {
-            double normDT = norm( MPS );
-            MPS[ 0 ]->number_operator( 0.0, 1.0 / normDT );
+            if ( doImaginary ) {
+               double normDT = norm( MPS );
+               MPS[ 0 ]->number_operator( 0.0, 1.0 / normDT );
+            }
          }
 
          std::cout << hashline;
