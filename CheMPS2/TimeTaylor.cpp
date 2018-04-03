@@ -1106,20 +1106,26 @@ void CheMPS2::TimeTaylor::doStep_rk_4( const int currentInstruction, const bool 
 
 int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
+   int krylovSpaceDimension = scheme->get_krylov_dimension( currentInstruction );
+
    dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * scheme->get_time_step( currentInstruction ) );
 
    HamiltonianOperator * op = new HamiltonianOperator( prob );
 
-   std::vector< CTensorT ** > krylovBasisVectors;
-   std::vector< SyBookkeeper * > krylovBasisVectorBookkeepers;
+   CTensorT *** krylovBasisVectors          = new CTensorT **[ krylovSpaceDimension ];
+   SyBookkeeper ** krylovBasisSyBookkeepers = new SyBookkeeper *[ krylovSpaceDimension ];
+
+   dcomplex * krylovHamiltonian = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   dcomplex * overlaps          = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
 
    // Step 1
-   krylovBasisVectors.push_back( mpsIn );
-   krylovBasisVectorBookkeepers.push_back( bkIn );
+   krylovBasisVectors[ 0 ]                           = mpsIn;
+   krylovBasisSyBookkeepers[ 0 ]                     = bkIn;
+   krylovHamiltonian[ 0 + 0 * krylovSpaceDimension ] = op->Overlap( krylovBasisVectors[ 0 ], krylovBasisSyBookkeepers[ 0 ], krylovBasisVectors[ 0 ], krylovBasisSyBookkeepers[ 0 ] );
+   overlaps[ 0 + 0 * krylovSpaceDimension ]          = overlap( krylovBasisVectors[ 0 ], krylovBasisVectors[ 0 ] );
 
-   while ( krylovBasisVectors.size() < scheme->get_krylov_dimension( currentInstruction ) &&
-           norm( krylovBasisVectors.back() ) > 1e-5 ) {
-      SyBookkeeper * bkTemp = new SyBookkeeper( *krylovBasisVectorBookkeepers.back() );
+   for ( int kry = 1; kry < krylovSpaceDimension; kry++ ) {
+      SyBookkeeper * bkTemp = new SyBookkeeper( *krylovBasisSyBookkeepers[ kry - 1 ] );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
       for ( int index = 0; index < L; index++ ) {
          mpsTemp[ index ] = new CTensorT( index, bkTemp );
@@ -1130,43 +1136,32 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
       std::vector< CTensorT ** > states;
       std::vector< SyBookkeeper * > bookkeepers;
 
-      for ( int i = 0; i < krylovBasisVectors.size(); i++ ) {
-         dcomplex nrm = overlap( krylovBasisVectors[ i ], krylovBasisVectors[ i ] );
-         dcomplex mat = op->Overlap( krylovBasisVectors[ i ], krylovBasisVectorBookkeepers[ i ], krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back() );
-         coef.push_back( -mat / nrm );
+      for ( int i = 0; i < kry; i++ ) {
+         coef.push_back( -krylovHamiltonian[ i * krylovSpaceDimension + ( kry - 1 ) ] / overlaps[ i * krylovSpaceDimension + i ] );
          states.push_back( krylovBasisVectors[ i ] );
-         bookkeepers.push_back( krylovBasisVectorBookkeepers[ i ] );
+         bookkeepers.push_back( krylovBasisSyBookkeepers[ i ] );
       }
 
-      op->DSApplyAndAdd( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back(),
+      op->DSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
                          states.size(), &coef[ 0 ], &states[ 0 ], &bookkeepers[ 0 ],
                          mpsTemp, bkTemp,
                          scheme->get_max_sweeps( currentInstruction ),
                          scheme->get_D( currentInstruction ),
                          scheme->get_cut_off( currentInstruction ) );
 
-      krylovBasisVectors.push_back( mpsTemp );
-      krylovBasisVectorBookkeepers.push_back( bkTemp );
-   }
+      krylovBasisVectors[ kry ]       = mpsTemp;
+      krylovBasisSyBookkeepers[ kry ] = bkTemp;
 
-   int krylovSpaceDimension = krylovBasisVectors.size();
-
-   dcomplex * overlaps = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
-   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-      for ( int j = 0; j < krylovSpaceDimension; j++ ) {
-            overlaps[ i + krylovSpaceDimension * j ] = overlap( krylovBasisVectors[ i ], krylovBasisVectors[ j ] );
+      for ( int i = 0; i <= kry; i++ ) {
+         overlaps[ i + kry * krylovSpaceDimension ]          = overlap( krylovBasisVectors[ i ], krylovBasisVectors[ kry ] );
+         overlaps[ kry + i * krylovSpaceDimension ]          = std::conj( overlaps[ i + kry * krylovSpaceDimension ] );
+         krylovHamiltonian[ i + kry * krylovSpaceDimension ] = op->Overlap( krylovBasisVectors[ i ], krylovBasisSyBookkeepers[ i ], krylovBasisVectors[ kry ], krylovBasisSyBookkeepers[ kry ] );
+         krylovHamiltonian[ kry + i * krylovSpaceDimension ] = std::conj( krylovHamiltonian[ i + kry * krylovSpaceDimension ] );
       }
    }
 
-   dcomplex * krylovHamiltonian = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
-   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-      for ( int j = 0; j < krylovSpaceDimension; j++ ) {
-         krylovHamiltonian[ i + krylovSpaceDimension * j ] = step * op->Overlap( krylovBasisVectors[ i ], krylovBasisVectorBookkeepers[ i ], krylovBasisVectors[ j ], krylovBasisVectorBookkeepers[ j ] );
-      }
-   }
-
-   int one                = 1;
-   int sqr                = krylovSpaceDimension * krylovSpaceDimension;
+   int one                 = 1;
+   int sqr                 = krylovSpaceDimension * krylovSpaceDimension;
    dcomplex * overlaps_inv = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
    zcopy_( &sqr, overlaps, &one, overlaps_inv, &one );
 
@@ -1187,10 +1182,9 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
 
    dcomplex * toExp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
    char notrans     = 'N';
-   dcomplex oneC    = 1.0;
    dcomplex zeroC   = 0.0;
    zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
-           &oneC, overlaps_inv, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zeroC, toExp, &krylovSpaceDimension );
+           &step, overlaps_inv, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zeroC, toExp, &krylovSpaceDimension );
 
    int deg        = 6;
    double bla     = 1.0;
@@ -1211,7 +1205,7 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
       result[ i ] = exph[ i + krylovSpaceDimension * 0 ];
    }
 
-   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisVectorBookkeepers[ 0 ],
+   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisSyBookkeepers[ 0 ],
               mpsOut, bkOut,
               scheme->get_max_sweeps( currentInstruction ),
               scheme->get_D( currentInstruction ),
@@ -1232,8 +1226,10 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
          delete krylovBasisVectors[ cnt ][ site ];
       }
       delete[] krylovBasisVectors[ cnt ];
-      delete krylovBasisVectorBookkeepers[ cnt ];
+      delete krylovBasisSyBookkeepers[ cnt ];
    }
+   delete[] krylovBasisVectors;
+   delete[] krylovBasisSyBookkeepers;
 
    delete op;
    return krylovSpaceDimension;
@@ -1246,14 +1242,14 @@ void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const boo
    // HamiltonianOperator * op = new HamiltonianOperator( prob );
 
    // std::vector< CTensorT ** > krylovBasisVectors;
-   // std::vector< SyBookkeeper * > krylovBasisVectorBookkeepers;
+   // std::vector< SyBookkeeper * > krylovBasisSyBookkeepers;
    // std::vector< dcomplex > krylovHamiltonianDiagonal;
    // std::vector< dcomplex > krylovHamiltonianOffDiagonal;
 
    // // Step 1
    // krylovBasisVectors.push_back( mpsIn );
-   // krylovBasisVectorBookkeepers.push_back( bkIn );
-   // krylovHamiltonianDiagonal.push_back( op->ExpectationValue( krylovBasisVectors.back(), krylovBasisVectorBookkeepers.back() ) );
+   // krylovBasisSyBookkeepers.push_back( bkIn );
+   // krylovHamiltonianDiagonal.push_back( op->ExpectationValue( krylovBasisVectors.back(), krylovBasisSyBookkeepers.back() ) );
 
    // while ( true ) {
 
