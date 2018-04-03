@@ -58,50 +58,50 @@ namespace CheMPS2 {
 
       //! Get the number of orbitals
       /** \return The number of orbitals */
-      int gL() const;
+      inline int gL() const { return Prob->gL(); }
 
       //! Get an orbital irrep
       /** \param orbital The DMRG orbital index (because the Problem class is asked)
              \return The irrep of the orbital */
-      int gIrrep( const int orbital ) const;
+      inline int gIrrep( const int orbital ) const { return Prob->gIrrep( orbital ); }
 
       //! Get twice the targeted spin
       /** \return Twice the targeted spin */
-      int gTwoS() const;
+      inline int gTwoS() const { return Prob->gTwoS(); }
 
       //! Get the targeted particle number
       /** \return The targeted particle number */
-      int gN() const;
+      inline int gN() const { return Prob->gN(); }
 
       //! Get the targeted irrep
       /** \return The targeted irrep */
-      int gIrrep() const;
+      inline int gIrrep() const { return Prob->gIrrep(); }
 
       //! Get the total number of irreps
       /** \return The number of irreps */
-      int getNumberOfIrreps() const;
+      inline int getNumberOfIrreps() const { return num_irreps; }
 
       //! Get the min. possible particle number for a certain boundary
       /** \param boundary The boundary index ( from 0 to L ( included ) )
              \return Nmin[ bound ] */
-      int gNmin( const int boundary ) const;
+      inline int gNmin( const int boundary ) const { return Nmin[ boundary ]; }
 
       //! Get the max. possible particle number for a certain boundary
       /** \param boundary The boundary index
              \return Nmax[ bound ] */
-      int gNmax( const int boundary ) const;
+      inline int gNmax( const int boundary ) const { return Nmax[ boundary ]; }
 
       //! Get the minimum possible spin value for a certain boundary and particle number
       /** \param boundary The boundary index
              \param N The particle number
              \return The corresponding minimum spin value */
-      int gTwoSmin( const int boundary, const int N ) const;
+      inline int gTwoSmin( const int boundary, const int N ) const { return TwoSmin[ boundary ][ N - Nmin[ boundary ] ]; }
 
       //! Get the maximum possible spin value for a certain boundary and particle number
       /** \param boundary The boundary index
              \param N The particle number
              \return The corresponding maximum spin value */
-      int gTwoSmax( const int boundary, const int N ) const;
+      inline int gTwoSmax( const int boundary, const int N ) const { return TwoSmax[ boundary ][ N - Nmin[ boundary ] ]; }
 
       //! Get the FCI virtual dimensions ( bound by SYBK_dimensionCutoff )
       /** \param boundary The boundary index
@@ -109,7 +109,7 @@ namespace CheMPS2 {
              \param TwoS Twice the spin sector
              \param irrep The irrep
              \return The corresponding FCI virtual dimension */
-      int gFCIdim( const int boundary, const int N, const int TwoS, const int irrep ) const;
+      inline int gFCIdim( const int boundary, const int N, const int TwoS, const int irrep ) const { return gDimPrivate( FCIdim, boundary, N, TwoS, irrep ); }
 
       //! Get the current virtual dimensions
       /** \param boundary The boundary index
@@ -117,7 +117,7 @@ namespace CheMPS2 {
              \param TwoS Twice the spin sector
              \param irrep The irrep
              \return The corresponding current virtual dimension */
-      int gCurrentDim( const int boundary, const int N, const int TwoS, const int irrep ) const;
+      inline int gCurrentDim( const int boundary, const int N, const int TwoS, const int irrep ) const { return gDimPrivate( CURdim, boundary, N, TwoS, irrep ); }
 
       //! Get whether the desired symmetry sector is possible
       /** \return Whether the desired symmetry sector is possible */

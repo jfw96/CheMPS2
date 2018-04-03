@@ -222,30 +222,6 @@ CheMPS2::SyBookkeeper::~SyBookkeeper() {
 
 const CheMPS2::Problem * CheMPS2::SyBookkeeper::gProb() const { return Prob; }
 
-int CheMPS2::SyBookkeeper::gL() const { return Prob->gL(); }
-
-int CheMPS2::SyBookkeeper::gIrrep( const int orbital ) const { return Prob->gIrrep( orbital ); }
-
-int CheMPS2::SyBookkeeper::gTwoS() const { return Prob->gTwoS(); }
-
-int CheMPS2::SyBookkeeper::gN() const { return Prob->gN(); }
-
-int CheMPS2::SyBookkeeper::gIrrep() const { return Prob->gIrrep(); }
-
-int CheMPS2::SyBookkeeper::getNumberOfIrreps() const { return num_irreps; }
-
-int CheMPS2::SyBookkeeper::gNmin( const int boundary ) const { return Nmin[ boundary ]; }
-
-int CheMPS2::SyBookkeeper::gNmax( const int boundary ) const { return Nmax[ boundary ]; }
-
-int CheMPS2::SyBookkeeper::gTwoSmin( const int boundary, const int N ) const { return TwoSmin[ boundary ][ N - Nmin[ boundary ] ]; }
-
-int CheMPS2::SyBookkeeper::gTwoSmax( const int boundary, const int N ) const { return TwoSmax[ boundary ][ N - Nmin[ boundary ] ]; }
-
-int CheMPS2::SyBookkeeper::gFCIdim( const int boundary, const int N, const int TwoS, const int irrep ) const { return gDimPrivate( FCIdim, boundary, N, TwoS, irrep ); }
-
-int CheMPS2::SyBookkeeper::gCurrentDim( const int boundary, const int N, const int TwoS, const int irrep ) const { return gDimPrivate( CURdim, boundary, N, TwoS, irrep ); }
-
 void CheMPS2::SyBookkeeper::SetDim( const int boundary, const int N, const int TwoS, const int irrep, const int value ) {
 
    if ( gFCIdim( boundary, N, TwoS, irrep ) != 0 ) {
