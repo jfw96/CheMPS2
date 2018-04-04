@@ -89,7 +89,7 @@ CheMPS2::SyBookkeeper::SyBookkeeper( const Problem * Prob, const int * occupatio
 
    int Nelec = 0;
    for ( int index = 0; index < gL(); index++ ) {
-      int ni = occupation[ Prob->gf2( index ) ];
+      int ni = occupation[ Prob->gReorder() ? Prob->gf2( index ): index ];
       for ( int NL = gNmin( index ); NL <= gNmax( index ); NL++ ) {
          for ( int TwoSL = gTwoSmin( index, NL ); TwoSL <= gTwoSmax( index, NL ); TwoSL += 2 ) {
             for ( int IL = 0; IL < getNumberOfIrreps(); IL++ ) {
@@ -123,7 +123,7 @@ CheMPS2::SyBookkeeper::SyBookkeeper( const Problem * Prob, const int * occupatio
    // Clean the indexes that turn out to be unncessary
    Nelec = 0;
    for ( int index = 0; index < gL(); index++ ) {
-      int ni = occupation[ Prob->gf2( index ) ];
+      int ni = occupation[ Prob->gReorder() ? Prob->gf2( index ): index ];
       for ( int NL = gNmin( index ); NL <= gNmax( index ); NL++ ) {
          for ( int TwoSL = gTwoSmin( index, NL ); TwoSL <= gTwoSmax( index, NL ); TwoSL += 2 ) {
             for ( int IL = 0; IL < getNumberOfIrreps(); IL++ ) {
