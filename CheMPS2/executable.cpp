@@ -403,7 +403,7 @@ cout << "\n"
 "              Perfrom a time evolution calculation.\n"
 "\n"
 "       TIME_NINIT = int, int, int\n"
-"              Set the occupation numbers for the inital state. Neccessary when TIME_EVOLU = TRUE (positive integers).\n"
+"              Set the occupation numbers for the inital state. Neccessary when TIME_EVOLU = TRUE. Ordered as in the FCIDUMP file. (positive integers).\n"
 "\n"
 "       TIME_HDF5OUTPUT = /path/to/hdf5/destination\n"
 "              Set the file path for the HDF5 output when specified (default unspecified).\n"
@@ -1002,7 +1002,7 @@ int main( int argc, char ** argv ){
    delete [] value_time_krycut;
    delete [] value_time_maxswe;
 
-   if ( full_active_space_calculation && !time_evolu ){
+   if ( full_active_space_calculation || time_evolu ){
 
       CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
 
@@ -1031,95 +1031,97 @@ int main( int argc, char ** argv ){
          delete [] dmrg2ham;
       }
 
-      CheMPS2::DMRG * dmrgsolver = new CheMPS2::DMRG( prob, opt_scheme, molcas_mps, tmp_folder );
+      if ( !time_evolu ){
+         CheMPS2::DMRG * dmrgsolver = new CheMPS2::DMRG( prob, opt_scheme, molcas_mps, tmp_folder );
 
-      // Solve for the correct root
-      double DMRG_ENERGY;
-      for ( int state = 0; state < ( excitation + 1 ); state++ ){
-         if ( state > 0 ){ dmrgsolver->newExcitation( fabs( DMRG_ENERGY ) ); }
-         DMRG_ENERGY = dmrgsolver->Solve();
-         if (( state == 0 ) && ( excitation > 0 )){ dmrgsolver->activateExcitations( excitation ); }
+         // Solve for the correct root
+         double DMRG_ENERGY;
+         for ( int state = 0; state < ( excitation + 1 ); state++ ){
+            if ( state > 0 ){ dmrgsolver->newExcitation( fabs( DMRG_ENERGY ) ); }
+            DMRG_ENERGY = dmrgsolver->Solve();
+            if (( state == 0 ) && ( excitation > 0 )){ dmrgsolver->activateExcitations( excitation ); }
 
-         // Only if state specific or last state N-RDMs should be calculated
-         if (( molcas_state_avg == true ) || ( state == excitation )){
+            // Only if state specific or last state N-RDMs should be calculated
+            if (( molcas_state_avg == true ) || ( state == excitation )){
 
-            const bool calc_3rdm = (( molcas_3rdm.length() != 0 ) || ( molcas_f4rdm.length() != 0 ));
-            const bool calc_2rdm = (( print_corr == true ) || ( molcas_2rdm.length() != 0 ));
-            if (( calc_2rdm ) || ( calc_3rdm )){
+               const bool calc_3rdm = (( molcas_3rdm.length() != 0 ) || ( molcas_f4rdm.length() != 0 ));
+               const bool calc_2rdm = (( print_corr == true ) || ( molcas_2rdm.length() != 0 ));
+               if (( calc_2rdm ) || ( calc_3rdm )){
 
-               dmrgsolver->calc_rdms_and_correlations( calc_3rdm, false );
-               std::stringstream result_filename;
+                  dmrgsolver->calc_rdms_and_correlations( calc_3rdm, false );
+                  std::stringstream result_filename;
 
-               // 2-RDM
-               if ( molcas_2rdm.length() != 0 ){
-                  result_filename.str("");
-                  result_filename << molcas_2rdm << ".r" << state;
-                  dmrgsolver->get2DM()->save_HAM( result_filename.str() );
+                  // 2-RDM
+                  if ( molcas_2rdm.length() != 0 ){
+                     result_filename.str("");
+                     result_filename << molcas_2rdm << ".r" << state;
+                     dmrgsolver->get2DM()->save_HAM( result_filename.str() );
+                  }
+
+                  // 3-RDM
+                  if ( molcas_3rdm.length() != 0 ){
+                     result_filename.str("");
+                     result_filename << molcas_3rdm << ".r" << state;
+                     dmrgsolver->get3DM()->save_HAM( result_filename.str() );
+                  }
+
+                  // F . 4-RDM
+                  if ( molcas_f4rdm.length() != 0 ){
+                     const int LAS      = ham->getL();
+                     const int LAS_pow6 = LAS * LAS * LAS * LAS * LAS * LAS;
+                     double * fockmx = new double[ LAS * LAS ];
+                     double * work   = new double[ LAS_pow6  ];
+                     double * result = new double[ LAS_pow6  ];
+                     for ( int cnt = 0; cnt < LAS_pow6; cnt++ ){ result[ cnt ] = 0.0; }
+                     ham->readfock( molcas_fock, fockmx, true );
+                     CheMPS2::CASSCF::fock_dot_4rdm( fockmx, dmrgsolver, ham, 0, 0, work, result, false, false );
+
+                     result_filename.str("");
+                     result_filename << molcas_f4rdm << ".r" << state;
+                     CheMPS2::ThreeDM::save_HAM_generic( result_filename.str(), LAS, "F.4-RDM", result );
+                     delete [] fockmx;
+                     delete [] work;
+                     delete [] result;
+                  }
+                  if (( print_corr ) && ( state == excitation )){ dmrgsolver->getCorrelations()->Print(); }
                }
-
-               // 3-RDM
-               if ( molcas_3rdm.length() != 0 ){
-                  result_filename.str("");
-                  result_filename << molcas_3rdm << ".r" << state;
-                  dmrgsolver->get3DM()->save_HAM( result_filename.str() );
-               }
-
-               // F . 4-RDM
-               if ( molcas_f4rdm.length() != 0 ){
-                  const int LAS      = ham->getL();
-                  const int LAS_pow6 = LAS * LAS * LAS * LAS * LAS * LAS;
-                  double * fockmx = new double[ LAS * LAS ];
-                  double * work   = new double[ LAS_pow6  ];
-                  double * result = new double[ LAS_pow6  ];
-                  for ( int cnt = 0; cnt < LAS_pow6; cnt++ ){ result[ cnt ] = 0.0; }
-                  ham->readfock( molcas_fock, fockmx, true );
-                  CheMPS2::CASSCF::fock_dot_4rdm( fockmx, dmrgsolver, ham, 0, 0, work, result, false, false );
-
-                  result_filename.str("");
-                  result_filename << molcas_f4rdm << ".r" << state;
-                  CheMPS2::ThreeDM::save_HAM_generic( result_filename.str(), LAS, "F.4-RDM", result );
-                  delete [] fockmx;
-                  delete [] work;
-                  delete [] result;
-               }
-               if (( print_corr ) && ( state == excitation )){ dmrgsolver->getCorrelations()->Print(); }
             }
          }
+
+         // Clean up
+         if ( CheMPS2::DMRG_storeRenormOptrOnDisk ){ dmrgsolver->deleteStoredOperators(); }
+         delete dmrgsolver;
+
+      } else {
+         CheMPS2::SyBookkeeper * initBK  = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
+         CheMPS2::CTensorT    ** initMPS = new CheMPS2::CTensorT *[ prob->gL() ];
+
+         for ( int index = 0; index < n_orbs; index++ ) {
+            initMPS[ index ] = new CheMPS2::CTensorT( index, initBK );
+            initMPS[ index ]->gStorage()[ 0 ] = 1.0;
+         }
+
+         double normDT2 = norm( initMPS ); initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
+
+         hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
+         if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
+
+         CheMPS2::TimeTaylor * taylor = new CheMPS2::TimeTaylor( prob, opt_scheme, fileID );
+         taylor->Propagate( initBK, initMPS, false, time_dumpfci );
+
+         if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
+
+         delete taylor;
+         for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
+            delete initMPS[ cnt ];
+         }
+         delete [] initMPS;
+         delete initBK;
+
       }
 
-      // Clean up
-      if ( CheMPS2::DMRG_storeRenormOptrOnDisk ){ dmrgsolver->deleteStoredOperators(); }
-      delete dmrgsolver;
       delete prob;
 
-   } else if ( time_evolu ) {
-      CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
-
-      CheMPS2::SyBookkeeper * initBK  = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
-      CheMPS2::CTensorT    ** initMPS = new CheMPS2::CTensorT *[ prob->gL() ];
-
-      for ( int index = 0; index < n_orbs; index++ ) {
-         initMPS[ index ] = new CheMPS2::CTensorT( index, initBK );
-         initMPS[ index ]->gStorage()[ 0 ] = 1.0;
-      }
-
-      double normDT2 = norm( initMPS ); initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
-
-      hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
-      if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
-
-      CheMPS2::TimeTaylor * taylor = new CheMPS2::TimeTaylor( prob, opt_scheme, fileID );
-      taylor->Propagate( initBK, initMPS, false, time_dumpfci );
-
-      if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
-
-      delete taylor;
-      for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
-         delete initMPS[ cnt ];
-      }
-      delete [] initMPS;
-      delete initBK;
-      delete prob;
    } else {
 
       CheMPS2::CASSCF koekoek( ham, NULL, NULL, nocc_parsed, nact_parsed, nvir_parsed, tmp_folder );

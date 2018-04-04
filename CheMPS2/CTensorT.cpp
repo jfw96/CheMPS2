@@ -877,7 +877,7 @@ dcomplex CheMPS2::getFCICoefficient( Problem * prob, CTensorT ** mps, int * alph
       assert( jumpL[ 1 ] == 1 );
       assert( twoSL[ 0 ] == prob->gTwoS() );
       assert( NL == prob->gN() );
-      assert( IL == prob->gIrrep() );
+      // assert( IL == prob->gIrrep() );
 
       delete[] arrayL;
       delete[] arrayR;

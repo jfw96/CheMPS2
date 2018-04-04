@@ -85,6 +85,19 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
 
    std::cout << "\n";
 
+   std::cout << "   Orbital ordering:\n";
+   std::cout << "      ";
+   int * ham2dmrg = new int[ L + 1 ];
+   for ( int i = 0; i < L; i++ ) {
+      ham2dmrg[ i ] = prob->gf2( i );
+      std::cout << std::setfill( ' ' ) << std::setw( 2 ) << i << " -> " << std::setfill( ' ' ) << std::setw( 1 ) << ham2dmrg[ i ] << "  ";
+   }
+   std::cout << "\n";
+   HDF5_MAKE_DATASET( waveFunctionPropertiesID, "Ham2DMRG", 1, &Lsize, H5T_STD_I32LE, ham2dmrg );
+   delete[] ham2dmrg;
+
+   std::cout << "\n";
+
    std::cout << "   full ci matrix product state dimensions:\n";
    std::cout << "   ";
    for ( int i = 0; i < L + 1; i++ ) {
@@ -104,6 +117,9 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
    HDF5_MAKE_DATASET( waveFunctionPropertiesID, "FCIDims", 1, &Lposize, H5T_STD_I32LE, fcidims );
    delete[] fcidims;
    delete tempBK;
+
+
+
    std::cout << "\n";
    std::cout << hashline;
 }
