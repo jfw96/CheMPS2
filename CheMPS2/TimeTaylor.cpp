@@ -17,9 +17,6 @@
 
 CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn, hid_t HDF5FILEIDIN )
     : prob( probIn ), scheme( schemeIn ), HDF5FILEID( HDF5FILEIDIN ), L( probIn->gL() ) {
-   assert( probIn->checkConsistency() );
-
-   prob->construct_mxelem();
 
    start        = time( NULL );
    tm * tmstart = localtime( &start );
@@ -36,6 +33,10 @@ CheMPS2::TimeTaylor::TimeTaylor( Problem * probIn, ConvergenceScheme * schemeIn,
    std::cout << std::setfill( '0' ) << std::setw( 2 ) << tmstart->tm_sec << "\n";
 
    std::cout << hashline;
+
+   assert( probIn->checkConsistency() );
+
+   prob->construct_mxelem();
 
    hid_t inputGroupID             = ( HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ) ? H5Gcreate( HDF5FILEID, "/Input", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
    hid_t systemPropertiesID       = ( HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ) ? H5Gcreate( HDF5FILEID, "/Input/SystemProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;

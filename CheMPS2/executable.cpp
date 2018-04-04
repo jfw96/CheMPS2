@@ -1095,13 +1095,12 @@ int main( int argc, char ** argv ){
    } else if ( time_evolu ) {
       CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
 
-      CheMPS2::SyBookkeeper * initBK = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
-
-      CheMPS2::CTensorT ** initMPS   = new CheMPS2::CTensorT *[ prob->gL() ];
+      CheMPS2::SyBookkeeper * initBK  = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
+      CheMPS2::CTensorT    ** initMPS = new CheMPS2::CTensorT *[ prob->gL() ];
 
       for ( int index = 0; index < n_orbs; index++ ) {
          initMPS[ index ] = new CheMPS2::CTensorT( index, initBK );
-         initMPS[ index ]->gStorage()[0] = 1.0;
+         initMPS[ index ]->gStorage()[ 0 ] = 1.0;
       }
 
       double normDT2 = norm( initMPS ); initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
