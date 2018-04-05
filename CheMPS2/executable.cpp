@@ -411,6 +411,9 @@ cout << "\n"
 "       TIME_DUMPFCI = bool\n"
 "              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_EVOLU = TRUE and TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
 "\n"
+"       TIME_NOISE = flt, flt, flt\n"
+"              Set the noise prefactor for optimization sweeps (Hamiltonian application and addition of MPS). Length must be smaller than number of sweeps and will be filled with zeros (default 0.0). \n"
+"\n"
 "       PRINT_CORR = bool\n"
 "              Print correlation functions (TRUE or FALSE; default FALSE).\n"
 "\n"
@@ -493,6 +496,7 @@ int main( int argc, char ** argv ){
    string time_ninit      = "";
    string time_hdf5output = "";
    bool time_dumpfci      = false;
+   string time_noise      = "";
 
    bool   print_corr = false;
    string tmp_folder = "/tmp";
@@ -696,6 +700,11 @@ int main( int argc, char ** argv ){
          time_ninit = line.substr( pos, line.length() - pos );
       }
 
+      if ( line.find( "TIME_NOISE" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         time_noise = line.substr( pos, line.length() - pos );
+      }
+
    }
    input.close();
 
@@ -865,9 +874,13 @@ int main( int argc, char ** argv ){
 
    int n_orbs        = 0;
    for ( int cnt = 0; cnt < num_irreps; cnt++ ) { n_orbs += nocc_parsed[ cnt ] + nact_parsed[ cnt ] + nvir_parsed[ cnt ]; }
-   int * time_ninit_parsed = new int[ n_orbs ];
+
+   int *   time_ninit_parsed = NULL;
+   double* time_noise_parsed = NULL;
 
    if ( time_evolu ){
+      
+      time_ninit_parsed = new int[ n_orbs ];
 
       if ( time_ninit.length() == 0 ){
          if ( am_i_master ){ cerr << "TIME_NINIT is mandatory options when TIME_EVOLU = TRUE !" << endl; }
@@ -897,6 +910,23 @@ int main( int argc, char ** argv ){
          return clean_exit( - 1 );
       }
 
+      if ( ni_d > 1 ){
+         if ( am_i_master ) { cerr << "TIME_NOISE not implemented if number of instructions > 0!" << endl; }
+         return clean_exit( - 1 );
+      }
+
+      time_noise_parsed = new double[ sweep_time_maxswe[ 0 ] ];
+      if ( time_noise.length() > 0 ){
+         const int n_noi  = count( time_ninit.begin(), time_ninit.end(), ',' ) + 1;
+         fetch_doubles( time_noise, time_noise_parsed, n_noi );
+         for( int idx = n_noi; idx < sweep_time_maxswe[ 0 ]; idx++ ){
+            time_noise_parsed[ idx ] = 0.0;
+         }
+      } else {
+         for( int idx = 0; idx < sweep_time_maxswe[ 0 ]; idx++ ){
+            time_noise_parsed[ idx ] = 0.0;
+         }
+      }
    }
 
    /**********************
@@ -960,6 +990,7 @@ int main( int argc, char ** argv ){
          cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < n_orbs; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
          cout << "   TIME_HDF5OUTPUT    = " << time_hdf5output << endl;
          cout << "   TIME_DUMPFCI       = " << (( time_dumpfci    ) ? "TRUE" : "FALSE" ) << endl;
+         cout << "   TIME_NOISE         = [ " << time_noise_parsed[ 0 ]; for ( int cnt = 1; cnt < sweep_time_maxswe[ 0 ]; cnt++ ){ cout << " ; " << time_noise_parsed[ cnt ]; } cout << " ]" << endl;
       }
       cout << "   PRINT_CORR         = " << (( print_corr     ) ? "TRUE" : "FALSE" ) << endl;
       cout << "   TMP_FOLDER         = " << tmp_folder << endl;
@@ -988,7 +1019,7 @@ int main( int argc, char ** argv ){
                                              value_time_krysiz[ count ],
                                              value_time_krycut[ count ],
                                              value_time_maxswe[ count ],
-                                             0.0);
+                                             time_noise_parsed);
       }
    }
    delete [] value_states;
@@ -1173,6 +1204,7 @@ int main( int argc, char ** argv ){
    delete [] nact_parsed;
    delete [] nvir_parsed;
    delete [] time_ninit_parsed;
+   delete [] time_noise_parsed;
    delete opt_scheme;
    delete ham;
 

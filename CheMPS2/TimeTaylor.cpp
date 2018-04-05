@@ -1164,7 +1164,8 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
                          mpsTemp, bkTemp,
                          scheme->get_max_sweeps( currentInstruction ),
                          scheme->get_D( currentInstruction ),
-                         scheme->get_cut_off( currentInstruction ) );
+                         scheme->get_cut_off( currentInstruction ),
+                         scheme->get_noise_prefactors( currentInstruction ) );
 
       delete[] coefs;
       delete[] states;
@@ -1234,7 +1235,8 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
               mpsOut, bkOut,
               scheme->get_max_sweeps( currentInstruction ),
               scheme->get_D( currentInstruction ),
-              scheme->get_cut_off( currentInstruction ) );
+              scheme->get_cut_off( currentInstruction ),
+              scheme->get_noise_prefactors( currentInstruction ) );
 
    delete[] result;
    delete[] wsp;
@@ -1825,6 +1827,13 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          int NSwe = scheme->get_max_sweeps( inst );
          std::cout << "   NSwe = " << NSwe << "\n";
          HDF5_MAKE_DATASET( dataPointID, "NSwe", 1, &dimarray1, H5T_STD_I32LE, &NSwe );
+
+         double* noise = scheme->get_noise_prefactors( inst );
+         hsize_t noisSize = NSwe;
+         std::cout << "   Nois = ";
+         for ( int idx = 0; idx < NSwe; idx++ ) { std::cout << noise[ idx ] << " "; }
+         std::cout << "\n";
+         HDF5_MAKE_DATASET( dataPointID, "Noise", 1, &noisSize, H5T_NATIVE_DOUBLE, noise );
 
          std::cout << "\n";
 

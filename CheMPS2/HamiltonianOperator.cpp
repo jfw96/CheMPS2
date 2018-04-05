@@ -346,8 +346,8 @@ void CheMPS2::HamiltonianOperator::SSSum( int statesToAdd,
 
 void CheMPS2::HamiltonianOperator::DSApply( CTensorT ** mpsA, SyBookkeeper * bkA,
                                             CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                                            int numberOfSweeps, int maxM, double cutOff ) {
-   DSApplyAndAdd( mpsA, bkA, 0, NULL, NULL, NULL, mpsOut, bkOut, numberOfSweeps );
+                                            int numberOfSweeps, int maxM, double cutOff, double * noise ) {
+   DSApplyAndAdd( mpsA, bkA, 0, NULL, NULL, NULL, mpsOut, bkOut, numberOfSweeps, maxM, cutOff, noise );
 }
 
 void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
@@ -356,7 +356,8 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                                                   CTensorT *** states,
                                                   SyBookkeeper ** bookkeepers,
                                                   CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                                                  int numberOfSweeps, int maxM, double cutOff ) {
+                                                  int numberOfSweeps, int maxM, double cutOff, double * noise ) {
+
    deleteAllBoundaryOperators();
    for ( int index = 0; index < L - 2; index++ ) {
       left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
@@ -412,7 +413,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          applied->Add( 1.0, fromAdded );
          delete fromAdded;
 
-         if ( i == 0 ) { applied->addNoise( 1e-5 ); }
+         if ( noise[ i ] > 0 ) { applied->addNoise( noise[ i ] ); }
          double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], maxM, cutOff, false, true );
 
          delete heff;
@@ -466,7 +467,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 
          applied->Add( 1.0, fromAdded );
 
-         if ( i == 0 ) { applied->addNoise( 1e-5 ); }
+         if ( noise[ i ] > 0 ) { applied->addNoise( noise[ i ] ); }
          double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], maxM, cutOff, true, true );
 
          delete applied;
@@ -500,7 +501,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
                                           dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
                                           CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                                          int numberOfSweeps, int maxM, double cutOff ) {
+                                          int numberOfSweeps, int maxM, double cutOff, double * noise ) {
    deleteAllBoundaryOperators();
 
    for ( int index = 0; index < L - 1; index++ ) {
@@ -537,8 +538,8 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
             added->Add( factors[ st ], add );
             delete add;
          }
+         if ( noise[ i ] > 0 ) { added->addNoise( noise[ i ] ); }
          added->Split( mpsOut[ site ], mpsOut[ site + 1 ], maxM, cutOff, false, true );
-         if ( i == 0 ) { added->addNoise( 1e-5 ); }
          delete added;
 
          // Otensors
@@ -565,8 +566,8 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
             delete add;
          }
 
+         if ( noise[ i ] > 0 ) { added->addNoise( noise[ i ] ); }
          added->Split( mpsOut[ site ], mpsOut[ site + 1 ], maxM, cutOff, true, true );
-         if ( i == 0 ) { added->addNoise( 1e-5 ); }
          delete added;
 
          // Otensors

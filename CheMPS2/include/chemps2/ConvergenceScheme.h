@@ -69,7 +69,7 @@ namespace CheMPS2 {
              \param max_time the max. time to use this scheme to
              \param noise_prefactor the noise prefactor for that instruction
              \param davidson_rtol the Davidson residual tolerance for that instruction */
-      void set_instruction( const int instruction, const int D, const double time_step, const double max_time, const int krylov_dimension, const double cut_off, const int max_sweeps, const double noise_prefactor );
+      void set_instruction( const int instruction, const int D, const double time_step, const double max_time, const int krylov_dimension, const double cut_off, const int max_sweeps, double* noise_prefactors );
 
       //! Set an instruction
       /** \param instruction the number of the instruction
@@ -121,6 +121,11 @@ namespace CheMPS2 {
              \return the noise prefactor for this instruction */
       double get_noise_prefactor( const int instruction ) const;
 
+      //! Get the noise prefactor for a particular instruction
+      /** \param instruction the number of the instruction
+             \return the noise prefactor for this instruction */
+      double * get_noise_prefactors( const int instruction ) const;
+
       //! Get the Davidson residual tolerance for a particular instruction
       /** \param instruction the number of the instruction
              \return the Davidson residual tolerance for this instruction */
@@ -153,6 +158,9 @@ namespace CheMPS2 {
 
       //The noise prefactor for each instruction
       double * noise_prefac;
+
+      //The noise prefactor for time sweeps
+      double ** noise_prefacs;
 
       //The Davidson residual tolerance for each instruction
       double * dvdson_rtol;

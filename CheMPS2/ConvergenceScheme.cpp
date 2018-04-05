@@ -35,6 +35,7 @@ CheMPS2::ConvergenceScheme::ConvergenceScheme( const int num_instructions ) {
    cut_offs           = new double[ num_instructions ];
    num_max_sweeps     = new int[ num_instructions ];
    noise_prefac       = new double[ num_instructions ];
+   noise_prefacs      = new double*[ num_instructions ];
    dvdson_rtol        = new double[ num_instructions ];
 }
 
@@ -48,6 +49,7 @@ CheMPS2::ConvergenceScheme::~ConvergenceScheme() {
    delete[] cut_offs;
    delete[] num_max_sweeps;
    delete[] noise_prefac;
+   delete[] noise_prefacs;
    delete[] dvdson_rtol;
 }
 
@@ -69,7 +71,7 @@ void CheMPS2::ConvergenceScheme::set_instruction( const int instruction, const i
    dvdson_rtol[ instruction ]        = davidson_rtol;
 }
 
-void CheMPS2::ConvergenceScheme::set_instruction( const int instruction, const int D, const double time_step, const double max_time, const int krylov_dimension, const double cut_off, const int max_sweeps, const double noise_prefactor ) {
+void CheMPS2::ConvergenceScheme::set_instruction( const int instruction, const int D, const double time_step, const double max_time, const int krylov_dimension, const double cut_off, const int max_sweeps, double* noise_prefactors ) {
 
    assert( instruction >= 0 );
    assert( instruction < num_instructions );
@@ -84,7 +86,7 @@ void CheMPS2::ConvergenceScheme::set_instruction( const int instruction, const i
    krylov_dimensions[ instruction ] = krylov_dimension;
    cut_offs[ instruction ]          = cut_off;
    num_max_sweeps[ instruction ]    = max_sweeps;
-   noise_prefac[ instruction ]      = noise_prefactor;
+   noise_prefacs[ instruction ]     = noise_prefactors;
 }
 
 int CheMPS2::ConvergenceScheme::get_D( const int instruction ) const { return num_D[ instruction ]; }
@@ -102,5 +104,7 @@ double CheMPS2::ConvergenceScheme::get_cut_off( const int instruction ) const { 
 int CheMPS2::ConvergenceScheme::get_max_sweeps( const int instruction ) const { return num_max_sweeps[ instruction ]; }
 
 double CheMPS2::ConvergenceScheme::get_noise_prefactor( const int instruction ) const { return noise_prefac[ instruction ]; }
+
+double * CheMPS2::ConvergenceScheme::get_noise_prefactors( const int instruction ) const { return noise_prefacs[ instruction ]; }
 
 double CheMPS2::ConvergenceScheme::get_dvdson_rtol( const int instruction ) const { return dvdson_rtol[ instruction ]; }
