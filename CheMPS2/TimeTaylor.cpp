@@ -1181,6 +1181,10 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
       }
    }
 
+   if ( std::abs( overlaps[ krylovSpaceDimension ] ) > 1e-6 ){
+      std::cout << "CHEMPS2::TIME WARNING: " << " Krylov vectors not completely orthonormal. |< kry_0 | kry_last>| is " << overlaps[ krylovSpaceDimension ] << std::endl;
+   }
+
    int one                 = 1;
    int sqr                 = krylovSpaceDimension * krylovSpaceDimension;
    dcomplex * overlaps_inv = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
