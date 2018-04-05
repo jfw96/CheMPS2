@@ -917,7 +917,7 @@ int main( int argc, char ** argv ){
 
       time_noise_parsed = new double[ sweep_time_maxswe[ 0 ] ];
       if ( time_noise.length() > 0 ){
-         const int n_noi  = count( time_ninit.begin(), time_ninit.end(), ',' ) + 1;
+         const int n_noi  = count( time_noise.begin(), time_noise.end(), ',' ) + 1;
          fetch_doubles( time_noise, time_noise_parsed, n_noi );
          for( int idx = n_noi; idx < sweep_time_maxswe[ 0 ]; idx++ ){
             time_noise_parsed[ idx ] = 0.0;
