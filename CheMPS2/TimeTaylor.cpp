@@ -1896,7 +1896,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          std::cout << "\n";
 
          if ( t + scheme->get_time_step( inst ) < scheme->get_max_time( inst ) ) {
-            SyBookkeeper * MPSBKDT = new SyBookkeeper( *MPSBK );
+            SyBookkeeper * MPSBKDT = new SyBookkeeper( prob, scheme->get_D( inst ) );
             CTensorT ** MPSDT      = new CTensorT *[ L ];
             for ( int index = 0; index < L; index++ ) {
                MPSDT[ index ] = new CTensorT( index, MPSBKDT );
