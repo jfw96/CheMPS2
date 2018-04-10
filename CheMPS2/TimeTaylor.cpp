@@ -1774,6 +1774,25 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
 
    for ( int inst = 0; inst < scheme->get_number(); inst++ ) {
 
+      std::cout << "\n";
+      std::cout << "   NEW INSTRUCTION " << inst << "\n";
+      std::cout << "\n";
+
+      std::cout << "   inital matrix product state dimensions for new states of instruction:\n";
+      std::cout << "   ";
+      for ( int i = 0; i < L + 1; i++ ) {
+         std::cout << std::setw( 5 ) << i;
+      }
+      std::cout << "\n";
+      std::cout << "   ";
+      SyBookkeeper * dummyBK = new SyBookkeeper( prob, scheme->get_D( inst ) );
+      for ( int i = 0; i < L + 1; i++ ) {
+         std::cout << std::setw( 5 ) << dummyBK->gTotDimAtBound( i );
+      }
+      std::cout << "\n";
+      delete dummyBK;
+      std::cout << "\n";
+
       for ( ; t < scheme->get_max_time( inst ); t += scheme->get_time_step( inst ) ) {
          char dataPointname[ 1024 ];
          sprintf( dataPointname, "/Output/DataPoint%.5f", t );
