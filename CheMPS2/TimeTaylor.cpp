@@ -1159,7 +1159,7 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
          bookkeepers[ i ] = krylovBasisSyBookkeepers[ i ];
       }
 
-      op->DSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
+      op->SSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
                          kry, coefs, states, bookkeepers,
                          mpsTemp, bkTemp,
                          scheme->get_max_sweeps( currentInstruction ),

@@ -185,6 +185,7 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 
          // Otensors
          for ( int st = 0; st < statesToAdd; st++ ) {
+            if ( isAllocated[ site - 1 ] > 0 ) { delete overlaps[ st ][ site - 1 ]; }
             overlaps[ st ][ site - 1 ] = new CTensorO( site, false, bkOut, bookkeepers[ st ] );
             if ( site == L - 1 ) {
                overlaps[ st ][ site - 1 ]->create( mpsOut[ site ], states[ st ][ site ] );
@@ -192,6 +193,7 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                overlaps[ st ][ site - 1 ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site ] );
             }
          }
+       
       }
       
       for ( int site = 0; site < L - 1; site++ ) {
@@ -233,6 +235,7 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 
          // Otensors
          for ( int st = 0; st < statesToAdd; st++ ) {
+            if ( isAllocated[ site ] > 0 ) { delete overlaps[ st ][ site ]; }
             overlaps[ st ][ site ] = new CTensorO( site + 1, true, bkOut, bookkeepers[ st ] );
             if ( site == 0 ) {
                overlaps[ st ][ site ]->create( mpsOut[ site ], states[ st ][ site ] );
@@ -240,8 +243,18 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                overlaps[ st ][ site ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site - 1 ] );
             }
          }
+
       }
    }
+
+   for ( int st = 0; st < statesToAdd; st++ ) {
+      for ( int cnt = 0; cnt < L - 1; cnt++ ) {
+         delete overlaps[ st ][ cnt ];
+      }
+      delete[] overlaps[ st ];
+   }
+   delete[] overlaps;
+
 }
 
 void CheMPS2::HamiltonianOperator::SSSum( int statesToAdd,
