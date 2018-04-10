@@ -1159,25 +1159,13 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
          bookkeepers[ i ] = krylovBasisSyBookkeepers[ i ];
       }
 
-      op->SSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
+      op->DSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
                          kry, coefs, states, bookkeepers,
                          mpsTemp, bkTemp,
                          scheme->get_max_sweeps( currentInstruction ),
                          scheme->get_D( currentInstruction ),
                          scheme->get_cut_off( currentInstruction ),
                          scheme->get_noise_prefactors( currentInstruction ) );
-
-      // for ( int index = 0; index < L; index++ ) {
-      //    mpsTemp[ index ]->random();
-      // }
-      // op->DSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
-      //                    kry, coefs, states, bookkeepers,
-      //                    mpsTemp, bkTemp,
-      //                    scheme->get_max_sweeps( currentInstruction ),
-      //                    scheme->get_D( currentInstruction ),
-      //                    scheme->get_cut_off( currentInstruction ),
-      //                    scheme->get_noise_prefactors( currentInstruction ) );
-      // abort();
 
       delete[] coefs;
       delete[] states;
