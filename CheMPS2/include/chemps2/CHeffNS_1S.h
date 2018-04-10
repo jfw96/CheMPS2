@@ -48,7 +48,7 @@ namespace CheMPS2 {
                   CTensorF0 **** F0tensors, CTensorF0T **** F0Ttensors,
                   CTensorF1 **** F1tensors, CTensorF1T **** F1Ttensors,
                   CTensorQ *** Qtensors, CTensorQT *** QtensorsT,
-                  CTensorX ** Xtensors, CTensorO ** Otensors, bool moveRight );
+                  CTensorX ** Xtensors, CTensorO ** Otensors );
       // void Apply( CSobject * denS, CSobject * denP,
       //             CTensorL *** Ltensors,
       //             CTensorLT *** LtensorsT, CTensorOperator **** Atensors,

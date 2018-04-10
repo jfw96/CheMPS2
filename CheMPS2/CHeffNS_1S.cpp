@@ -27,7 +27,7 @@ void CheMPS2::CHeffNS_1S::Apply( CTensorT * in, CTensorT * out,
                                  CTensorF0 **** F0tensors, CTensorF0T **** F0Ttensors,
                                  CTensorF1 **** F1tensors, CTensorF1T **** F1Ttensors,
                                  CTensorQ *** Qtensors, CTensorQT *** QtensorsT,
-                                 CTensorX ** Xtensors, CTensorO ** Otensors, bool moveRight ) {
+                                 CTensorX ** Xtensors, CTensorO ** Otensors ) {
    out->Clear();
 
    const int index    = in->gIndex();

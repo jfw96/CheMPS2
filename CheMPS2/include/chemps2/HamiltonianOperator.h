@@ -59,12 +59,9 @@ namespace CheMPS2 {
 
       // Single Site functions
       void SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
-                          int statesToAdd,
-                          dcomplex * factors,
-                          CTensorT *** states,
-                          SyBookkeeper ** bookkeepers,
+                          int statesToAdd, dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
                           CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                          int numberOfSweeps = 2 );
+                          int numberOfSweeps, int maxM, double cutOff, double * noise );
 
       void SSSum( int statesToAdd,
                   dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,

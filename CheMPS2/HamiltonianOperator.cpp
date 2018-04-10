@@ -117,12 +117,9 @@ dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeepe
 }
 
 void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
-                                                  int statesToAdd,
-                                                  dcomplex * factors,
-                                                  CTensorT *** states,
-                                                  SyBookkeeper ** bookkeepers,
+                                                  int statesToAdd, dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
                                                   CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                                                  int numberOfSweeps ) {
+                                                  int numberOfSweeps, int maxM, double cutOff, double * noise ) {
    deleteAllBoundaryOperators();
    for ( int index = 0; index < L - 1; index++ ) {
       left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
@@ -175,7 +172,7 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                       F0tensors, F0tensorsT,
                       F1tensors, F1tensorsT,
                       Qtensors, QtensorsT,
-                      Xtensors, Otensors, false );
+                      Xtensors, Otensors );
 
          fromAdded->zaxpy( 1.0, applied );
          applied->zcopy( mpsOut[ site ] );
@@ -195,9 +192,8 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                overlaps[ st ][ site - 1 ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site ] );
             }
          }
-         std::cout << i << " " << overlap( mpsOut, mpsOut ) << std::endl;
       }
-      // abort();
+      
       for ( int site = 0; site < L - 1; site++ ) {
          CTensorT * fromAdded = new CTensorT( site, bkOut );
          fromAdded->Clear();
@@ -224,7 +220,7 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                       F0tensors, F0tensorsT,
                       F1tensors, F1tensorsT,
                       Qtensors, QtensorsT,
-                      Xtensors, Otensors, true );
+                      Xtensors, Otensors );
          delete heff;
 
          fromAdded->zaxpy( 1.0, applied );
@@ -244,7 +240,6 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                overlaps[ st ][ site ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site - 1 ] );
             }
          }
-         std::cout << i << " " << overlap( mpsOut, mpsOut ) << std::endl;
       }
    }
 }
