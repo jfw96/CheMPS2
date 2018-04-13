@@ -375,3 +375,34 @@ void CheMPS2::SyBookkeeper::restart( const int start, const int stop, const int 
 bool CheMPS2::SyBookkeeper::IsPossible() const {
    return ( gCurrentDim( gL(), gN(), gTwoS(), gIrrep() ) == 1 );
 }
+
+void CheMPS2::subspaceExpand( int index,  bool movingRight, const SyBookkeeper * initBK, SyBookkeeper * sseBK ){
+
+   for ( int NL = initBK->gNmin( index ); NL <= initBK->gNmax( index ); NL++ ) {
+      for ( int TwoSL = initBK->gTwoSmin( index, NL ); TwoSL <= initBK->gTwoSmax( index, NL ); TwoSL += 2 ) {
+         for ( int IL = 0; IL < initBK->getNumberOfIrreps(); IL++ ) {
+            const int dimL = movingRight ? initBK->gCurrentDim( index, NL, TwoSL, IL ) : initBK->gFCIdim( index, NL, TwoSL, IL );
+            if ( dimL > 0 ) {
+               for ( int NR = NL; NR <= NL + 2; NR++ ) {
+                  const int TwoJ = ( ( NR == NL + 1 ) ? 1 : 0 );
+                  for ( int TwoSR = TwoSL - TwoJ; TwoSR <= TwoSL + TwoJ; TwoSR += 2 ) {
+                     if ( TwoSR >= 0 ) {
+                        int IR         = ( ( NR == NL + 1 ) ? Irreps::directProd( IL, initBK->gIrrep( index ) ) : IL );
+                        const int dimR = movingRight ? initBK->gFCIdim( index + 1, NR, TwoSR, IR ) : initBK->gCurrentDim( index + 1, NR, TwoSR, IR );
+                        if ( dimR > 0 ) {
+                           if ( movingRight ){
+                              sseBK->SetDim( index + 1, NR, TwoSR, IR , initBK->gFCIdim( index + 1, NR, TwoSR, IR ));
+                           } else {
+                              sseBK->SetDim( index, NL, TwoSL, IL , initBK->gFCIdim( index, NL, TwoSL, IL ));
+
+                           }
+                        }
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }
+
+}

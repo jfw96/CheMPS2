@@ -110,6 +110,8 @@ namespace CheMPS2 {
              \param beta  Constant to be multiplied with the MPS tensor */
       void number_operator( dcomplex alpha, dcomplex beta );
 
+      void scale( dcomplex alpha );
+
       //! Left-normalization
       /** \param Rstorage Where the R-part of the QR-decomposition can be stored (diagonal TensorOperator). */
       void QR( CTensor * Rstorage );

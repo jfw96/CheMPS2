@@ -194,6 +194,8 @@ namespace CheMPS2 {
       // Copy dimension arrays
       void CopyDim( int **** origin, int **** target );
    };
+
+   void subspaceExpand( int index,  bool movingRight, const SyBookkeeper * intBK, SyBookkeeper * sseBK );
 } // namespace CheMPS2
 
 #endif

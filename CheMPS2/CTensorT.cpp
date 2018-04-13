@@ -181,6 +181,12 @@ void CheMPS2::CTensorT::number_operator( dcomplex alpha, dcomplex beta ) {
    }
 }
 
+void CheMPS2::CTensorT::scale( dcomplex alpha ) {
+   int size         = kappa2index[ nKappa ];
+   int inc1         = 1;
+   zscal_( &size, &alpha, storage, &inc1 );
+}
+
 void CheMPS2::CTensorT::QR( CTensor * Rstorage ) {
 // Left normalization occurs in T-convention: no pre or after multiplication
 // Work per right symmetry sector

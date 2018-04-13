@@ -517,8 +517,7 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
    int * SplitSectIM    = new int[ nCenterSectors ];
    nCenterSectors       = 0;
    for ( int NM = denBK->gNmin( index + 1 ); NM <= denBK->gNmax( index + 1 ); NM++ ) {
-      for ( int TwoSM = denBK->gTwoSmin( index + 1, NM );
-            TwoSM <= denBK->gTwoSmax( index + 1, NM ); TwoSM += 2 ) {
+      for ( int TwoSM = denBK->gTwoSmin( index + 1, NM ); TwoSM <= denBK->gTwoSmax( index + 1, NM ); TwoSM += 2 ) {
          for ( int IM = 0; IM < denBK->getNumberOfIrreps(); IM++ ) {
             const int dimM = denBK->gFCIdim( index + 1, NM, TwoSM, IM ); // FCIdim !! Whether possible hence.
             if ( dimM > 0 ) {
@@ -598,8 +597,7 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
          }
 
          int dimLtotal2 = 0;
-         for ( int NL = SplitSectNM[ iCenter ] - 2; NL <= SplitSectNM[ iCenter ];
-               NL++ ) {
+         for ( int NL = SplitSectNM[ iCenter ] - 2; NL <= SplitSectNM[ iCenter ]; NL++ ) {
             const int TwoS1 = ( ( NL + 1 == SplitSectNM[ iCenter ] ) ? 1 : 0 );
             for ( int TwoSL = SplitSectTwoJM[ iCenter ] - TwoS1;
                   TwoSL <= SplitSectTwoJM[ iCenter ] + TwoS1; TwoSL += 2 ) {

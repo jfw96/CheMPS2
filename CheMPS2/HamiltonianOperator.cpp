@@ -25,6 +25,7 @@
 #include "CTensorT.h"
 #include "HamiltonianOperator.h"
 #include "Special.h"
+#include "CSubSpaceExpander.h"
 
 CheMPS2::HamiltonianOperator::HamiltonianOperator( Problem * probIn ) : prob( probIn ), L( probIn->gL() ) {
 
@@ -158,6 +159,31 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
             delete add;
          }
 
+         // double bla = 2.0;
+
+         SyBookkeeper * subBK = new SyBookkeeper( *bkA ); 
+         subspaceExpand( site, false, bkA, subBK);
+
+         CTensorT * expandedLeft = new CTensorT( site - 1, subBK ); expandedLeft->Clear();
+         CTensorT * expandedRight = new CTensorT( site, subBK ); expandedRight->Clear();
+
+         CSubSpaceExpander * expander = new CSubSpaceExpander( site, false, bkOut, bkA, subBK, prob );
+
+         // expander->Expand( &bla,
+         //                   mpsA[ site ], expandedRight,
+         //                   Ltensors, LtensorsT,
+         //                   Atensors, AtensorsT,
+         //                   Btensors, BtensorsT,
+         //                   Ctensors, CtensorsT,
+         //                   Dtensors, DtensorsT,
+         //                   S0tensors, S0tensorsT,
+         //                   S1tensors, S1tensorsT,
+         //                   F0tensors, F0tensorsT,
+         //                   F1tensors, F1tensorsT,
+         //                   Qtensors, QtensorsT,
+         //                   Xtensors, Otensors );
+
+
          CTensorT * applied = new CTensorT( mpsOut[ site ] );
          applied->Clear();
          CHeffNS_1S * heff = new CHeffNS_1S( bkOut, bkA, prob );
@@ -174,13 +200,37 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                       Qtensors, QtensorsT,
                       Xtensors, Otensors );
 
+         // std::cout << *fromAdded << std::endl;
+         // std::cout << *applied << std::endl;
          fromAdded->zaxpy( 1.0, applied );
-         applied->zcopy( mpsOut[ site ] );
+
+         // std::cout << "overlap(mpsOut)" << std::endl;
+         // std::cout << Overlap( mpsOut, bkOut, mpsOut, bkOut ) << std::endl;
+
+         // applied->zcopy( mpsOut[ site ] );
+
+         expander->AddNonExpandedToExpanded( expandedLeft, mpsOut[ site - 1 ] );
+         expander->AddNonExpandedToExpanded( expandedRight, applied );
+
+         expander->decomposeMovingLeft( expandedLeft, subBK, 
+                                        expandedRight, subBK, 
+                                        mpsOut[ site - 1 ], bkOut,
+                                        mpsOut[ site ], bkOut );
+
+
+         // std::cout << "overlap(mpsOut)" << std::endl;
+         // std::cout << Overlap( mpsOut, bkOut, mpsOut, bkOut ) << std::endl;
+
+         abort();
+         if ( site == L - 2){
+            abort();
+         }
+
          delete fromAdded;
          delete applied;
          delete heff;
 
-         right_normalize( mpsOut[ site - 1 ], mpsOut[ site ] );
+         // right_normalize( mpsOut[ site - 1 ], mpsOut[ site ] );
          updateMovingLeftSafe( site - 1, mpsOut, bkOut, mpsA, bkA );
 
          // Otensors
@@ -194,6 +244,53 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
             }
          }
        
+         // CTensorT * fromAdded = new CTensorT( site, bkOut );
+         // fromAdded->Clear();
+         // for ( int st = 0; st < statesToAdd; st++ ) {
+         //    CTensorT * add           = new CTensorT( site, bkOut );
+         //    CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlaps[ st ][ site - 1 ] : NULL;
+         //    CTensorO * rightOverlapA = ( site + 1 ) < L ? overlaps[ st ][ site ] : NULL;
+         //    add->Join( leftOverlapA, states[ st ][ site ], rightOverlapA );
+         //    add->zaxpy( factors[ st ], fromAdded );
+         //    delete add;
+         // }
+
+         // CTensorT * applied = new CTensorT( mpsOut[ site ] );
+         // applied->Clear();
+         // CHeffNS_1S * heff = new CHeffNS_1S( bkOut, bkA, prob );
+         // heff->Apply( mpsA[ site ], applied,
+         //              Ltensors, LtensorsT,
+         //              Atensors, AtensorsT,
+         //              Btensors, BtensorsT,
+         //              Ctensors, CtensorsT,
+         //              Dtensors, DtensorsT,
+         //              S0tensors, S0tensorsT,
+         //              S1tensors, S1tensorsT,
+         //              F0tensors, F0tensorsT,
+         //              F1tensors, F1tensorsT,
+         //              Qtensors, QtensorsT,
+         //              Xtensors, Otensors );
+
+         // fromAdded->zaxpy( 1.0, applied );
+         // applied->zcopy( mpsOut[ site ] );
+         // delete fromAdded;
+         // delete applied;
+         // delete heff;
+
+         // right_normalize( mpsOut[ site - 1 ], mpsOut[ site ] );
+         // updateMovingLeftSafe( site - 1, mpsOut, bkOut, mpsA, bkA );
+
+         // // Otensors
+         // for ( int st = 0; st < statesToAdd; st++ ) {
+         //    if ( isAllocated[ site - 1 ] > 0 ) { delete overlaps[ st ][ site - 1 ]; }
+         //    overlaps[ st ][ site - 1 ] = new CTensorO( site, false, bkOut, bookkeepers[ st ] );
+         //    if ( site == L - 1 ) {
+         //       overlaps[ st ][ site - 1 ]->create( mpsOut[ site ], states[ st ][ site ] );
+         //    } else {
+         //       overlaps[ st ][ site - 1 ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site ] );
+         //    }
+         // }
+
       }
       
       for ( int site = 0; site < L - 1; site++ ) {
