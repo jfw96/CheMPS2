@@ -182,9 +182,51 @@ void CheMPS2::CTensorT::number_operator( dcomplex alpha, dcomplex beta ) {
 }
 
 void CheMPS2::CTensorT::scale( dcomplex alpha ) {
-   int size         = kappa2index[ nKappa ];
-   int inc1         = 1;
+   int size = kappa2index[ nKappa ];
+   int inc1 = 1;
    zscal_( &size, &alpha, storage, &inc1 );
+}
+
+void CheMPS2::CTensorT::add( CTensorT * toAdd ) {
+   assert( index == toAdd->gIndex() );
+
+   for ( int ikappa = 0; ikappa < nKappa; ikappa++ ) {
+
+      const int NL    = sectorNL[ ikappa ];
+      const int TwoSL = sectorTwoSL[ ikappa ];
+      const int IL    = sectorIL[ ikappa ];
+
+      const int NR    = sectorNR[ ikappa ];
+      const int TwoSR = sectorTwoSR[ ikappa ];
+      const int IR    = sectorIR[ ikappa ];
+
+      const int N    = NR - NL;
+      const int TwoS = ( N == 1 ) ? 1 : 0;
+      const int I    = denBK->gIrrep( index );
+
+      int memNonExpKappa = toAdd->gKappa( NL, TwoSL, IL, NR, TwoSR, IR );
+      if ( memNonExpKappa != -1 ) {
+
+         int dimLEXP = denBK->gCurrentDim( index, NL, TwoSL, IL );
+         int dimREXP = denBK->gCurrentDim( index + 1, NR, TwoSR, IR );
+
+         int dimLNON = toAdd->gBK()->gCurrentDim( index, NL, TwoSL, IL );
+         int dimRNON = toAdd->gBK()->gCurrentDim( index + 1, NR, TwoSR, IR );
+
+         // If nonExpanded has the block it has to have the same size
+         assert( dimLEXP == dimLNON );
+         assert( dimREXP == dimRNON );
+
+         int dim      = dimLEXP * dimREXP;
+         int inc      = 1;
+         dcomplex one = 1.0;
+
+         dcomplex * BlockExp = storage + kappa2index[ ikappa ];
+         dcomplex * BlockNon = toAdd->gStorage() + toAdd->gKappa2index( memNonExpKappa );
+
+         zaxpy_( &dim, &one, BlockNon, &inc, BlockExp, &inc );
+      }
+   }
 }
 
 void CheMPS2::CTensorT::QR( CTensor * Rstorage ) {
@@ -677,8 +719,8 @@ void recusion( CheMPS2::Problem * prob, CheMPS2::CTensorT ** mps,
          // dcomplex coef = getFCICoefficient( prob, mps, &alphas[ 0 ], &betas[ 0 ] );
          alphasOut.push_back( alphas );
          betasOut.push_back( betas );
-         coefsRealOut.push_back( std::real(getFCICoefficient( prob, mps, &alphas[ 0 ], &betas[ 0 ] )) );
-         coefsImagOut.push_back( std::imag(getFCICoefficient( prob, mps, &alphas[ 0 ], &betas[ 0 ] )) );
+         coefsRealOut.push_back( std::real( getFCICoefficient( prob, mps, &alphas[ 0 ], &betas[ 0 ] ) ) );
+         coefsImagOut.push_back( std::imag( getFCICoefficient( prob, mps, &alphas[ 0 ], &betas[ 0 ] ) ) );
          // std::cout << std::real( coef ) << " " << std::imag( coef ) << std::endl;
       }
    } else if ( alphas.size() == L ) {
@@ -698,11 +740,11 @@ void recusion( CheMPS2::Problem * prob, CheMPS2::CTensorT ** mps,
    }
 }
 
-void CheMPS2::getFCITensor( Problem * prob, CTensorT ** mps, 
-                            std::vector< std::vector< int > >& alphasOut,
-                            std::vector< std::vector< int > >& betasOut,
-                            std::vector< double >& coefsRealOut,
-                            std::vector< double >& coefsImagOut) {
+void CheMPS2::getFCITensor( Problem * prob, CTensorT ** mps,
+                            std::vector< std::vector< int > > & alphasOut,
+                            std::vector< std::vector< int > > & betasOut,
+                            std::vector< double > & coefsRealOut,
+                            std::vector< double > & coefsImagOut ) {
 
    std::vector< int > alphas;
    std::vector< int > betas;
@@ -723,12 +765,12 @@ void CheMPS2::printFCITensor( Problem * prob, CTensorT ** mps ) {
 
    for ( int coef = 0; coef < coefsRealOut.size(); coef++ ) {
       for ( int i = 0; i < prob->gL(); i++ ) {
-         std::cout << alphasOut[coef][ i ] << " ";
+         std::cout << alphasOut[ coef ][ i ] << " ";
       }
       for ( int i = 0; i < prob->gL(); i++ ) {
-         std::cout << betasOut[coef][ i ] << " ";
+         std::cout << betasOut[ coef ][ i ] << " ";
       }
-      std::cout << coefsRealOut[coef] << " " <<  coefsImagOut[coef] << std::endl;
+      std::cout << coefsRealOut[ coef ] << " " << coefsImagOut[ coef ] << std::endl;
    }
 }
 
@@ -969,4 +1011,566 @@ void CheMPS2::right_normalize( CTensorT * left_mps, CTensorT * right_mps ) {
    MPIchemps2::broadcast_tensor( right_mps, MPI_CHEPsi2_MASTER );
    if ( left_mps != NULL ) { MPIchemps2::broadcast_tensor( left_mps, MPI_CHEPsi2_MASTER ); }
 #endif
+}
+
+void CheMPS2::decomposeMovingLeft( bool change, int virtualdimensionD, double cut_off,
+                                   CTensorT * expandedLeft, SyBookkeeper * expandedLeftBK,
+                                   CTensorT * expandedRight, SyBookkeeper * expandedRightBK,
+                                   CTensorT * newLeft, SyBookkeeper * newLeftBK,
+                                   CTensorT * newRight, SyBookkeeper * newRightBK ) {
+   assert( expandedLeftBK == expandedRightBK );
+   assert( newLeftBK == newRightBK );
+   assert( expandedLeft->gIndex() == newLeft->gIndex() );
+   assert( expandedRight->gIndex() == newRight->gIndex() );
+   assert( expandedLeft->gIndex() + 1 == expandedRight->gIndex() );
+   const int index = expandedRight->gIndex();
+
+   int nMiddleSectors = 0;
+   for ( int NM = expandedRightBK->gNmin( index ); NM <= expandedRightBK->gNmax( index ); NM++ ) {
+      for ( int TwoSM = expandedRightBK->gTwoSmin( index, NM ); TwoSM <= expandedRightBK->gTwoSmax( index, NM ); TwoSM += 2 ) {
+         for ( int IM = 0; IM < expandedRightBK->getNumberOfIrreps(); IM++ ) {
+            int dimM = expandedRightBK->gCurrentDim( index, NM, TwoSM, IM );
+            if ( dimM > 0 ) {
+               int dimRtotal = 0;
+               for ( int ikappa = 0; ikappa < expandedRight->gNKappa(); ikappa++ ) {
+                  if ( ( NM == expandedRight->gNL( ikappa ) ) && ( TwoSM == expandedRight->gTwoSL( ikappa ) ) && ( IM == expandedRight->gIL( ikappa ) ) ) {
+                     dimRtotal += expandedRightBK->gCurrentDim( index + 1, expandedRight->gNR( ikappa ), expandedRight->gTwoSR( ikappa ), expandedRight->gIR( ikappa ) );
+                  }
+               }
+               if ( dimRtotal > 0 ) {
+                  nMiddleSectors++;
+               }
+            }
+         }
+      }
+   }
+
+   int * SplitSectNM    = new int[ nMiddleSectors ];
+   int * SplitSectTwoJM = new int[ nMiddleSectors ];
+   int * SplitSectIM    = new int[ nMiddleSectors ];
+   int * DimLs          = new int[ nMiddleSectors ];
+   int * DimMs          = new int[ nMiddleSectors ];
+   int * DimRs          = new int[ nMiddleSectors ];
+
+   nMiddleSectors = 0;
+   for ( int NM = expandedRightBK->gNmin( index ); NM <= expandedRightBK->gNmax( index ); NM++ ) {
+      for ( int TwoSM = expandedRightBK->gTwoSmin( index, NM ); TwoSM <= expandedRightBK->gTwoSmax( index, NM ); TwoSM += 2 ) {
+         for ( int IM = 0; IM < expandedRightBK->getNumberOfIrreps(); IM++ ) {
+            int dimM = expandedRightBK->gCurrentDim( index, NM, TwoSM, IM );
+            if ( dimM > 0 ) {
+               int dimRtotal = 0;
+               for ( int ikappa = 0; ikappa < expandedRight->gNKappa(); ikappa++ ) {
+                  if ( ( NM == expandedRight->gNL( ikappa ) ) && ( TwoSM == expandedRight->gTwoSL( ikappa ) ) && ( IM == expandedRight->gIL( ikappa ) ) ) {
+                     dimRtotal += expandedRightBK->gCurrentDim( index + 1, expandedRight->gNR( ikappa ), expandedRight->gTwoSR( ikappa ), expandedRight->gIR( ikappa ) );
+                  }
+               }
+               if ( dimRtotal > 0 ) {
+                  SplitSectNM[ nMiddleSectors ]    = NM;
+                  SplitSectTwoJM[ nMiddleSectors ] = TwoSM;
+                  SplitSectIM[ nMiddleSectors ]    = IM;
+                  DimLs[ nMiddleSectors ]          = dimM;
+                  DimMs[ nMiddleSectors ]          = std::min( dimM, dimRtotal );
+                  DimRs[ nMiddleSectors ]          = dimRtotal;
+                  nMiddleSectors++;
+               }
+            }
+         }
+      }
+   }
+
+   double ** Lambdas = NULL;
+   dcomplex ** Us    = NULL;
+   dcomplex ** VTs   = NULL;
+
+   Lambdas = new double *[ nMiddleSectors ];
+   Us      = new dcomplex *[ nMiddleSectors ];
+   VTs     = new dcomplex *[ nMiddleSectors ];
+
+   for ( int iMiddleSector = 0; iMiddleSector < nMiddleSectors; iMiddleSector++ ) {
+
+      Lambdas[ iMiddleSector ] = new double[ DimMs[ iMiddleSector ] ];
+      Us[ iMiddleSector ]      = new dcomplex[ DimLs[ iMiddleSector ] * DimMs[ iMiddleSector ] ];
+      VTs[ iMiddleSector ]     = new dcomplex[ DimMs[ iMiddleSector ] * DimRs[ iMiddleSector ] ];
+
+      // Copy the relevant parts from storage to mem & multiply with factor !!
+      dcomplex * mem = new dcomplex[ DimRs[ iMiddleSector ] * DimLs[ iMiddleSector ] ];
+      int dimRtotal2 = 0;
+      for ( int ikappa = 0; ikappa < expandedRight->gNKappa(); ikappa++ ) {
+         if ( ( SplitSectNM[ iMiddleSector ] == expandedRight->gNL( ikappa ) ) && ( SplitSectTwoJM[ iMiddleSector ] == expandedRight->gTwoSL( ikappa ) ) && ( SplitSectIM[ iMiddleSector ] == expandedRight->gIL( ikappa ) ) ) {
+            int dimR = expandedRightBK->gCurrentDim( index + 1, expandedRight->gNR( ikappa ), expandedRight->gTwoSR( ikappa ), expandedRight->gIR( ikappa ) );
+            if ( dimR > 0 ) {
+               double factor = sqrt( ( expandedRight->gTwoSR( ikappa ) + 1.0 ) / ( SplitSectTwoJM[ iMiddleSector ] + 1.0 ) );
+               for ( int l = 0; l < DimLs[ iMiddleSector ]; l++ ) {
+                  for ( int r = 0; r < dimR; r++ ) {
+                     dcomplex * storage                                     = expandedRight->gStorage() + expandedRight->gKappa2index( ikappa );
+                     mem[ l + DimLs[ iMiddleSector ] * ( dimRtotal2 + r ) ] = factor * storage[ l + DimLs[ iMiddleSector ] * r ];
+                  }
+               }
+               dimRtotal2 += dimR;
+            }
+         }
+      }
+
+      // Now mem contains sqrt((2jR+1)/(2jM+1)) * (TT)^{jM nM IM) --> SVD per
+      // central symmetry
+      char jobz       = 'S'; // M x min(M,N) in U and min(M,N) x N in VT
+      int lwork       = DimMs[ iMiddleSector ] * DimMs[ iMiddleSector ] + 3 * DimMs[ iMiddleSector ];
+      int lrwork      = std::max( 5 * DimMs[ iMiddleSector ] * DimMs[ iMiddleSector ] + 5 * DimMs[ iMiddleSector ], 2 * std::max( DimLs[ iMiddleSector ], DimRs[ iMiddleSector ] ) * DimMs[ iMiddleSector ] + 2 * DimMs[ iMiddleSector ] * DimMs[ iMiddleSector ] + DimMs[ iMiddleSector ] );
+      dcomplex * work = new dcomplex[ lwork ];
+      double * rwork  = new double[ lrwork ];
+      int * iwork     = new int[ 8 * DimMs[ iMiddleSector ] ];
+      int info;
+
+      // dgesdd is not thread-safe in every implementation ( intel MKL is safe, Atlas is not safe )
+      zgesdd_( &jobz, DimLs + iMiddleSector, DimRs + iMiddleSector, mem, DimLs + iMiddleSector,
+               Lambdas[ iMiddleSector ], Us[ iMiddleSector ], DimLs + iMiddleSector, VTs[ iMiddleSector ],
+               DimMs + iMiddleSector, work, &lwork, rwork, iwork, &info );
+
+      delete[] work;
+      delete[] rwork;
+      delete[] iwork;
+      delete[] mem;
+   }
+
+   double discardedWeight = 0.0; // Only if change==true; will the discardedWeight be meaningful and different from zero.
+   int updateSectors      = 0;
+   int * NewDims          = NULL;
+
+   // If change: determine new virtual dimensions.
+   if ( change ) {
+      NewDims = new int[ nMiddleSectors ];
+
+      // First determine the total number of singular values
+      int totalDimSVD = 0;
+      for ( int iSector = 0; iSector < nMiddleSectors; iSector++ ) {
+         NewDims[ iSector ] = DimMs[ iSector ];
+         totalDimSVD += NewDims[ iSector ];
+      }
+
+      // Copy them all in 1 array
+      double * values = new double[ totalDimSVD ];
+      totalDimSVD     = 0;
+      int inc         = 1;
+      for ( int iSector = 0; iSector < nMiddleSectors; iSector++ ) {
+         if ( NewDims[ iSector ] > 0 ) {
+            dcopy_( NewDims + iSector, Lambdas[ iSector ], &inc, values + totalDimSVD, &inc );
+            totalDimSVD += NewDims[ iSector ];
+         }
+      }
+
+      // Sort them in decreasing order
+      char ID = 'D';
+      int info;
+      dlasrt_( &ID, &totalDimSVD, values, &info ); // Quicksort
+
+      int maxD = 0;
+      while ( maxD < totalDimSVD && maxD < virtualdimensionD && cut_off < values[ maxD ] ) {
+         maxD++;
+      }
+
+      // int maxD = virtualdimensionD;
+      // If larger then the required virtualdimensionD, new virtual dimensions
+      // will be set in NewDims.
+      if ( totalDimSVD > maxD ) {
+
+         // The D+1'th value becomes the lower bound Schmidt value. Every value
+         // smaller than or equal to the D+1'th value is thrown out (hence Dactual // <= Ddesired).
+         const double lowerBound = values[ maxD ];
+         for ( int iSector = 0; iSector < nMiddleSectors; iSector++ ) {
+            for ( int cnt = 0; cnt < NewDims[ iSector ]; cnt++ ) {
+               if ( Lambdas[ iSector ][ cnt ] <= lowerBound ) {
+                  NewDims[ iSector ] = cnt;
+               }
+            }
+         }
+
+         // Discarded weight
+         double totalSum     = 0.0;
+         double discardedSum = 0.0;
+         for ( int iSector = 0; iSector < nMiddleSectors; iSector++ ) {
+            for ( int iLocal = 0; iLocal < DimMs[ iSector ]; iLocal++ ) {
+               double temp = ( expandedRight->gTwoSL( iSector ) + 1 ) * Lambdas[ iSector ][ iLocal ] * Lambdas[ iSector ][ iLocal ];
+               totalSum += temp;
+               if ( Lambdas[ iSector ][ iLocal ] <= lowerBound ) {
+                  discardedSum += temp;
+               }
+            }
+         }
+         discardedWeight = discardedSum / totalSum;
+      }
+      // Clean-up
+      delete[] values;
+
+      // Check if there is a sector which differs
+      updateSectors = 0;
+      for ( int iSector = 0; iSector < nMiddleSectors; iSector++ ) {
+         const int MPSdim = expandedRightBK->gCurrentDim( index, SplitSectNM[ iSector ], SplitSectTwoJM[ iSector ], SplitSectIM[ iSector ] );
+         if ( NewDims[ iSector ] != MPSdim ) {
+            updateSectors = 1;
+         }
+      }
+   }
+
+   if ( updateSectors == 1 ) {
+      for ( int iSector = 0; iSector < nMiddleSectors; iSector++ ) {
+         newLeftBK->SetDim( index, SplitSectNM[ iSector ], SplitSectTwoJM[ iSector ], SplitSectIM[ iSector ], NewDims[ iSector ] );
+      }
+      newRight->Reset();
+      newLeft->Reset();
+   }
+
+   if ( NewDims != NULL ) {
+      delete[] NewDims;
+   }
+
+   newRight->Clear();
+   newLeft->Clear();
+
+   // Copy first dimM per central symmetry sector to the relevant parts
+   for ( int iCenter = 0; iCenter < nMiddleSectors; iCenter++ ) {
+
+      int dimLtotal2 = 0;
+      for ( int ikappa = 0; ikappa < newLeft->gNKappa(); ikappa++ ) {
+
+         const int NL    = newLeft->gNL( ikappa );
+         const int TwoSL = newLeft->gTwoSL( ikappa );
+         const int IL    = newLeft->gIL( ikappa );
+
+         const int NR    = newLeft->gNR( ikappa );
+         const int TwoSR = newLeft->gTwoSR( ikappa );
+         const int IR    = newLeft->gIR( ikappa );
+
+         if ( ( SplitSectNM[ iCenter ] == NR ) && ( SplitSectTwoJM[ iCenter ] == TwoSR ) && ( SplitSectIM[ iCenter ] == IR ) ) {
+            const int dimL = newLeftBK->gCurrentDim( index - 1, NL, TwoSL, IL );
+            const int dimM = expandedLeftBK->gCurrentDim( index, SplitSectNM[ iCenter ], SplitSectTwoJM[ iCenter ], SplitSectIM[ iCenter ] );
+            if ( dimL > 0 ) {
+               dcomplex * TleftOld = expandedLeft->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+               dcomplex * TleftNew = newLeft->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+
+               const int dimension_limit_right = std::min( dimM, DimMs[ iCenter ] );
+               for ( int l = 0; l < dimL; l++ ) {
+                  for ( int r = 0; r < dimension_limit_right; r++ ) {
+                     TleftNew[ l + dimL * r ] = 0.0;
+                     for ( int m = 0; m < dimM; m++ ) {
+                        TleftNew[ l + dimL * r ] += TleftOld[ l + dimL * m ] * Us[ iCenter ][ m + DimMs[ iCenter ] * r ] * Lambdas[ iCenter ][ r ];
+                     }
+                  }
+               }
+               for ( int l = 0; l < dimL; l++ ) {
+                  for ( int r = dimension_limit_right; r < dimM; r++ ) {
+                     TleftNew[ l + dimL * r ] = 0.0;
+                  }
+               }
+               dimLtotal2 += dimL;
+            }
+         }
+      }
+
+      // Copy from mem to storage & multiply with factor !!
+      int dimRtotal2 = 0;
+      for ( int ikappa = 0; ikappa < newRight->gNKappa(); ikappa++ ) {
+
+         const int NL    = newRight->gNL( ikappa );
+         const int TwoSL = newRight->gTwoSL( ikappa );
+         const int IL    = newRight->gIL( ikappa );
+
+         const int NR    = newRight->gNR( ikappa );
+         const int TwoSR = newRight->gTwoSR( ikappa );
+         const int IR    = newRight->gIR( ikappa );
+
+         if ( ( SplitSectNM[ iCenter ] == NL ) && ( SplitSectTwoJM[ iCenter ] == TwoSL ) && ( SplitSectIM[ iCenter ] == IL ) ) {
+            int dimR = newRightBK->gCurrentDim( index + 1, NR, TwoSR, IR );
+            if ( dimR > 0 ) {
+               double factor      = sqrt( ( SplitSectTwoJM[ iCenter ] + 1.0 ) / ( TwoSR + 1.0 ) );
+               dcomplex * storage = newRight->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+
+               for ( int l = 0; l < DimMs[ iCenter ]; l++ ) {
+                  for ( int r = 0; r < dimR; r++ ) {
+                     storage[ l + DimLs[ iCenter ] * r ] = factor * VTs[ iCenter ][ l + DimMs[ iCenter ] * ( r + dimRtotal2 ) ];
+                  }
+               }
+               dimRtotal2 += dimR;
+            }
+         }
+      }
+   }
+}
+
+void CheMPS2::decomposeMovingRight( bool change, int virtualdimensionD, double cut_off,
+                                    CTensorT * expandedLeft, SyBookkeeper * expandedLeftBK,
+                                    CTensorT * expandedRight, SyBookkeeper * expandedRightBK,
+                                    CTensorT * newLeft, SyBookkeeper * newLeftBK,
+                                    CTensorT * newRight, SyBookkeeper * newRightBK ) {
+   assert( expandedLeftBK == expandedRightBK );
+   assert( newLeftBK == newRightBK );
+   assert( expandedLeft->gIndex() == newLeft->gIndex() );
+   assert( expandedRight->gIndex() == newRight->gIndex() );
+   assert( expandedLeft->gIndex() + 1 == expandedRight->gIndex() );
+   const int index = expandedLeft->gIndex();
+
+   int nMiddleSectors = 0;
+   for ( int NM = expandedLeftBK->gNmin( index + 1 ); NM <= expandedLeftBK->gNmax( index + 1 ); NM++ ) {
+      for ( int TwoSM = expandedLeftBK->gTwoSmin( index + 1, NM ); TwoSM <= expandedLeftBK->gTwoSmax( index + 1, NM ); TwoSM += 2 ) {
+         for ( int IM = 0; IM < expandedLeftBK->getNumberOfIrreps(); IM++ ) {
+            int dimM = expandedLeftBK->gCurrentDim( index + 1, NM, TwoSM, IM );
+            if ( dimM > 0 ) {
+               int dimLtotal = 0;
+               for ( int ikappa = 0; ikappa < expandedLeft->gNKappa(); ikappa++ ) {
+                  if ( ( NM == expandedLeft->gNR( ikappa ) ) && ( TwoSM == expandedLeft->gTwoSR( ikappa ) ) && ( IM == expandedLeft->gIR( ikappa ) ) ) {
+                     dimLtotal += expandedLeftBK->gCurrentDim( index, expandedLeft->gNL( ikappa ), expandedLeft->gTwoSL( ikappa ), expandedRight->gIL( ikappa ) );
+                  }
+               }
+               if ( dimLtotal > 0 ) {
+                  nMiddleSectors++;
+               }
+            }
+         }
+      }
+   }
+
+   int * SplitSectNM    = new int[ nMiddleSectors ];
+   int * SplitSectTwoJM = new int[ nMiddleSectors ];
+   int * SplitSectIM    = new int[ nMiddleSectors ];
+   int * DimLs          = new int[ nMiddleSectors ];
+   int * DimMs          = new int[ nMiddleSectors ];
+   int * DimRs          = new int[ nMiddleSectors ];
+
+   nMiddleSectors = 0;
+   for ( int NM = expandedLeftBK->gNmin( index + 1 ); NM <= expandedLeftBK->gNmax( index + 1 ); NM++ ) {
+      for ( int TwoSM = expandedLeftBK->gTwoSmin( index + 1, NM ); TwoSM <= expandedLeftBK->gTwoSmax( index + 1, NM ); TwoSM += 2 ) {
+         for ( int IM = 0; IM < expandedLeftBK->getNumberOfIrreps(); IM++ ) {
+            int dimM = expandedLeftBK->gCurrentDim( index + 1, NM, TwoSM, IM );
+            if ( dimM > 0 ) {
+               int dimLtotal = 0;
+               for ( int ikappa = 0; ikappa < expandedLeft->gNKappa(); ikappa++ ) {
+                  if ( ( NM == expandedLeft->gNR( ikappa ) ) && ( TwoSM == expandedLeft->gTwoSR( ikappa ) ) && ( IM == expandedLeft->gIR( ikappa ) ) ) {
+                     dimLtotal += expandedLeftBK->gCurrentDim( index, expandedLeft->gNL( ikappa ), expandedLeft->gTwoSL( ikappa ), expandedLeft->gIL( ikappa ) );
+                  }
+               }
+               if ( dimLtotal > 0 ) {
+                  SplitSectNM[ nMiddleSectors ]    = NM;
+                  SplitSectTwoJM[ nMiddleSectors ] = TwoSM;
+                  SplitSectIM[ nMiddleSectors ]    = IM;
+                  DimLs[ nMiddleSectors ]          = dimLtotal;
+                  DimMs[ nMiddleSectors ]          = std::min( dimM, dimLtotal );
+                  DimRs[ nMiddleSectors ]          = dimM;
+                  nMiddleSectors++;
+               }
+            }
+         }
+      }
+   }
+   double ** Lambdas = NULL;
+   dcomplex ** Us    = NULL;
+   dcomplex ** VTs   = NULL;
+
+   Lambdas = new double *[ nMiddleSectors ];
+   Us      = new dcomplex *[ nMiddleSectors ];
+   VTs     = new dcomplex *[ nMiddleSectors ];
+
+   for ( int iMiddleSector = 0; iMiddleSector < nMiddleSectors; iMiddleSector++ ) {
+
+      Lambdas[ iMiddleSector ] = new double[ DimMs[ iMiddleSector ] ];
+      Us[ iMiddleSector ]      = new dcomplex[ DimLs[ iMiddleSector ] * DimMs[ iMiddleSector ] ];
+      VTs[ iMiddleSector ]     = new dcomplex[ DimMs[ iMiddleSector ] * DimRs[ iMiddleSector ] ];
+
+      // Copy the relevant parts from storage to mem & multiply with factor !!
+      dcomplex * mem = new dcomplex[ DimLs[ iMiddleSector ] * DimRs[ iMiddleSector ] ];
+      int dimLtotal2 = 0;
+      for ( int ikappa = 0; ikappa < expandedLeft->gNKappa(); ikappa++ ) {
+         if ( ( SplitSectNM[ iMiddleSector ] == expandedLeft->gNR( ikappa ) ) && ( SplitSectTwoJM[ iMiddleSector ] == expandedLeft->gTwoSR( ikappa ) ) && ( SplitSectIM[ iMiddleSector ] == expandedLeft->gIR( ikappa ) ) ) {
+            int dimL = expandedLeftBK->gCurrentDim( index, expandedLeft->gNL( ikappa ), expandedLeft->gTwoSL( ikappa ), expandedLeft->gIL( ikappa ) );
+            if ( dimL > 0 ) {
+               for ( int l = 0; l < dimL; l++ ) {
+                  for ( int r = 0; r < DimRs[ iMiddleSector ]; r++ ) {
+                     dcomplex * storage                                 = expandedLeft->gStorage() + expandedLeft->gKappa2index( ikappa );
+                     mem[ dimLtotal2 + l + DimLs[ iMiddleSector ] * r ] = storage[ l + dimL * r ];
+                  }
+               }
+               dimLtotal2 += dimL;
+            }
+         }
+      }
+      // Now mem contains sqrt((2jR+1)/(2jM+1)) * (TT)^{jM nM IM) --> SVD per
+      // central symmetry
+      char jobz       = 'S'; // M x min(M,N) in U and min(M,N) x N in VT
+      int lwork       = DimMs[ iMiddleSector ] * DimMs[ iMiddleSector ] + 3 * DimMs[ iMiddleSector ];
+      int lrwork      = std::max( 5 * DimMs[ iMiddleSector ] * DimMs[ iMiddleSector ] + 5 * DimMs[ iMiddleSector ], 2 * std::max( DimLs[ iMiddleSector ], DimRs[ iMiddleSector ] ) * DimMs[ iMiddleSector ] + 2 * DimMs[ iMiddleSector ] * DimMs[ iMiddleSector ] + DimMs[ iMiddleSector ] );
+      dcomplex * work = new dcomplex[ lwork ];
+      double * rwork  = new double[ lrwork ];
+      int * iwork     = new int[ 8 * DimMs[ iMiddleSector ] ];
+      int info;
+
+      // dgesdd is not thread-safe in every implementation ( intel MKL is safe, Atlas is not safe )
+      zgesdd_( &jobz, DimLs + iMiddleSector, DimRs + iMiddleSector, mem, DimLs + iMiddleSector,
+               Lambdas[ iMiddleSector ], Us[ iMiddleSector ], DimLs + iMiddleSector, VTs[ iMiddleSector ],
+               DimMs + iMiddleSector, work, &lwork, rwork, iwork, &info );
+
+      delete[] work;
+      delete[] rwork;
+      delete[] iwork;
+      delete[] mem;
+   }
+
+   double discardedWeight = 0.0; // Only if change==true; will the discardedWeight be meaningful and different from zero.
+   int updateSectors      = 0;
+   int * NewDims          = NULL;
+
+   // If change: determine new virtual dimensions.
+   if ( change ) {
+      NewDims = new int[ nMiddleSectors ];
+
+      // First determine the total number of singular values
+      int totalDimSVD = 0;
+      for ( int iSector = 0; iSector < nMiddleSectors; iSector++ ) {
+         NewDims[ iSector ] = DimMs[ iSector ];
+         totalDimSVD += NewDims[ iSector ];
+      }
+
+      // Copy them all in 1 array
+      double * values = new double[ totalDimSVD ];
+      totalDimSVD     = 0;
+      int inc         = 1;
+      for ( int iSector = 0; iSector < nMiddleSectors; iSector++ ) {
+         if ( NewDims[ iSector ] > 0 ) {
+            dcopy_( NewDims + iSector, Lambdas[ iSector ], &inc, values + totalDimSVD, &inc );
+            totalDimSVD += NewDims[ iSector ];
+         }
+      }
+
+      // Sort them in decreasing order
+      char ID = 'D';
+      int info;
+      dlasrt_( &ID, &totalDimSVD, values, &info ); // Quicksort
+
+      int maxD = 0;
+      while ( maxD < totalDimSVD && maxD < virtualdimensionD && cut_off < values[ maxD ] ) {
+         maxD++;
+      }
+
+      // int maxD = virtualdimensionD;
+      // If larger then the required virtualdimensionD, new virtual dimensions
+      // will be set in NewDims.
+      if ( totalDimSVD > maxD ) {
+
+         // The D+1'th value becomes the lower bound Schmidt value. Every value
+         // smaller than or equal to the D+1'th value is thrown out (hence Dactual // <= Ddesired).
+         const double lowerBound = values[ maxD ];
+         for ( int iSector = 0; iSector < nMiddleSectors; iSector++ ) {
+            for ( int cnt = 0; cnt < NewDims[ iSector ]; cnt++ ) {
+               if ( Lambdas[ iSector ][ cnt ] <= lowerBound ) {
+                  NewDims[ iSector ] = cnt;
+               }
+            }
+         }
+
+         // Discarded weight
+         double totalSum     = 0.0;
+         double discardedSum = 0.0;
+         for ( int iSector = 0; iSector < nMiddleSectors; iSector++ ) {
+            for ( int iLocal = 0; iLocal < DimMs[ iSector ]; iLocal++ ) {
+               double temp = ( expandedLeft->gTwoSL( iSector ) + 1 ) * Lambdas[ iSector ][ iLocal ] * Lambdas[ iSector ][ iLocal ];
+               totalSum += temp;
+               if ( Lambdas[ iSector ][ iLocal ] <= lowerBound ) {
+                  discardedSum += temp;
+               }
+            }
+         }
+         discardedWeight = discardedSum / totalSum;
+      }
+      // Clean-up
+      delete[] values;
+
+      // Check if there is a sector which differs
+      updateSectors = 0;
+      for ( int iSector = 0; iSector < nMiddleSectors; iSector++ ) {
+         const int MPSdim = expandedLeftBK->gCurrentDim( index + 1, SplitSectNM[ iSector ], SplitSectTwoJM[ iSector ], SplitSectIM[ iSector ] );
+         if ( NewDims[ iSector ] != MPSdim ) {
+            updateSectors = 1;
+         }
+      }
+   }
+
+   if ( updateSectors == 1 ) {
+      for ( int iSector = 0; iSector < nMiddleSectors; iSector++ ) {
+         newLeftBK->SetDim( index + 1, SplitSectNM[ iSector ], SplitSectTwoJM[ iSector ], SplitSectIM[ iSector ], NewDims[ iSector ] );
+      }
+      newLeft->Reset();
+      newRight->Reset();
+   }
+
+   if ( NewDims != NULL ) {
+      delete[] NewDims;
+   }
+
+   newLeft->Clear();
+   newRight->Clear();
+
+   // Copy first dimM per central symmetry sector to the relevant parts
+   for ( int iCenter = 0; iCenter < nMiddleSectors; iCenter++ ) {
+
+      // Copy from mem to storage & multiply with factor !!
+      int dimLtotal2 = 0;
+      for ( int ikappa = 0; ikappa < newLeft->gNKappa(); ikappa++ ) {
+
+         const int NL    = newLeft->gNL( ikappa );
+         const int TwoSL = newLeft->gTwoSL( ikappa );
+         const int IL    = newLeft->gIL( ikappa );
+
+         const int NR    = newLeft->gNR( ikappa );
+         const int TwoSR = newLeft->gTwoSR( ikappa );
+         const int IR    = newLeft->gIR( ikappa );
+
+         if ( ( SplitSectNM[ iCenter ] == NR ) && ( SplitSectTwoJM[ iCenter ] == TwoSR ) && ( SplitSectIM[ iCenter ] == IR ) ) {
+            int dimL = newLeftBK->gCurrentDim( index, NL, TwoSL, IL );
+            if ( dimL > 0 ) {
+               dcomplex * storage = newLeft->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+
+               for ( int l = 0; l < dimL; l++ ) {
+                  for ( int r = 0; r < DimMs[ iCenter ]; r++ ) {
+                     storage[ l + dimL * r ] = Us[ iCenter ][ dimLtotal2 + l + DimLs[ iCenter ] * r ];
+                  }
+               }
+               dimLtotal2 += dimL;
+            }
+         }
+      }
+
+      int dimRtotal2 = 0;
+      for ( int ikappa = 0; ikappa < newRight->gNKappa(); ikappa++ ) {
+
+         const int NL    = newRight->gNL( ikappa );
+         const int TwoSL = newRight->gTwoSL( ikappa );
+         const int IL    = newRight->gIL( ikappa );
+
+         const int NR    = newRight->gNR( ikappa );
+         const int TwoSR = newRight->gTwoSR( ikappa );
+         const int IR    = newRight->gIR( ikappa );
+
+         if ( ( SplitSectNM[ iCenter ] == NL ) && ( SplitSectTwoJM[ iCenter ] == TwoSL ) && ( SplitSectIM[ iCenter ] == IL ) ) {
+            const int dimM = expandedRightBK->gCurrentDim( index + 1, SplitSectNM[ iCenter ], SplitSectTwoJM[ iCenter ], SplitSectIM[ iCenter ] );
+            const int dimR = newRightBK->gCurrentDim( index + 2, NR, TwoSR, IR );
+            if ( dimR > 0 ) {
+               dcomplex * TrightOld = expandedRight->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+               dcomplex * TrightNew = newRight->gStorage( NL, TwoSL, IL, NR, TwoSR, IR );
+
+               const int dimension_limit_left = std::min( dimM, DimMs[ iCenter ] );
+               for ( int l = 0; l < dimension_limit_left; l++ ) {
+                  for ( int r = 0; r < dimR; r++ ) {
+                     TrightNew[ l + DimMs[ iCenter ] * r ] = 0.0;
+                     for ( int m = 0; m < dimM; m++ ) {
+                        TrightNew[ l + dimM * r ] += Lambdas[ iCenter ][ l ] * VTs[ iCenter ][ l + DimMs[ iCenter ] * m ] * TrightOld[ m + dimM * r ];
+                     }
+                  }
+               }
+               for ( int l = dimension_limit_left; l < dimM; l++ ) {
+                  for ( int r = 0; r < dimR; r++ ) {
+                     TrightNew[ l + dimM * r ] = 0.0;
+                  }
+               }
+               dimRtotal2 += dimR;
+            }
+         }
+      }
+   }
 }

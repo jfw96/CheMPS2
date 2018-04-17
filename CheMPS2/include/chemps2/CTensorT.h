@@ -112,6 +112,8 @@ namespace CheMPS2 {
 
       void scale( dcomplex alpha );
 
+      void add( CTensorT * toAdd );
+
       //! Left-normalization
       /** \param Rstorage Where the R-part of the QR-decomposition can be stored (diagonal TensorOperator). */
       void QR( CTensor * Rstorage );
@@ -201,6 +203,18 @@ namespace CheMPS2 {
    void left_normalize( CTensorT * left_mps, CTensorT * right_mps );
 
    void right_normalize( CTensorT * left_mps, CTensorT * right_mps );
+
+   void decomposeMovingLeft( bool change, int virtualdimensionD, double cut_off,
+                             CTensorT * expandedLeft, SyBookkeeper * expandedLeftBK,
+                             CTensorT * expandedRight, SyBookkeeper * expandedRightBK,
+                             CTensorT * newLeft, SyBookkeeper * newLeftBK,
+                             CTensorT * newRight, SyBookkeeper * newRightBK );
+
+   void decomposeMovingRight( bool change, int virtualdimensionD, double cut_off,
+                              CTensorT * expandedLeft, SyBookkeeper * expandedLeftBK,
+                              CTensorT * expandedRight, SyBookkeeper * expandedRightBK,
+                              CTensorT * newLeft, SyBookkeeper * newLeftBK,
+                              CTensorT * newRight, SyBookkeeper * newRightBK );
 } // namespace CheMPS2
 
 #endif

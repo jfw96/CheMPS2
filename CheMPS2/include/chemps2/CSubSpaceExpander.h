@@ -53,7 +53,8 @@ namespace CheMPS2 {
 
       void AddNonExpandedToExpanded( CTensorT * expanded, CTensorT * nonExpanded );
 
-      void decomposeMovingLeft( CTensorT * expandedLeft, SyBookkeeper * expandedLeftBK,
+      void decomposeMovingLeft( bool change, int virtualdimensionD, double cut_off,
+                                CTensorT * expandedLeft, SyBookkeeper * expandedLeftBK,
                                 CTensorT * expandedRight, SyBookkeeper * expandedRightBK,
                                 CTensorT * newLeft, SyBookkeeper * newLeftBK,
                                 CTensorT * newRight, SyBookkeeper * newRightBK );

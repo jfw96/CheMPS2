@@ -1142,7 +1142,7 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
    overlaps[ 0 + 0 * krylovSpaceDimension ]          = overlap( krylovBasisVectors[ 0 ], krylovBasisVectors[ 0 ] );
 
    for ( int kry = 1; kry < krylovSpaceDimension; kry++ ) {
-      SyBookkeeper * bkTemp = new SyBookkeeper( prob, scheme->get_D( currentInstruction ) );
+      SyBookkeeper * bkTemp = new SyBookkeeper( *krylovBasisSyBookkeepers[ kry - 1 ] );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
       for ( int index = 0; index < L; index++ ) {
          mpsTemp[ index ] = new CTensorT( index, bkTemp );
@@ -1159,7 +1159,7 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
          bookkeepers[ i ] = krylovBasisSyBookkeepers[ i ];
       }
 
-      op->DSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
+      op->SSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
                          kry, coefs, states, bookkeepers,
                          mpsTemp, bkTemp,
                          scheme->get_max_sweeps( currentInstruction ),
@@ -1915,7 +1915,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          std::cout << "\n";
 
          if ( t + scheme->get_time_step( inst ) < scheme->get_max_time( inst ) ) {
-            SyBookkeeper * MPSBKDT = new SyBookkeeper( prob, scheme->get_D( inst ) );
+            SyBookkeeper * MPSBKDT = new SyBookkeeper( *MPSBK );
             CTensorT ** MPSDT      = new CTensorT *[ L ];
             for ( int index = 0; index < L; index++ ) {
                MPSDT[ index ] = new CTensorT( index, MPSBKDT );

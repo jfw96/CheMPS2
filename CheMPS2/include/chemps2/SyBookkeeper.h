@@ -43,6 +43,9 @@ namespace CheMPS2 {
       /** \param tocopy The SyBookkeeper to be copied */
       SyBookkeeper( const SyBookkeeper & tocopy );
 
+      //! Constructor with sub space expansion of Bookkeeper orig at site 
+      SyBookkeeper( const int site, SyBookkeeper * orig );
+
       //! Constructor from occupation numbers
       /** \param Prob The problem to be solved
              \param occu    The occupation numbers */
@@ -196,6 +199,8 @@ namespace CheMPS2 {
    };
 
    void subspaceExpand( int index,  bool movingRight, const SyBookkeeper * intBK, SyBookkeeper * sseBK );
+
+   std::ostream & operator<<( std::ostream & os, const SyBookkeeper & bk );
 } // namespace CheMPS2
 
 #endif

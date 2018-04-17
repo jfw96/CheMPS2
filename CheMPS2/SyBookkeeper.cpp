@@ -19,9 +19,10 @@
 
 #include <algorithm>
 #include <assert.h>
+#include <iostream>
+#include <iomanip>
 #include <math.h>
 #include <stdlib.h>
-#include <iostream>
 
 #include "Irreps.h"
 #include "Options.h"
@@ -89,7 +90,7 @@ CheMPS2::SyBookkeeper::SyBookkeeper( const Problem * Prob, const int * occupatio
 
    int Nelec = 0;
    for ( int index = 0; index < gL(); index++ ) {
-      int ni = occupation[ Prob->gReorder() ? Prob->gf2( index ): index ];
+      int ni = occupation[ Prob->gReorder() ? Prob->gf2( index ) : index ];
       for ( int NL = gNmin( index ); NL <= gNmax( index ); NL++ ) {
          for ( int TwoSL = gTwoSmin( index, NL ); TwoSL <= gTwoSmax( index, NL ); TwoSL += 2 ) {
             for ( int IL = 0; IL < getNumberOfIrreps(); IL++ ) {
@@ -123,7 +124,7 @@ CheMPS2::SyBookkeeper::SyBookkeeper( const Problem * Prob, const int * occupatio
    // Clean the indexes that turn out to be unncessary
    Nelec = 0;
    for ( int index = 0; index < gL(); index++ ) {
-      int ni = occupation[ Prob->gReorder() ? Prob->gf2( index ): index ];
+      int ni = occupation[ Prob->gReorder() ? Prob->gf2( index ) : index ];
       for ( int NL = gNmin( index ); NL <= gNmax( index ); NL++ ) {
          for ( int TwoSL = gTwoSmin( index, NL ); TwoSL <= gTwoSmax( index, NL ); TwoSL += 2 ) {
             for ( int IL = 0; IL < getNumberOfIrreps(); IL++ ) {
@@ -155,6 +156,34 @@ CheMPS2::SyBookkeeper::SyBookkeeper( const Problem * Prob, const int * occupatio
    }
 
    assert( IsPossible() );
+}
+
+CheMPS2::SyBookkeeper::SyBookkeeper( const int site, SyBookkeeper * orig ){
+
+   this->Prob = orig->gProb();
+   Irreps temp( Prob->gSy() );
+   this->num_irreps = temp.getNumberOfIrreps();
+
+   // Allocate the arrays
+   allocate_arrays();
+
+   // Fill FCIdim
+   fillFCIdim();
+
+   // Copy the CURdim
+   for ( int boundary = 0; boundary <= gL(); boundary++ ) {
+      for ( int N = gNmin( boundary ); N <= gNmax( boundary ); N++ ) {
+         for ( int TwoS = gTwoSmin( boundary, N ); TwoS <= gTwoSmax( boundary, N ); TwoS += 2 ) {
+            for ( int irrep = 0; irrep < num_irreps; irrep++ ) {
+               if ( boundary != site ){
+                  CURdim[ boundary ][ N - gNmin( boundary ) ][ ( TwoS - gTwoSmin( boundary, N ) ) / 2 ][ irrep ] = orig->gCurrentDim( boundary, N, TwoS, irrep );
+               } else {
+                  CURdim[ boundary ][ N - gNmin( boundary ) ][ ( TwoS - gTwoSmin( boundary, N ) ) / 2 ][ irrep ] = orig->gFCIdim( boundary, N, TwoS, irrep );                  
+               }
+            }
+         }
+      }
+   }
 }
 
 void CheMPS2::SyBookkeeper::allocate_arrays() {
@@ -376,33 +405,42 @@ bool CheMPS2::SyBookkeeper::IsPossible() const {
    return ( gCurrentDim( gL(), gN(), gTwoS(), gIrrep() ) == 1 );
 }
 
-void CheMPS2::subspaceExpand( int index,  bool movingRight, const SyBookkeeper * initBK, SyBookkeeper * sseBK ){
+void CheMPS2::subspaceExpand( int index, bool movingRight, const SyBookkeeper * initBK, SyBookkeeper * sseBK ) {
 
    for ( int NL = initBK->gNmin( index ); NL <= initBK->gNmax( index ); NL++ ) {
       for ( int TwoSL = initBK->gTwoSmin( index, NL ); TwoSL <= initBK->gTwoSmax( index, NL ); TwoSL += 2 ) {
          for ( int IL = 0; IL < initBK->getNumberOfIrreps(); IL++ ) {
             const int dimL = movingRight ? initBK->gCurrentDim( index, NL, TwoSL, IL ) : initBK->gFCIdim( index, NL, TwoSL, IL );
             if ( dimL > 0 ) {
-               for ( int NR = NL; NR <= NL + 2; NR++ ) {
-                  const int TwoJ = ( ( NR == NL + 1 ) ? 1 : 0 );
-                  for ( int TwoSR = TwoSL - TwoJ; TwoSR <= TwoSL + TwoJ; TwoSR += 2 ) {
-                     if ( TwoSR >= 0 ) {
-                        int IR         = ( ( NR == NL + 1 ) ? Irreps::directProd( IL, initBK->gIrrep( index ) ) : IL );
-                        const int dimR = movingRight ? initBK->gFCIdim( index + 1, NR, TwoSR, IR ) : initBK->gCurrentDim( index + 1, NR, TwoSR, IR );
-                        if ( dimR > 0 ) {
-                           if ( movingRight ){
-                              sseBK->SetDim( index + 1, NR, TwoSR, IR , initBK->gFCIdim( index + 1, NR, TwoSR, IR ));
-                           } else {
-                              sseBK->SetDim( index, NL, TwoSL, IL , initBK->gFCIdim( index, NL, TwoSL, IL ));
-
-                           }
-                        }
-                     }
-                  }
-               }
+               sseBK->SetDim( index, NL, TwoSL, IL, initBK->gFCIdim( index, NL, TwoSL, IL ) );
+               // for ( int NR = initBK->gNmin( index ); NR <= initBK->gNmax( index ); NR++ ) {
+               //    for ( int TwoSR = initBK->gTwoSmin( index, NR ); TwoSR <= initBK->gTwoSmax( index, NR ); TwoSR += 2 ) {
+               //       for ( int IR = 0; IR < initBK->getNumberOfIrreps(); IR++ ) {
+               //          const int dimR = movingRight ? initBK->gFCIdim( index, NR, TwoSR, IR ) : initBK->gCurrentDim( index, NR, TwoSR, IR );
+               //          if ( dimR > 0 ) {
+               //          }
+               //       }
+               //    }
+               // }
             }
          }
       }
    }
+}
 
+std::ostream & CheMPS2::operator<<( std::ostream & os, const CheMPS2::SyBookkeeper & bk ) {
+   os << "#################################################################\n";
+
+   os << "SymmetryBookkeeper with dimensions: " << std::endl;
+   std::cout << "   matrix product state dimensions:\n";
+   std::cout << "   ";
+   for ( int i = 0; i < bk.gL() + 1; i++ ) {
+      std::cout << std::setw( 10 ) << i;
+   }
+   std::cout << "\n";
+   std::cout << "   ";
+   for ( int i = 0; i < bk.gL() + 1; i++ ) {
+      std::cout << std::setw( 10 ) <<  bk.gTotDimAtBound( i );
+   }
+   return os;
 }

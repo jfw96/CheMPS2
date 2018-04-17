@@ -564,13 +564,17 @@ void CheMPS2::CSubSpaceExpander::addDiagram2b3spin0Left( const int ikappa, dcomp
    int TwoSL = out->gTwoSL( ikappa );
    int IL    = out->gIL( ikappa );
 
+   int NR    = out->gNR( ikappa );
+   int TwoSR = out->gTwoSR( ikappa );
+   int IR    = out->gIR( ikappa );
+
    int N = out->gNR( ikappa ) - out->gNL( ikappa );
 
    int theindex = out->gIndex();
 
    if ( N != 0 ) {
       int dimL      = sseBKDown->gCurrentDim( theindex, NL, TwoSL, IL );
-      int dimR      = initBKDown->gCurrentDim( theindex + 1, NL, TwoSL, IL );
+      int dimR      = initBKDown->gCurrentDim( theindex + 1, NR, TwoSR, IR );
       int memSkappa = in->gKappa( out->gNL( ikappa ), out->gTwoSL( ikappa ), out->gIL( ikappa ), out->gNR( ikappa ), out->gTwoSR( ikappa ), out->gIR( ikappa ) );
 
       if ( memSkappa != -1 ) {
