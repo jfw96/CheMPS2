@@ -1922,7 +1922,6 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
                MPSDT[ index ]->random();
             }
 
-            // doStep_krylov( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
             krylovSpaceDimension = doStep_arnoldi( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
 
             for ( int site = 0; site < L; site++ ) {

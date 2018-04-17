@@ -273,7 +273,6 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          // std::cout << mpsOut[ site ]->CheckRightNormal() << std::endl;
 
          std::cout << overlap( mpsOut, mpsOut ) << std::endl;
-         // std::cout << *bkOut << std::endl;
       }
 
       std::cout << *bkOut << std::endl;
@@ -417,7 +416,6 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          //    }
          // }
 
-         // std::cout << overlap( mpsOut, mpsOut ) << std::endl;
       }
    }
 

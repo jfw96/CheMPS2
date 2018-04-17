@@ -1,4 +1,4 @@
-project (CheMPS2)
+project (CheMPS2 CXX Fortran)
 set (CheMPS2_MMP_VERSION   "1.8.4")
 set (CheMPS2_VERSION       "${CheMPS2_MMP_VERSION}-4 (2017-10-23)")
 #set (CheMPS2_VERSION       "${CheMPS2_MMP_VERSION}-15 (2017-05-22)")
@@ -121,11 +121,7 @@ if (MKL)
     add_definitions (-DCHEMPS2_MKL)
 endif ()
 
-# <<< Find ExpoKit >>>
-find_package (TargetEXPOKIT REQUIRED)
-
 # <<<  Find HDF5  >>>
-
 find_package (TargetHDF5 REQUIRED)
 
 # <<<  Add source files, tests, sphinx, and doxygen  >>>

@@ -77,7 +77,7 @@ set (CHEMPS2LIB_SOURCE_FILES "CASPT2.cpp"
                              "HeffDiagrams5.cpp"
                              "Initialize.cpp"
                              "Irreps.cpp"
-			                 "Logger.cpp"
+			                    "Logger.cpp"
                              "Molden.cpp"
                              "PrintLicense.cpp"
                              "Problem.cpp"
@@ -96,13 +96,15 @@ set (CHEMPS2LIB_SOURCE_FILES "CASPT2.cpp"
                              "TensorS1.cpp"
                              "TensorT.cpp"
                              "TensorX.cpp"
-			                 "TimeTaylor.cpp"
+			                    "TimeTaylor.cpp"
                              "ThreeDM.cpp"
                              "TwoDM.cpp"
                              "CTwoDM.cpp"
                              "CTwoDMBuilder.cpp"
                              "TwoIndex.cpp"
-                             "Wigner.cpp")
+                             "Wigner.cpp"
+                             "expokit.f")
+
 
 add_library (chemps2-base OBJECT ${CHEMPS2LIB_SOURCE_FILES} )
 target_include_directories (chemps2-base PRIVATE ${CheMPS2_SOURCE_DIR}/CheMPS2/include/chemps2
@@ -116,9 +118,7 @@ if (NOT STATIC_ONLY)
     add_library           (chemps2-shared SHARED  $<TARGET_OBJECTS:chemps2-base>)
     target_link_libraries (chemps2-shared PRIVATE ${LIBC_INTERJECT}
                                                   tgt::lapack
-                                                  tgt::hdf5
-                                                  tgt::expokit
-                                                  )
+                                                  tgt::hdf5)
                                                   
     set_target_properties (chemps2-shared PROPERTIES SOVERSION ${CheMPS2_LIB_SOVERSION}
                                                      MACOSX_RPATH ON
@@ -130,8 +130,8 @@ if (NOT SHARED_ONLY)
     add_library           (chemps2-static STATIC  $<TARGET_OBJECTS:chemps2-base>)
     target_link_libraries (chemps2-static PRIVATE ${LIBC_INTERJECT}
                                                   tgt::lapack
-                                                  tgt::hdf5
-                                                  tgt::expokit)
+                                                  tgt::hdf5)
+                                                  
     set_target_properties (chemps2-static PROPERTIES SOVERSION ${CheMPS2_LIB_SOVERSION}
                                                      MACOSX_RPATH ON
                                                      OUTPUT_NAME "chemps2"
@@ -145,7 +145,7 @@ else ()
 endif()
 
 add_executable             (chemps2-bin executable.cpp)
-target_link_libraries      (chemps2-bin tgt::expokit tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} )
+target_link_libraries      (chemps2-bin tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} )
 set_target_properties      (chemps2-bin PROPERTIES OUTPUT_NAME "chemps2")
 
 # <<<  Install  >>>
