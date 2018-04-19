@@ -104,79 +104,79 @@ void CheMPS2::CSubSpaceExpander::ApplyRight( CTensorT * in, CTensorT * out,
             memLUxRD[ cnt ] = 0.0;
          }
 
-         // addDiagram0ALeft( ikappa, memLDxRD, in, out, prob->gEconst() );
-         // addDiagram1C( ikappa, memLDxRD, in, out, prob->gMxElement( index, index, index, index ) );
+         addDiagram0ARight( ikappa, memLDxRD, in, out, prob->gEconst() );
+         addDiagram1CRight( ikappa, memLDxRD, in, out, prob->gMxElement( index, index, index, index ) );
 
-         // if ( !atLeft ) {
-         //    /*********************
-         //    *  Diagrams group 1  *
-         //    *********************/
-         //    addDiagram1A( ikappa, memLDxRD, in, out, Xtensors[ index - 1 ] );
+         if ( !atLeft && dimLU > 0 && dimRD > 0) {
+            /*********************
+            *  Diagrams group 1  *
+            *********************/
+            addDiagram1ARight( ikappa, memLUxRD, in, out, Xtensors[ index - 1 ] );
 
-         //    /*********************
-         //    *  Diagrams group 2  *
-         //    *********************/
-         //    addDiagram2b1and2b2Left( ikappa, memLDxRD, in, out, Atensors[ index - 1 ][ 0 ][ 0 ], AtensorsT[ index - 1 ][ 0 ][ 0 ] );
-         //    addDiagram2b3spin0Left( ikappa, memLDxRD, in, out, CtensorsT[ index - 1 ][ 0 ][ 0 ] );
-         //    addDiagram2b3spin1Left( ikappa, memLDxRD, in, out, DtensorsT[ index - 1 ][ 0 ][ 0 ] );
+            /*********************
+            *  Diagrams group 2  *
+            *********************/
+            addDiagram2b1and2b2Right( ikappa, memLUxRD, in, out, Atensors[ index - 1 ][ 0 ][ 0 ], AtensorsT[ index - 1 ][ 0 ][ 0 ] );
+            addDiagram2b3spin0Right( ikappa, memLUxRD, in, out, CtensorsT[ index - 1 ][ 0 ][ 0 ] );
+            addDiagram2b3spin1Right( ikappa, memLUxRD, in, out, DtensorsT[ index - 1 ][ 0 ][ 0 ] );
 
-         //    /*********************
-         //    *  Diagrams group 3  *
-         //    *********************/
-         //    addDiagram3Aand3DLeft( ikappa, memLDxRD, in, out, Qtensors[ index - 1 ][ 0 ], QtensorsT[ index - 1 ][ 0 ], Ltensors[ index - 1 ], LtensorsT[ index - 1 ], temp );
-         // }
+            /*********************
+            *  Diagrams group 3  *
+            *********************/
+            addDiagram3Aand3DRight( ikappa, memLUxRD, in, out, Qtensors[ index - 1 ][ 0 ], QtensorsT[ index - 1 ][ 0 ], Ltensors[ index - 1 ], LtensorsT[ index - 1 ], temp );
+         }
 
-         // if ( ( !atLeft ) && ( !atRight ) ) {
+         if ( ( !atLeft ) && ( !atRight ) && dimLU > 0 && dimRD > 0 ) {
 
-         //    /*********************
-         //    *  Diagrams group 2  *
-         //    *********************/
-         //    addDiagram2a1spin0Left( ikappa, memLDxRU, in, out, AtensorsT, S0Ttensors, temp );
-         //    addDiagram2a2spin0Left( ikappa, memLDxRU, in, out, Atensors, S0tensors, temp );
-         //    addDiagram2a1spin1Left( ikappa, memLDxRU, in, out, BtensorsT, S1Ttensors, temp );
-         //    addDiagram2a2spin1Left( ikappa, memLDxRU, in, out, Btensors, S1tensors, temp );
-         //    addDiagram2a3spin0Left( ikappa, memLDxRU, in, out, Ctensors, CtensorsT, F0tensors, F0Ttensors, temp );
-         //    addDiagram2a3spin1Left( ikappa, memLDxRU, in, out, Dtensors, DtensorsT, F1tensors, F1Ttensors, temp );
+            /*********************
+            *  Diagrams group 2  *
+            *********************/
+            addDiagram2a1spin0Right( ikappa, memLUxRD, in, out, AtensorsT, S0Ttensors, temp );
+            addDiagram2a2spin0Right( ikappa, memLUxRD, in, out, Atensors, S0tensors, temp );
+            addDiagram2a1spin1Right( ikappa, memLUxRD, in, out, BtensorsT, S1Ttensors, temp );
+            addDiagram2a2spin1Right( ikappa, memLUxRD, in, out, Btensors, S1tensors, temp );
+            addDiagram2a3spin0Right( ikappa, memLUxRD, in, out, Ctensors, CtensorsT, F0tensors, F0Ttensors, temp );
+            addDiagram2a3spin1Right( ikappa, memLUxRD, in, out, Dtensors, DtensorsT, F1tensors, F1Ttensors, temp );
 
-         //    /*********************
-         //    *  Diagrams group 3  *
-         //    *********************/
-         //    addDiagram3CLeft( ikappa, memLDxRU, in, out, Qtensors[ index - 1 ], QtensorsT[ index - 1 ], Ltensors[ index ], LtensorsT[ index ], temp );
-         //    addDiagram3JLeft( ikappa, memLDxRU, in, out, Qtensors[ index ], QtensorsT[ index ], Ltensors[ index - 1 ], LtensorsT[ index - 1 ], temp );
+            /*********************
+            *  Diagrams group 3  *
+            *********************/
+            addDiagram3CRight( ikappa, memLUxRD, in, out, Qtensors[ index - 1 ], QtensorsT[ index - 1 ], Ltensors[ index ], LtensorsT[ index ], temp );
+            addDiagram3JRight( ikappa, memLUxRD, in, out, Qtensors[ index ], QtensorsT[ index ], Ltensors[ index - 1 ], LtensorsT[ index - 1 ], temp );
 
-         //    /*********************
-         //    *  Diagrams group 4  *
-         //    *********************/
-         //    addDiagram4B1and4B2spin0Left( ikappa, memLDxRU, in, out, Atensors[ index - 1 ], AtensorsT[ index - 1 ], Ltensors[ index ], LtensorsT[ index ], temp );
-         //    addDiagram4B1and4B2spin1Left( ikappa, memLDxRU, in, out, Btensors[ index - 1 ], BtensorsT[ index - 1 ], Ltensors[ index ], LtensorsT[ index ], temp );
-         //    addDiagram4B3and4B4spin0Left( ikappa, memLDxRU, in, out, Ctensors[ index - 1 ], CtensorsT[ index - 1 ], Ltensors[ index ], LtensorsT[ index ], temp );
-         //    addDiagram4B3and4B4spin1Left( ikappa, memLDxRU, in, out, Dtensors[ index - 1 ], DtensorsT[ index - 1 ], Ltensors[ index ], LtensorsT[ index ], temp );
-         //    addDiagram4ELeft( ikappa, memLDxRU, in, out, Ltensors[ index - 1 ], LtensorsT[ index - 1 ], Ltensors[ index ], LtensorsT[ index ], temp, temp2 );
-         //    addDiagram4L1and4L2spin0Left( ikappa, memLDxRU, in, out, Ltensors[ index - 1 ], LtensorsT[ index - 1 ], Atensors[ index ], AtensorsT[ index ], temp );
-         //    addDiagram4L3and4L4spin0Left( ikappa, memLDxRU, in, out, Ltensors[ index - 1 ], LtensorsT[ index - 1 ], Ctensors[ index ], CtensorsT[ index ], temp );
-         //    addDiagram4L1and4L2spin1Left( ikappa, memLDxRU, in, out, Ltensors[ index - 1 ], LtensorsT[ index - 1 ], Btensors[ index ], BtensorsT[ index ], temp );
-         //    addDiagram4L3and4L4spin1Left( ikappa, memLDxRU, in, out, Ltensors[ index - 1 ], LtensorsT[ index - 1 ], Dtensors[ index ], DtensorsT[ index ], temp );
-         // }
+            /*********************
+            *  Diagrams group 4  *
+            *********************/
+            addDiagram4B1and4B2spin0Right( ikappa, memLUxRD, in, out, Atensors[ index - 1 ], AtensorsT[ index - 1 ], Ltensors[ index ], LtensorsT[ index ], temp );
+            addDiagram4B1and4B2spin1Right( ikappa, memLUxRD, in, out, Btensors[ index - 1 ], BtensorsT[ index - 1 ], Ltensors[ index ], LtensorsT[ index ], temp );
+            addDiagram4B3and4B4spin0Right( ikappa, memLUxRD, in, out, Ctensors[ index - 1 ], CtensorsT[ index - 1 ], Ltensors[ index ], LtensorsT[ index ], temp );
+            addDiagram4B3and4B4spin1Right( ikappa, memLUxRD, in, out, Dtensors[ index - 1 ], DtensorsT[ index - 1 ], Ltensors[ index ], LtensorsT[ index ], temp );
+            addDiagram4ERight( ikappa, memLUxRD, in, out, Ltensors[ index - 1 ], LtensorsT[ index - 1 ], Ltensors[ index ], LtensorsT[ index ], temp, temp2 );
+            addDiagram4L1and4L2spin0Right( ikappa, memLUxRD, in, out, Ltensors[ index - 1 ], LtensorsT[ index - 1 ], Atensors[ index ], AtensorsT[ index ], temp );
+            addDiagram4L3and4L4spin0Right( ikappa, memLUxRD, in, out, Ltensors[ index - 1 ], LtensorsT[ index - 1 ], Ctensors[ index ], CtensorsT[ index ], temp );
+            addDiagram4L1and4L2spin1Right( ikappa, memLUxRD, in, out, Ltensors[ index - 1 ], LtensorsT[ index - 1 ], Btensors[ index ], BtensorsT[ index ], temp );
+            addDiagram4L3and4L4spin1Right( ikappa, memLUxRD, in, out, Ltensors[ index - 1 ], LtensorsT[ index - 1 ], Dtensors[ index ], DtensorsT[ index ], temp );
+         }
 
-         // if ( !atRight && dimLD > 0 ) {
+         if ( !atRight && dimLD > 0 && dimRD > 0 ) {
 
-         //    /*********************
-         //    *  Diagrams group 1  *
-         //    *********************/
-         //    addDiagram1B( ikappa, memLDxRU, in, out, Xtensors[ index ] );
+            /*********************
+            *  Diagrams group 1  *
+            *********************/
+            addDiagram1BRight( ikappa, memLDxRD, in, out, Xtensors[ index ] );
 
-         //    /*********************
-         //    *  Diagrams group 2  *
-         //    *********************/
-         //    addDiagram2e1and2e2Left( ikappa, memLDxRU, in, out, Atensors[ index ][ 0 ][ 0 ], AtensorsT[ index ][ 0 ][ 0 ] );
-         //    addDiagram2e3spin0Left( ikappa, memLDxRU, in, out, CtensorsT[ index ][ 0 ][ 0 ] );
-         //    addDiagram2e3spin1Left( ikappa, memLDxRU, in, out, DtensorsT[ index ][ 0 ][ 0 ] );
+            /*********************
+            *  Diagrams group 2  *
+            *********************/
+            addDiagram2e1and2e2Right( ikappa, memLDxRD, in, out, Atensors[ index ][ 0 ][ 0 ], AtensorsT[ index ][ 0 ][ 0 ] );
+            addDiagram2e3spin0Right( ikappa, memLDxRD, in, out, CtensorsT[ index ][ 0 ][ 0 ] );
+            addDiagram2e3spin1Right( ikappa, memLDxRD, in, out, DtensorsT[ index ][ 0 ][ 0 ] );
 
-         //    /*********************
-         //    *  Diagrams group 3  *
-         //    *********************/
-         //    addDiagram3Kand3FLeft( ikappa, memLDxRU, in, out, Qtensors[ index ][ 0 ], QtensorsT[ index ][ 0 ], Ltensors[ index ], LtensorsT[ index ], temp );
-         // }
+            /*********************
+            *  Diagrams group 3  *
+            *********************/
+            addDiagram3Kand3FRight( ikappa, memLDxRD, in, out, Qtensors[ index ][ 0 ], QtensorsT[ index ][ 0 ], Ltensors[ index ], LtensorsT[ index ], temp );
+         }
 
          int dimLUxRD = dimLU * dimRD;
          int dimLDxRD = dimLD * dimRD;
@@ -185,14 +185,14 @@ void CheMPS2::CSubSpaceExpander::ApplyRight( CTensorT * in, CTensorT * out,
 
          dcomplex one = 1.0;
          int inc      = 1;
-         zaxpy_( &dimLUxRD, &one, memLUxRD, &inc, BlockOut, &inc );
+         zaxpy_( &dimLUxRD, &one, memLUxRD, &inc, BlockOut, &inc );        
 
-         if ( atLeft ) {
-            int dimLDxRD = dimLD * dimRD;
-            zaxpy_( &dimLDxRD, &one, memLDxRD, &inc, BlockOut, &inc );
-         } else if (dimLU > 0 && dimRD > 0) {
-            dcomplex * BlockOT = Otensors[ index ]->gStorage( NL, TwoSL, IL, NL, TwoSL, IL );
-            zgemm_( &notrans, &notrans, &dimLU, &dimRD, &dimLD, &one, memLDxRD, &dimLU, BlockOT, &dimLD, &one, BlockOut, &dimLU );
+         if ( !atLeft && dimLD > 0 && dimLU > 0 ) {
+            dcomplex * BlockO = Otensors[ index - 1 ]->gStorage( NL, TwoSL, IL, NL, TwoSL, IL );
+            zgemm_( &notrans, &notrans, &dimLU, &dimRD, &dimLD, &one, BlockO, &dimLU, memLDxRD, &dimLD, &one, BlockOut, &dimLU );
+         } else if ( dimLD > 0 ) {
+            int dimLDxRU = dimLD * dimRD;
+            zaxpy_( &dimLDxRU, &one, memLDxRD, &inc, BlockOut, &inc );
          }
 
          delete[] memLUxRD;
@@ -202,9 +202,8 @@ void CheMPS2::CSubSpaceExpander::ApplyRight( CTensorT * in, CTensorT * out,
       delete[] temp;
       delete[] temp2;
    }
-
-   std::cout << "hi right" << std::endl;
-   abort();
+   // std::cout << "out" << std::endl;
+   // std::cout << *out << std::endl;
 }
 
 void CheMPS2::CSubSpaceExpander::ApplyLeft( CTensorT * in, CTensorT * out,
@@ -265,13 +264,13 @@ void CheMPS2::CSubSpaceExpander::ApplyLeft( CTensorT * in, CTensorT * out,
          }
 
          addDiagram0ALeft( ikappa, memLDxRD, in, out, prob->gEconst() );
-         addDiagram1C( ikappa, memLDxRD, in, out, prob->gMxElement( index, index, index, index ) );
+         addDiagram1CLeft( ikappa, memLDxRD, in, out, prob->gMxElement( index, index, index, index ) );
 
          if ( !atLeft ) {
             /*********************
             *  Diagrams group 1  *
             *********************/
-            addDiagram1A( ikappa, memLDxRD, in, out, Xtensors[ index - 1 ] );
+            addDiagram1ALeft( ikappa, memLDxRD, in, out, Xtensors[ index - 1 ] );
 
             /*********************
             *  Diagrams group 2  *
@@ -323,7 +322,7 @@ void CheMPS2::CSubSpaceExpander::ApplyLeft( CTensorT * in, CTensorT * out,
             /*********************
             *  Diagrams group 1  *
             *********************/
-            addDiagram1B( ikappa, memLDxRU, in, out, Xtensors[ index ] );
+            addDiagram1BLeft( ikappa, memLDxRU, in, out, Xtensors[ index ] );
 
             /*********************
             *  Diagrams group 2  *

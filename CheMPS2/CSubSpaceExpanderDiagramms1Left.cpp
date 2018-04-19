@@ -37,7 +37,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram0ALeft( const int ikappa, dcomplex * 
    }
 }
 
-void CheMPS2::CSubSpaceExpander::addDiagram1A( const int ikappa, dcomplex * memHeff, CTensorT * in, CTensorT * out, CTensorX * Xleft ) {
+void CheMPS2::CSubSpaceExpander::addDiagram1ALeft( const int ikappa, dcomplex * memHeff, CTensorT * in, CTensorT * out, CTensorX * Xleft ) {
    const int index = in->gIndex();
 
    const int NL    = out->gNL( ikappa );
@@ -84,7 +84,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram1A( const int ikappa, dcomplex * memH
    }
 }
 
-void CheMPS2::CSubSpaceExpander::addDiagram1B( const int ikappa, dcomplex * memHeff, CTensorT * in, CTensorT * out, CTensorOperator * Xright ) {
+void CheMPS2::CSubSpaceExpander::addDiagram1BLeft( const int ikappa, dcomplex * memHeff, CTensorT * in, CTensorT * out, CTensorOperator * Xright ) {
    const int index = out->gIndex();
 
    const int NL    = out->gNL( ikappa );
@@ -131,7 +131,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram1B( const int ikappa, dcomplex * memH
    }
 }
 
-void CheMPS2::CSubSpaceExpander::addDiagram1C( const int ikappa, dcomplex * memHeff, CTensorT * in, CTensorT * out, dcomplex Helem ) {
+void CheMPS2::CSubSpaceExpander::addDiagram1CLeft( const int ikappa, dcomplex * memHeff, CTensorT * in, CTensorT * out, dcomplex Helem ) {
 
    const int NL    = out->gNL( ikappa );
    const int TwoSL = out->gTwoSL( ikappa );

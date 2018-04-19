@@ -702,7 +702,7 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
       dlasrt_( &ID, &totalDimSVD, values, &info ); // Quicksort
 
       int maxD = 0;
-      while ( maxD < totalDimSVD && maxD < virtualdimensionD && cut_off < values[ maxD ] ) {
+      while ( maxD < totalDimSVD && maxD < virtualdimensionD && cut_off <= values[ maxD ] ) {
          maxD++;
       }
 
@@ -772,13 +772,11 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
       if ( dimM > 0 ) {
          // U-part: copy
          int dimLtotal2 = 0;
-         for ( int NL = SplitSectNM[ iCenter ] - 2; NL <= SplitSectNM[ iCenter ];
-               NL++ ) {
+         for ( int NL = SplitSectNM[ iCenter ] - 2; NL <= SplitSectNM[ iCenter ]; NL++ ) {
             const int TwoS1 = ( ( NL + 1 == SplitSectNM[ iCenter ] ) ? 1 : 0 );
             for ( int TwoSL = SplitSectTwoJM[ iCenter ] - TwoS1; TwoSL <= SplitSectTwoJM[ iCenter ] + TwoS1; TwoSL += 2 ) {
                if ( TwoSL >= 0 ) {
-                  const int IL = ( ( TwoS1 == 1 ) ? Irreps::directProd( Ilocal1, SplitSectIM[ iCenter ] )
-                                                  : SplitSectIM[ iCenter ] );
+                  const int IL = ( ( TwoS1 == 1 ) ? Irreps::directProd( Ilocal1, SplitSectIM[ iCenter ] ): SplitSectIM[ iCenter ] );
                   const int dimL = denBK->gCurrentDim( index, NL, TwoSL, IL );
                   if ( dimL > 0 ) {
                      dcomplex * TleftBlock = Tleft->gStorage( NL, TwoSL, IL, SplitSectNM[ iCenter ], SplitSectTwoJM[ iCenter ],

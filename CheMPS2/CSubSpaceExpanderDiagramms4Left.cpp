@@ -50,7 +50,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B1and4B2spin0Left( const int ikappa,
                   int memSkappa = in->gKappa( NL, TwoSL, IL, NR - 1, TwoSRdown, IRdown );
 
                   if ( memSkappa != -1 ) {
-                     dcomplex alpha = 1.0;
+                     dcomplex alpha = factor;
                      dcomplex beta  = 1.0;
 
                      dcomplex * Lblock = LTright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR - 1, TwoSRdown, IRdown );
@@ -75,7 +75,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B1and4B2spin0Left( const int ikappa,
                int memSkappa = in->gKappa( NL, TwoSL, IL, NR - 1, TwoSRdown, IRdown );
 
                if ( memSkappa != -1 ) {
-                  dcomplex alpha = 1.0;
+                  dcomplex alpha = factor;
                   dcomplex beta  = 1.0;
 
                   dcomplex * Lblock = LTright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR - 1, TwoSRdown, IRdown );
@@ -100,7 +100,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B1and4B2spin0Left( const int ikappa,
                int memSkappa = in->gKappa( NL, TwoSL, IL, NR + 1, TwoSRdown, IRdown );
 
                if ( memSkappa != -1 ) {
-                  dcomplex alpha = 1.0;
+                  dcomplex alpha = factor;
                   dcomplex beta  = 1.0;
 
                   dcomplex * Lblock = Lright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR + 1, TwoSRdown, IRdown );
@@ -127,7 +127,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B1and4B2spin0Left( const int ikappa,
                   int memSkappa = in->gKappa( NL, TwoSL, IL, NR + 1, TwoSRdown, IRdown );
 
                   if ( memSkappa != -1 ) {
-                     dcomplex alpha = 1.0;
+                     dcomplex alpha = factor;
                      dcomplex beta  = 1.0;
 
                      dcomplex * Lblock = Lright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR + 1, TwoSRdown, IRdown );
@@ -180,7 +180,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B1and4B2spin1Left( const int ikappa,
                   int memSkappa = in->gKappa( NL, TwoSL, IL, NR - 1, TwoSRdown, IRdown );
 
                   if ( memSkappa != -1 ) {
-                     dcomplex alpha = 1.0;
+                     dcomplex alpha = factor;
                      dcomplex beta  = 1.0;
 
                      dcomplex * Lblock = LTright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR - 1, TwoSRdown, IRdown );
@@ -205,7 +205,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B1and4B2spin1Left( const int ikappa,
                int memSkappa = in->gKappa( NL, TwoSL, IL, NR - 1, TwoSRdown, IRdown );
 
                if ( memSkappa != -1 ) {
-                  dcomplex alpha = 1.0;
+                  dcomplex alpha = factor;
                   dcomplex beta  = 1.0;
 
                   dcomplex * Lblock = LTright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR - 1, TwoSRdown, IRdown );
@@ -229,7 +229,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B1and4B2spin1Left( const int ikappa,
                int memSkappa = in->gKappa( NL, TwoSL, IL, NR + 1, TwoSRdown, IRdown );
 
                if ( memSkappa != -1 ) {
-                  dcomplex alpha = 1.0;
+                  dcomplex alpha = factor;
                   dcomplex beta  = 1.0;
 
                   dcomplex * Lblock = Lright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR + 1, TwoSRdown, IRdown );
@@ -257,7 +257,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B1and4B2spin1Left( const int ikappa,
                   int memSkappa = in->gKappa( NL, TwoSL, IL, NR + 1, TwoSRdown, IRdown );
 
                   if ( memSkappa != -1 ) {
-                     dcomplex alpha = 1.0;
+                     dcomplex alpha = factor;
                      dcomplex beta  = 1.0;
 
                      dcomplex * Lblock = Lright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR + 1, TwoSRdown, IRdown );
@@ -309,7 +309,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B3and4B4spin0Left( const int ikappa,
                int memSkappa = in->gKappa( NL, TwoSL, IL, NR, TwoSRdown, IRdown );
 
                if ( memSkappa != -1 ) {
-                  dcomplex alpha = 1.0;
+                  dcomplex alpha = factor;
                   dcomplex beta  = 1.0;
 
                   dcomplex * Lblock = LTright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR - 1, TwoSRdown, IRdown );
@@ -336,7 +336,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B3and4B4spin0Left( const int ikappa,
                   int memSkappa = in->gKappa( NL, TwoSL, IL, NR - 1, TwoSRdown, IRdown );
 
                   if ( memSkappa != -1 ) {
-                     dcomplex alpha = 1.0;
+                     dcomplex alpha = factor;
                      dcomplex beta  = 1.0;
 
                      dcomplex * Lblock = LTright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR - 1, TwoSRdown, IRdown );
@@ -364,7 +364,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B3and4B4spin0Left( const int ikappa,
                   int memSkappa = in->gKappa( NL, TwoSL, IL, NR + 1, TwoSRdown, IRdown );
 
                   if ( memSkappa != -1 ) {
-                     dcomplex alpha = 1.0;
+                     dcomplex alpha = factor;
                      dcomplex beta  = 1.0;
 
                      dcomplex * Lblock = Lright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR + 1, TwoSRdown, IRdown );
@@ -389,7 +389,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B3and4B4spin0Left( const int ikappa,
                int memSkappa = in->gKappa( NL, TwoSL, IL, NR + 1, TwoSRdown, IRdown );
 
                if ( memSkappa != -1 ) {
-                  dcomplex alpha = 1.0;
+                  dcomplex alpha = factor;
                   dcomplex beta  = 1.0;
 
                   dcomplex * Lblock = Lright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR + 1, TwoSRdown, IRdown );
@@ -438,7 +438,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B3and4B4spin1Left( const int ikappa,
                int memSkappa = in->gKappa( NL, TwoSL, IL, NR - 1, TwoSRdown, IRdown );
 
                if ( memSkappa != -1 ) {
-                  dcomplex alpha = 1.0;
+                  dcomplex alpha = factor;
                   dcomplex beta  = 1.0;
 
                   dcomplex * Lblock = LTright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR - 1, TwoSRdown, IRdown );
@@ -465,7 +465,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B3and4B4spin1Left( const int ikappa,
                   int memSkappa = in->gKappa( NL, TwoSL, IL, NR - 1, TwoSRdown, IRdown );
 
                   if ( memSkappa != -1 ) {
-                     dcomplex alpha = 1.0;
+                     dcomplex alpha = factor;
                      dcomplex beta  = 1.0;
 
                      dcomplex * Lblock = LTright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR - 1, TwoSRdown, IRdown );
@@ -494,7 +494,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B3and4B4spin1Left( const int ikappa,
                   int memSkappa = in->gKappa( NL, TwoSL, IL, NR + 1, TwoSRdown, IRdown );
 
                   if ( memSkappa != -1 ) {
-                     dcomplex alpha = 1.0;
+                     dcomplex alpha = factor;
                      dcomplex beta  = 1.0;
 
                      dcomplex * Lblock = Lright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR + 1, TwoSRdown, IRdown );
@@ -521,7 +521,7 @@ void CheMPS2::CSubSpaceExpander::addDiagram4B3and4B4spin1Left( const int ikappa,
                int memSkappa = in->gKappa( NL, TwoSL, IL, NR + 1, TwoSRdown, IRdown );
 
                if ( memSkappa != -1 ) {
-                  dcomplex alpha = 1.0;
+                  dcomplex alpha = factor;
                   dcomplex beta  = 1.0;
 
                   dcomplex * Lblock = Lright[ l_index - theindex - 1 ]->gStorage( NR, TwoSR, IR, NR + 1, TwoSRdown, IRdown );

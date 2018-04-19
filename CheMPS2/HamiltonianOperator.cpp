@@ -145,7 +145,7 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
       }
    }
    for ( int i = 0; i < numberOfSweeps; ++i ) {
-      std::cout << *bkOut << std::endl;
+      // std::cout << *bkOut << std::endl;
       for ( int site = L - 1; site > 0; site-- ) {
 
          CTensorT * fromAdded = new CTensorT( site, bkOut );
@@ -159,15 +159,12 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
             delete add;
          }
 
-         double bla           = i == 0 ? 1e-2 : 1e-5;
          SyBookkeeper * subBK = new SyBookkeeper( site, bkOut );
-
          CTensorT * expandedLeft = new CTensorT( site - 1, subBK ); expandedLeft->Clear();
          CTensorT * expandedRight = new CTensorT( site, subBK ); expandedRight->Clear();
 
          CSubSpaceExpander * expander = new CSubSpaceExpander( site, false, bkA, bkOut, subBK, prob );
-         double theNoise = 1e-5;
-         expander->Expand(&theNoise, mpsA[ site ], expandedRight,
+         expander->Expand(noise + i, mpsA[ site ], expandedRight,
                           Ltensors, LtensorsT,
                           Atensors, AtensorsT,
                           Btensors, BtensorsT,
@@ -179,7 +176,6 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                           F1tensors, F1tensorsT,
                           Qtensors, QtensorsT,
                           Xtensors, Otensors );
-
 
          CTensorT * applied = new CTensorT( mpsOut[ site ] );
          CHeffNS_1S * heff  = new CHeffNS_1S( bkOut, bkA, prob );
@@ -200,6 +196,8 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 
          expandedLeft->add( mpsOut[ site - 1 ] );
          expandedRight->add( applied );
+
+         expandedRight->add( noise[ i ] );
 
          decomposeMovingLeft( true, 10, 0,
                               expandedLeft, subBK,
@@ -275,10 +273,6 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          std::cout << overlap( mpsOut, mpsOut ) << std::endl;
       }
 
-      std::cout << *bkOut << std::endl;
-
-      // abort();
-
       for ( int site = 0; site < L - 1; site++ ) {
 
          CTensorT * fromAdded = new CTensorT( site, bkOut );
@@ -293,14 +287,14 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          }
 
          double bla           = i == 0 ? 1e-2 : 1e-5;
-         SyBookkeeper * subBK = new SyBookkeeper( site, bkOut );
+         SyBookkeeper * subBK = new SyBookkeeper( site + 1, bkOut );
 
          CTensorT * expandedLeft = new CTensorT( site, subBK ); expandedLeft->Clear();
          CTensorT * expandedRight = new CTensorT( site + 1, subBK ); expandedRight->Clear();
 
          CSubSpaceExpander * expander = new CSubSpaceExpander( site, true, bkA, bkOut, subBK, prob );
-         double theNoise = 1e-5;
-         expander->Expand(&theNoise, mpsA[ site ], expandedRight,
+
+         expander->Expand(noise + i, mpsA[ site ], expandedLeft,
                           Ltensors, LtensorsT,
                           Atensors, AtensorsT,
                           Btensors, BtensorsT,
@@ -312,7 +306,7 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                           F1tensors, F1tensorsT,
                           Qtensors, QtensorsT,
                           Xtensors, Otensors );
-         abort();
+         expandedLeft->number_operator( noise[i], noise[i] );
 
          CTensorT * applied = new CTensorT( mpsOut[ site ] );
          CHeffNS_1S * heff  = new CHeffNS_1S( bkOut, bkA, prob );
@@ -335,22 +329,13 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          expandedLeft->add( applied );
          expandedRight->add( mpsOut[ site + 1 ] );
 
-         // std::cout << *mpsOut[ site ] << std::endl;
-         // std::cout << *expandedLeft << std::endl;
-         // std::cout << *mpsOut[ site + 1 ] << std::endl;
-         // std::cout << *expandedRight << std::endl;
+         expandedLeft->add(noise[i]);
 
          decomposeMovingRight( true, 10, 0,
                               expandedLeft, subBK,
                               expandedRight, subBK,
                               mpsOut[ site ], bkOut,
                               mpsOut[ site + 1 ], bkOut );
-
-         // std::cout << *mpsOut[ site ] << std::endl;
-         // std::cout << *expandedLeft << std::endl;
-         // std::cout << *mpsOut[ site + 1 ] << std::endl;
-         // std::cout << *expandedRight << std::endl;
-         // abort();
 
          delete fromAdded;
          delete applied;
@@ -368,7 +353,6 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
             }
          }
 
-         std::cout << overlap( mpsOut, mpsOut ) << std::endl;
 
          // CTensorT * fromAdded = new CTensorT( site, bkOut );
          // fromAdded->Clear();
@@ -416,8 +400,11 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          //    }
          // }
 
+         std::cout << overlap( mpsOut, mpsOut ) << std::endl;
       }
+      std::cout << *bkOut << std::endl;
    }
+   std::cout << *bkOut << std::endl;
 
    for ( int st = 0; st < statesToAdd; st++ ) {
       for ( int cnt = 0; cnt < L - 1; cnt++ ) {
@@ -426,6 +413,7 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
       delete[] overlaps[ st ];
    }
    delete[] overlaps;
+
    // abort();
 }
 
