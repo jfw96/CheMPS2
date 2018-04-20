@@ -225,7 +225,6 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
             delete add;
          }
 
-         double bla           = i == 0 ? 1e-2 : 1e-5;
          SyBookkeeper * subBK = new SyBookkeeper( site + 1, bkOut );
 
          CTensorT * expandedLeft = new CTensorT( site, subBK );
@@ -294,7 +293,7 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 void CheMPS2::HamiltonianOperator::SSSum( int statesToAdd,
                                           dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
                                           CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                                          int numberOfSweeps ) {
+                                          int numberOfSweeps, int maxM, double cutOff, double * noise ) {
    deleteAllBoundaryOperators();
    for ( int index = 0; index < L - 1; index++ ) {
       left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
@@ -331,11 +330,29 @@ void CheMPS2::HamiltonianOperator::SSSum( int statesToAdd,
             delete add;
          }
 
-         added->zcopy( mpsOut[ site ] );
+         SyBookkeeper * subBK    = new SyBookkeeper( site, bkOut );
+         CTensorT * expandedLeft = new CTensorT( site - 1, subBK );
+         expandedLeft->Clear();
+         CTensorT * expandedRight = new CTensorT( site, subBK );
+         expandedRight->Clear();
+
+         expandedLeft->add( mpsOut[ site - 1 ] );
+         expandedRight->add( added );
+
+         if ( noise[ i ] > 0 ) {
+            expandedRight->addNoise( noise[ i ] );
+         }
+
+         decomposeMovingLeft( true, 10, cutOff,
+                              expandedLeft, subBK,
+                              expandedRight, subBK,
+                              mpsOut[ site - 1 ], bkOut,
+                              mpsOut[ site ], bkOut );
+
+         // right_normalize( mpsOut[ site - 1 ], mpsOut[ site ] );
+
+         // added->zcopy( mpsOut[ site ] );
          delete added;
-
-         right_normalize( mpsOut[ site - 1 ], mpsOut[ site ] );
-
          // Otensors
          for ( int st = 0; st < statesToAdd; st++ ) {
             overlaps[ st ][ site - 1 ] = new CTensorO( site, false, bkOut, bookkeepers[ st ] );
@@ -359,10 +376,28 @@ void CheMPS2::HamiltonianOperator::SSSum( int statesToAdd,
             delete add;
          }
 
-         added->zcopy( mpsOut[ site ] );
+         // added->zcopy( mpsOut[ site ] );
+         SyBookkeeper * subBK = new SyBookkeeper( site + 1, bkOut );
+         CTensorT * expandedLeft = new CTensorT( site, subBK );
+         expandedLeft->Clear();
+         CTensorT * expandedRight = new CTensorT( site + 1, subBK );
+         expandedRight->Clear();
+
+         expandedLeft->add( added );
+         expandedRight->add( mpsOut[ site + 1 ] );
          delete added;
 
-         left_normalize( mpsOut[ site ], mpsOut[ site + 1 ] );
+         if ( noise[ i ] > 0 ) {
+            expandedLeft->addNoise( noise[ i ] );
+         }
+
+         decomposeMovingRight( true, 10, cutOff,
+                               expandedLeft, subBK,
+                               expandedRight, subBK,
+                               mpsOut[ site ], bkOut,
+                               mpsOut[ site + 1 ], bkOut );
+
+         // left_normalize( mpsOut[ site ], mpsOut[ site + 1 ] );
 
          // Otensors
          for ( int st = 0; st < statesToAdd; st++ ) {

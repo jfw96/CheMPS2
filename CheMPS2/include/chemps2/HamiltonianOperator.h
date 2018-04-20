@@ -66,7 +66,7 @@ namespace CheMPS2 {
       void SSSum( int statesToAdd,
                   dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
                   CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                  int numberOfSweeps = 2 );
+                  int numberOfSweeps, int maxM, double cutOff, double * noise );
 
       // Double Site functions
       void DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,

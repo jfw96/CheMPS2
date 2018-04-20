@@ -1231,7 +1231,7 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
       result[ i ] = exph[ i + krylovSpaceDimension * 0 ];
    }
 
-   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisSyBookkeepers[ 0 ],
+   op->SSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisSyBookkeepers[ 0 ],
               mpsOut, bkOut,
               scheme->get_max_sweeps( currentInstruction ),
               scheme->get_D( currentInstruction ),
