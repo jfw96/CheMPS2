@@ -187,10 +187,11 @@ void CheMPS2::CTensorT::scale( dcomplex alpha ) {
    zscal_( &size, &alpha, storage, &inc1 );
 }
 
-void CheMPS2::CTensorT::add( dcomplex alpha ) {
-   for ( int i = 0; i < kappa2index[ nKappa ]; i++ ) {
-      storage[ i ] += alpha;
-   }
+void CheMPS2::CTensorT::addNoise( dcomplex NoiseLevel ) {
+   for ( int cnt = 0; cnt < kappa2index[ nKappa ]; cnt++ ) {
+      const dcomplex RN = ( ( double ) rand() ) / RAND_MAX - 0.5;
+      storage[ cnt ] += RN * NoiseLevel;
+   }   
 }
 
 void CheMPS2::CTensorT::add( CTensorT * toAdd ) {

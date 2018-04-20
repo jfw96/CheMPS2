@@ -114,7 +114,7 @@ namespace CheMPS2 {
 
       void add( CTensorT * toAdd );
 
-      void add( dcomplex alpha );
+      void addNoise( dcomplex NoiseLevel );
 
       //! Left-normalization
       /** \param Rstorage Where the R-part of the QR-decomposition can be stored (diagonal TensorOperator). */
