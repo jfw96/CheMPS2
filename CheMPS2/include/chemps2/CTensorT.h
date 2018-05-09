@@ -21,7 +21,6 @@
 #define CTENSORT_CHEMPS2_H
 
 #include "CTensor.h"
-#include "CTensorOperator.h"
 #include "SyBookkeeper.h"
 
 #include <vector>

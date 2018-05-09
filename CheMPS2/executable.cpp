@@ -32,7 +32,7 @@
 #include "Molden.h"
 #include "MPIchemps2.h"
 #include "EdmistonRuedenberg.h"
-#include "TimeTaylor.h"
+#include "TimeEvolution.h"
 #include "Irreps.h"
 
 using namespace std;
@@ -1094,7 +1094,7 @@ int main( int argc, char ** argv ){
          hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
          if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
 
-         CheMPS2::TimeTaylor * taylor = new CheMPS2::TimeTaylor( prob, opt_scheme, fileID );
+         CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
          taylor->Propagate( initBK, initMPS, time_step, time_final, time_krysize, false, time_dumpfci );
 
          if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
