@@ -597,9 +597,8 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
 // }
 
 void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
-                                     const double time_step, const double time_final,
-                                     const int kry_size, const bool doImaginary, const bool doDumpFCI ) {
-
+                                        const double time_step, const double time_final,
+                                        const int kry_size, const bool doImaginary, const bool doDumpFCI ) {
    std::cout << "\n";
    std::cout << "   Starting to propagate MPS\n";
    std::cout << "\n";

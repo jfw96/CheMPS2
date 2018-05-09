@@ -56,6 +56,7 @@ endif()
 message("-- The CMake build type is ${CMAKE_BUILD_TYPE}")
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 # <<<  Enable OpenMP  >>>
 

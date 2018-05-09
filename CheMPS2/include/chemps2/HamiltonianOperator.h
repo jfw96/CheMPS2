@@ -76,17 +76,17 @@ namespace CheMPS2 {
                           CTensorT *** states,
                           SyBookkeeper ** bookkeepers,
                           CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                          int numberOfSweeps, int maxM, double cutOff, double * noise );
+                          ConvergenceScheme * scheme );
 
       // Double Site functions
       void DSApply( CTensorT ** mpsA, SyBookkeeper * bkA,
                     CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                    int numberOfSweeps, int maxM, double cutOff, double * noise );
+                    ConvergenceScheme * scheme );
 
       void DSSum( int statesToAdd,
                   dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
                   CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                  int numberOfSweeps, int maxM, double cutOff, double * noise );
+                  ConvergenceScheme * scheme );
 
       private:
       void updateMovingLeftSafe( const int cnt, CTensorT ** mpsUp, SyBookkeeper * bkUp, CTensorT ** mpsDown, SyBookkeeper * bkDown );
