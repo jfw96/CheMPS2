@@ -1301,35 +1301,27 @@ void CheMPS2::decomposeMovingLeft( bool change, int virtualdimensionD, double cu
                }
             }
          }
-
-         // // VT-part: copy
-         // int dimRtotal2 = 0;
-         // for ( int NR = SplitSectNL[ iCenter ]; NR <= SplitSectNL[ iCenter ] + 2; NR++ ) {
-         //    const int TwoS2 = ( ( NR == SplitSectNL[ iCenter ] + 1 ) ? 1 : 0 );
-         //    for ( int TwoSR = SplitSectTwoJL[ iCenter ] - TwoS2; TwoSR <= SplitSectTwoJL[ iCenter ] + TwoS2; TwoSR += 2 ) {
-         //       if ( TwoSR >= 0 ) {
-         //          const int IR   = ( ( TwoS2 == 1 ) ? Irreps::directProd( newLeftBK->gIrrep( index ), SplitSectIL[ iCenter ] ) : SplitSectIL[ iCenter ] );
-         //          const int dimR = newRightBK->gCurrentDim( index + 1, NR, TwoSR, IR );
-         //          if ( dimR > 0 ) {
-         //             dcomplex * TrightBlock = newRight->gStorage( SplitSectNL[ iCenter ], SplitSectTwoJL[ iCenter ],
-         //                                                          SplitSectIL[ iCenter ], NR, TwoSR, IR );
-
-         //             double factor = sqrt( ( SplitSectTwoJL[ iCenter ] + 1.0 ) / ( TwoSR + 1.0 ) );
-
-         //             for ( int l = 0; l < DimMs[ iCenter ]; l++ ) {
-         //                for ( int r = 0; r < dimR; r++ ) {
-         //                   TrightBlock[ l + DimMs[ iCenter ] * r ] = factor * VTs[ iCenter ][ l + DimMs[ iCenter ] * ( r + dimRtotal2 ) ];
-         //                }
-         //             }
-         //             dimRtotal2 += dimR;
-         //          }
-         //       }
-         //    }
-         // }
       }
    }
-   // std::cout << *newRight << std::endl;
-   // assert( newRight->CheckRightNormal() );
+
+   for ( int iSector = 0; iSector < nSectors; iSector++ ) {
+      if ( DimMs[ iSector ] > 0 ) {
+         delete[] Us[ iSector ];
+         delete[] Lambdas[ iSector ];
+         delete[] VTs[ iSector ];
+      }
+   }
+
+   delete[] Lambdas;
+   delete[] Us;
+   delete[] VTs;
+
+   delete[] SplitSectNL;
+   delete[] SplitSectTwoJL;
+   delete[] SplitSectIL;
+   delete[] DimLs;
+   delete[] DimMs;
+   delete[] DimRs;
 }
 
 void CheMPS2::decomposeMovingRight( bool change, int virtualdimensionD, double cut_off,
@@ -1353,7 +1345,7 @@ void CheMPS2::decomposeMovingRight( bool change, int virtualdimensionD, double c
                int dimLtotal = 0;
                for ( int ikappa = 0; ikappa < expandedLeft->gNKappa(); ikappa++ ) {
                   if ( ( NR == expandedLeft->gNR( ikappa ) ) && ( TwoSR == expandedLeft->gTwoSR( ikappa ) ) && ( IR == expandedLeft->gIR( ikappa ) ) ) {
-                     dimLtotal += expandedLeftBK->gCurrentDim( index, expandedLeft->gNL( ikappa ), expandedLeft->gTwoSL( ikappa ), expandedRight->gIL( ikappa ) );
+                     dimLtotal += expandedLeftBK->gCurrentDim( index, expandedLeft->gNL( ikappa ), expandedLeft->gTwoSL( ikappa ), expandedLeft->gIL( ikappa ) );
                   }
                }
                if ( dimLtotal > 0 ) {
@@ -1613,5 +1605,22 @@ void CheMPS2::decomposeMovingRight( bool change, int virtualdimensionD, double c
       }
    }
 
-   // assert( newLeft->CheckLeftNormal() );
+   for ( int iSector = 0; iSector < nSectors; iSector++ ) {
+      if ( DimMs[ iSector ] > 0 ) {
+         delete[] Us[ iSector ];
+         delete[] Lambdas[ iSector ];
+         delete[] VTs[ iSector ];
+      }
+   }
+
+   delete[] Lambdas;
+   delete[] Us;
+   delete[] VTs;
+
+   delete[] SplitSectNR;
+   delete[] SplitSectTwoJR;
+   delete[] SplitSectIR;
+   delete[] DimLs;
+   delete[] DimMs;
+   delete[] DimRs;
 }

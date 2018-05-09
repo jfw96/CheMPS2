@@ -120,7 +120,7 @@ dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeepe
 void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
                                                   int statesToAdd, dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
                                                   CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                                                  int numberOfSweeps, int maxM, double cutOff, double * noise ) {
+                                                  ConvergenceScheme * scheme ) {
    deleteAllBoundaryOperators();
    for ( int index = 0; index < L - 1; index++ ) {
       left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
@@ -144,138 +144,147 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
          }
       }
    }
-   for ( int i = 0; i < numberOfSweeps; ++i ) {
-      for ( int site = L - 1; site > 0; site-- ) {
 
-         CTensorT * fromAdded = new CTensorT( site, bkOut );
-         fromAdded->Clear();
-         for ( int st = 0; st < statesToAdd; st++ ) {
-            CTensorT * add           = new CTensorT( site, bkOut );
-            CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlaps[ st ][ site - 1 ] : NULL;
-            CTensorO * rightOverlapA = ( site + 1 ) < L ? overlaps[ st ][ site ] : NULL;
-            add->Join( leftOverlapA, states[ st ][ site ], rightOverlapA );
-            add->zaxpy( factors[ st ], fromAdded );
-            delete add;
-         }
+   for ( int inst = 0; inst < scheme->get_number(); inst++ ){
+      for ( int iswe = 0; iswe < scheme->get_max_sweeps( inst ); ++iswe ) {
+         for ( int site = L - 1; site > 0; site-- ) {
 
-         SyBookkeeper * subBK    = new SyBookkeeper( site, bkOut );
-         CTensorT * expandedLeft = new CTensorT( site - 1, subBK );
-         expandedLeft->Clear();
-         CTensorT * expandedRight = new CTensorT( site, subBK );
-         expandedRight->Clear();
+            CTensorT * fromAdded = new CTensorT( site, bkOut );
+            fromAdded->Clear();
+            for ( int st = 0; st < statesToAdd; st++ ) {
+               CTensorT * add           = new CTensorT( site, bkOut );
+               CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlaps[ st ][ site - 1 ] : NULL;
+               CTensorO * rightOverlapA = ( site + 1 ) < L ? overlaps[ st ][ site ] : NULL;
+               add->Join( leftOverlapA, states[ st ][ site ], rightOverlapA );
+               add->zaxpy( factors[ st ], fromAdded );
+               delete add;
+            }
 
-         CTensorT * applied = new CTensorT( mpsOut[ site ] );
-         CHeffNS_1S * heff  = new CHeffNS_1S( bkOut, bkA, prob );
-         heff->Apply( mpsA[ site ], applied,
-                      Ltensors, LtensorsT,
-                      Atensors, AtensorsT,
-                      Btensors, BtensorsT,
-                      Ctensors, CtensorsT,
-                      Dtensors, DtensorsT,
-                      S0tensors, S0tensorsT,
-                      S1tensors, S1tensorsT,
-                      F0tensors, F0tensorsT,
-                      F1tensors, F1tensorsT,
-                      Qtensors, QtensorsT,
-                      Xtensors, Otensors );
+            SyBookkeeper * subBK    = new SyBookkeeper( site, bkOut );
+            CTensorT * expandedLeft = new CTensorT( site - 1, subBK ); expandedLeft->Clear();
+            CTensorT * expandedRight = new CTensorT( site, subBK ); expandedRight->Clear();
 
-         fromAdded->zaxpy( 1.0, applied );
+            CTensorT * applied = new CTensorT( mpsOut[ site ] );
+            CHeffNS_1S * heff  = new CHeffNS_1S( bkOut, bkA, prob );
+            heff->Apply( mpsA[ site ], applied,
+                        Ltensors, LtensorsT,
+                        Atensors, AtensorsT,
+                        Btensors, BtensorsT,
+                        Ctensors, CtensorsT,
+                        Dtensors, DtensorsT,
+                        S0tensors, S0tensorsT,
+                        S1tensors, S1tensorsT,
+                        F0tensors, F0tensorsT,
+                        F1tensors, F1tensorsT,
+                        Qtensors, QtensorsT,
+                        Xtensors, Otensors );
 
-         expandedLeft->add( mpsOut[ site - 1 ] );
-         expandedRight->add( applied );
+            fromAdded->zaxpy( 1.0, applied );
 
-         if ( noise[ i ] > 0 ) {
-            expandedRight->addNoise( noise[ i ] );
-         }
+            expandedLeft->add( mpsOut[ site - 1 ] );
+            expandedRight->add( applied );
 
-         decomposeMovingLeft( true, 10, cutOff,
-                              expandedLeft, subBK,
-                              expandedRight, subBK,
-                              mpsOut[ site - 1 ], bkOut,
-                              mpsOut[ site ], bkOut );
+            if ( scheme->get_noise_prefactor( inst ) > 0 ) {
+               expandedRight->addNoise( scheme->get_noise_prefactor( inst ) );
+            }
 
-         delete fromAdded;
-         delete applied;
-         delete heff;
+            decomposeMovingLeft( true, scheme->get_D( inst ), 
+                                 scheme->get_cut_off( inst ),
+                                 expandedLeft, subBK,
+                                 expandedRight, subBK,
+                                 mpsOut[ site - 1 ], bkOut,
+                                 mpsOut[ site ], bkOut );
 
-         updateMovingLeftSafe( site - 1, mpsOut, bkOut, mpsA, bkA );
+            delete subBK;
+            delete expandedLeft;
+            delete expandedRight;
+            delete fromAdded;
+            delete applied;
+            delete heff;
 
-         // Otensors
-         for ( int st = 0; st < statesToAdd; st++ ) {
-            if ( isAllocated[ site - 1 ] > 0 ) { delete overlaps[ st ][ site - 1 ]; }
-            overlaps[ st ][ site - 1 ] = new CTensorO( site, false, bkOut, bookkeepers[ st ] );
-            if ( site == L - 1 ) {
-               overlaps[ st ][ site - 1 ]->create( mpsOut[ site ], states[ st ][ site ] );
-            } else {
-               overlaps[ st ][ site - 1 ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site ] );
+            updateMovingLeftSafe( site - 1, mpsOut, bkOut, mpsA, bkA );
+
+            // Otensors
+            for ( int st = 0; st < statesToAdd; st++ ) {
+               if ( isAllocated[ site - 1 ] > 0 ) { delete overlaps[ st ][ site - 1 ]; }
+               overlaps[ st ][ site - 1 ] = new CTensorO( site, false, bkOut, bookkeepers[ st ] );
+               if ( site == L - 1 ) {
+                  overlaps[ st ][ site - 1 ]->create( mpsOut[ site ], states[ st ][ site ] );
+               } else {
+                  overlaps[ st ][ site - 1 ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site ] );
+               }
             }
          }
-      }
+         for ( int site = 0; site < L - 1; site++ ) {
 
-      for ( int site = 0; site < L - 1; site++ ) {
+            CTensorT * fromAdded = new CTensorT( site, bkOut );
+            fromAdded->Clear();
+            for ( int st = 0; st < statesToAdd; st++ ) {
+               CTensorT * add           = new CTensorT( site, bkOut );
+               CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlaps[ st ][ site - 1 ] : NULL;
+               CTensorO * rightOverlapA = ( site + 1 ) < L ? overlaps[ st ][ site ] : NULL;
+               add->Join( leftOverlapA, states[ st ][ site ], rightOverlapA );
+               add->zaxpy( factors[ st ], fromAdded );
+               delete add;
+            }
 
-         CTensorT * fromAdded = new CTensorT( site, bkOut );
-         fromAdded->Clear();
-         for ( int st = 0; st < statesToAdd; st++ ) {
-            CTensorT * add           = new CTensorT( site, bkOut );
-            CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlaps[ st ][ site - 1 ] : NULL;
-            CTensorO * rightOverlapA = ( site + 1 ) < L ? overlaps[ st ][ site ] : NULL;
-            add->Join( leftOverlapA, states[ st ][ site ], rightOverlapA );
-            add->zaxpy( factors[ st ], fromAdded );
-            delete add;
-         }
+            SyBookkeeper * subBK = new SyBookkeeper( site + 1, bkOut );
 
-         SyBookkeeper * subBK = new SyBookkeeper( site + 1, bkOut );
+            CTensorT * expandedLeft = new CTensorT( site, subBK );
+            expandedLeft->Clear();
+            CTensorT * expandedRight = new CTensorT( site + 1, subBK );
+            expandedRight->Clear();
 
-         CTensorT * expandedLeft = new CTensorT( site, subBK );
-         expandedLeft->Clear();
-         CTensorT * expandedRight = new CTensorT( site + 1, subBK );
-         expandedRight->Clear();
+            CTensorT * applied = new CTensorT( mpsOut[ site ] );
+            CHeffNS_1S * heff  = new CHeffNS_1S( bkOut, bkA, prob );
+            heff->Apply( mpsA[ site ], applied,
+                        Ltensors, LtensorsT,
+                        Atensors, AtensorsT,
+                        Btensors, BtensorsT,
+                        Ctensors, CtensorsT,
+                        Dtensors, DtensorsT,
+                        S0tensors, S0tensorsT,
+                        S1tensors, S1tensorsT,
+                        F0tensors, F0tensorsT,
+                        F1tensors, F1tensorsT,
+                        Qtensors, QtensorsT,
+                        Xtensors, Otensors );
 
-         CTensorT * applied = new CTensorT( mpsOut[ site ] );
-         CHeffNS_1S * heff  = new CHeffNS_1S( bkOut, bkA, prob );
-         heff->Apply( mpsA[ site ], applied,
-                      Ltensors, LtensorsT,
-                      Atensors, AtensorsT,
-                      Btensors, BtensorsT,
-                      Ctensors, CtensorsT,
-                      Dtensors, DtensorsT,
-                      S0tensors, S0tensorsT,
-                      S1tensors, S1tensorsT,
-                      F0tensors, F0tensorsT,
-                      F1tensors, F1tensorsT,
-                      Qtensors, QtensorsT,
-                      Xtensors, Otensors );
-         delete heff;
+            fromAdded->zaxpy( 1.0, applied );
 
-         fromAdded->zaxpy( 1.0, applied );
+            expandedLeft->add( applied );
+            expandedRight->add( mpsOut[ site + 1 ] );
 
-         expandedLeft->add( applied );
-         expandedRight->add( mpsOut[ site + 1 ] );
+            if ( scheme->get_noise_prefactor( inst ) > 0 ) {
+               expandedLeft->addNoise( scheme->get_noise_prefactor( inst ) );
+            }
 
-         if ( noise[ i ] > 0 ) {
-            expandedLeft->addNoise( noise[ i ] );
-         }
+            decomposeMovingRight( true, 
+                                 scheme->get_D( inst ), 
+                                 scheme->get_cut_off( inst ),
+                                 expandedLeft, subBK,
+                                 expandedRight, subBK,
+                                 mpsOut[ site ], bkOut,
+                                 mpsOut[ site + 1 ], bkOut );
 
-         decomposeMovingRight( true, 10, cutOff,
-                               expandedLeft, subBK,
-                               expandedRight, subBK,
-                               mpsOut[ site ], bkOut,
-                               mpsOut[ site + 1 ], bkOut );
+            delete subBK;
+            delete expandedLeft;
+            delete expandedRight;
+            delete fromAdded;
+            delete applied;
+            delete heff;
 
-         delete fromAdded;
-         delete applied;
+            updateMovingRightSafe( site, mpsOut, bkOut, mpsA, bkA );
 
-         updateMovingRightSafe( site, mpsOut, bkOut, mpsA, bkA );
-
-         // Otensors
-         for ( int st = 0; st < statesToAdd; st++ ) {
-            if ( isAllocated[ site ] > 0 ) { delete overlaps[ st ][ site ]; }
-            overlaps[ st ][ site ] = new CTensorO( site + 1, true, bkOut, bookkeepers[ st ] );
-            if ( site == 0 ) {
-               overlaps[ st ][ site ]->create( mpsOut[ site ], states[ st ][ site ] );
-            } else {
-               overlaps[ st ][ site ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site - 1 ] );
+            // Otensors
+            for ( int st = 0; st < statesToAdd; st++ ) {
+               if ( isAllocated[ site ] > 0 ) { delete overlaps[ st ][ site ]; }
+               overlaps[ st ][ site ] = new CTensorO( site + 1, true, bkOut, bookkeepers[ st ] );
+               if ( site == 0 ) {
+                  overlaps[ st ][ site ]->create( mpsOut[ site ], states[ st ][ site ] );
+               } else {
+                  overlaps[ st ][ site ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site - 1 ] );
+               }
             }
          }
       }
@@ -293,7 +302,7 @@ void CheMPS2::HamiltonianOperator::SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 void CheMPS2::HamiltonianOperator::SSSum( int statesToAdd,
                                           dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
                                           CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                                          int numberOfSweeps, int maxM, double cutOff, double * noise ) {
+                                          ConvergenceScheme * scheme ) {
    deleteAllBoundaryOperators();
    for ( int index = 0; index < L - 1; index++ ) {
       left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
@@ -316,96 +325,106 @@ void CheMPS2::HamiltonianOperator::SSSum( int statesToAdd,
       }
    }
 
-   for ( int i = 0; i < numberOfSweeps; ++i ) {
-      for ( int site = L - 1; site > 0; site-- ) {
+   for( int inst = 0; inst < scheme->get_number(); inst++ ){
+      for ( int iswe = 0; iswe < scheme->get_max_sweeps( inst ); ++iswe ) {
+         for ( int site = L - 1; site > 0; site-- ) {
 
-         CTensorT * added = new CTensorT( site, bkOut );
-         added->Clear();
-         for ( int st = 0; st < statesToAdd; st++ ) {
-            CTensorT * add           = new CTensorT( site, bkOut );
-            CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlaps[ st ][ site - 1 ] : NULL;
-            CTensorO * rightOverlapA = ( site + 1 ) < L ? overlaps[ st ][ site ] : NULL;
-            add->Join( leftOverlapA, states[ st ][ site ], rightOverlapA );
-            add->zaxpy( factors[ st ], added );
-            delete add;
-         }
+            CTensorT * added = new CTensorT( site, bkOut );
+            added->Clear();
+            for ( int st = 0; st < statesToAdd; st++ ) {
+               CTensorT * add           = new CTensorT( site, bkOut );
+               CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlaps[ st ][ site - 1 ] : NULL;
+               CTensorO * rightOverlapA = ( site + 1 ) < L ? overlaps[ st ][ site ] : NULL;
+               add->Join( leftOverlapA, states[ st ][ site ], rightOverlapA );
+               add->zaxpy( factors[ st ], added );
+               delete add;
+            }
 
-         SyBookkeeper * subBK    = new SyBookkeeper( site, bkOut );
-         CTensorT * expandedLeft = new CTensorT( site - 1, subBK );
-         expandedLeft->Clear();
-         CTensorT * expandedRight = new CTensorT( site, subBK );
-         expandedRight->Clear();
+            SyBookkeeper * subBK    = new SyBookkeeper( site, bkOut );
+            CTensorT * expandedLeft = new CTensorT( site - 1, subBK );
+            expandedLeft->Clear();
+            CTensorT * expandedRight = new CTensorT( site, subBK );
+            expandedRight->Clear();
 
-         expandedLeft->add( mpsOut[ site - 1 ] );
-         expandedRight->add( added );
+            expandedLeft->add( mpsOut[ site - 1 ] );
+            expandedRight->add( added );
 
-         if ( noise[ i ] > 0 ) {
-            expandedRight->addNoise( noise[ i ] );
-         }
+            if ( scheme->get_noise_prefactor( inst ) > 0 ) {
+               expandedRight->addNoise( scheme->get_noise_prefactor( inst ) );
+            }
 
-         decomposeMovingLeft( true, 10, cutOff,
-                              expandedLeft, subBK,
-                              expandedRight, subBK,
-                              mpsOut[ site - 1 ], bkOut,
-                              mpsOut[ site ], bkOut );
+            decomposeMovingLeft( true, 
+                                 scheme->get_D( inst ),
+                                 scheme->get_cut_off( inst ),
+                                 expandedLeft, subBK,
+                                 expandedRight, subBK,
+                                 mpsOut[ site - 1 ], bkOut,
+                                 mpsOut[ site ], bkOut );
 
-         // right_normalize( mpsOut[ site - 1 ], mpsOut[ site ] );
+            delete subBK;
+            delete expandedLeft;
+            delete expandedRight;
+            delete added;
 
-         // added->zcopy( mpsOut[ site ] );
-         delete added;
-         // Otensors
-         for ( int st = 0; st < statesToAdd; st++ ) {
-            overlaps[ st ][ site - 1 ] = new CTensorO( site, false, bkOut, bookkeepers[ st ] );
-            if ( site == L - 1 ) {
-               overlaps[ st ][ site - 1 ]->create( mpsOut[ site ], states[ st ][ site ] );
-            } else {
-               overlaps[ st ][ site - 1 ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site ] );
+            // Otensors
+            for ( int st = 0; st < statesToAdd; st++ ) {
+               delete overlaps[ st ][ site - 1 ];
+               overlaps[ st ][ site - 1 ] = new CTensorO( site, false, bkOut, bookkeepers[ st ] );
+               if ( site == L - 1 ) {
+                  overlaps[ st ][ site - 1 ]->create( mpsOut[ site ], states[ st ][ site ] );
+               } else {
+                  overlaps[ st ][ site - 1 ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site ] );
+               }
             }
          }
-      }
 
-      for ( int site = 0; site < L - 1; site++ ) {
-         CTensorT * added = new CTensorT( site, bkOut );
-         added->Clear();
-         for ( int st = 0; st < statesToAdd; st++ ) {
-            CTensorT * add           = new CTensorT( site, bkOut );
-            CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlaps[ st ][ site - 1 ] : NULL;
-            CTensorO * rightOverlapA = ( site + 1 ) < L ? overlaps[ st ][ site ] : NULL;
-            add->Join( leftOverlapA, states[ st ][ site ], rightOverlapA );
-            add->zaxpy( factors[ st ], added );
-            delete add;
-         }
+         for ( int site = 0; site < L - 1; site++ ) {
+            CTensorT * added = new CTensorT( site, bkOut );
+            added->Clear();
+            for ( int st = 0; st < statesToAdd; st++ ) {
+               CTensorT * add           = new CTensorT( site, bkOut );
+               CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlaps[ st ][ site - 1 ] : NULL;
+               CTensorO * rightOverlapA = ( site + 1 ) < L ? overlaps[ st ][ site ] : NULL;
+               add->Join( leftOverlapA, states[ st ][ site ], rightOverlapA );
+               add->zaxpy( factors[ st ], added );
+               delete add;
+            }
 
-         // added->zcopy( mpsOut[ site ] );
-         SyBookkeeper * subBK = new SyBookkeeper( site + 1, bkOut );
-         CTensorT * expandedLeft = new CTensorT( site, subBK );
-         expandedLeft->Clear();
-         CTensorT * expandedRight = new CTensorT( site + 1, subBK );
-         expandedRight->Clear();
+            SyBookkeeper * subBK = new SyBookkeeper( site + 1, bkOut );
+            CTensorT * expandedLeft = new CTensorT( site, subBK );
+            expandedLeft->Clear();
+            CTensorT * expandedRight = new CTensorT( site + 1, subBK );
+            expandedRight->Clear();
 
-         expandedLeft->add( added );
-         expandedRight->add( mpsOut[ site + 1 ] );
-         delete added;
+            expandedLeft->add( added );
+            expandedRight->add( mpsOut[ site + 1 ] );
 
-         if ( noise[ i ] > 0 ) {
-            expandedLeft->addNoise( noise[ i ] );
-         }
+            if ( scheme->get_noise_prefactor( inst ) > 0 ) {
+               expandedLeft->addNoise( scheme->get_noise_prefactor( inst ) );
+            }
 
-         decomposeMovingRight( true, 10, cutOff,
-                               expandedLeft, subBK,
-                               expandedRight, subBK,
-                               mpsOut[ site ], bkOut,
-                               mpsOut[ site + 1 ], bkOut );
+            decomposeMovingRight( true, 
+                                  scheme->get_D( inst ), 
+                                  scheme->get_cut_off( inst ),
+                                  expandedLeft, subBK,
+                                  expandedRight, subBK,
+                                  mpsOut[ site ], bkOut,
+                                  mpsOut[ site + 1 ], bkOut );
 
-         // left_normalize( mpsOut[ site ], mpsOut[ site + 1 ] );
+            delete subBK;
+            delete expandedLeft;
+            delete expandedRight;
+            delete added;
 
-         // Otensors
-         for ( int st = 0; st < statesToAdd; st++ ) {
-            overlaps[ st ][ site ] = new CTensorO( site + 1, true, bkOut, bookkeepers[ st ] );
-            if ( site == 0 ) {
-               overlaps[ st ][ site ]->create( mpsOut[ site ], states[ st ][ site ] );
-            } else {
-               overlaps[ st ][ site ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site - 1 ] );
+            // Otensors
+            for ( int st = 0; st < statesToAdd; st++ ) {
+               delete overlaps[ st ][ site ];
+               overlaps[ st ][ site ] = new CTensorO( site + 1, true, bkOut, bookkeepers[ st ] );
+               if ( site == 0 ) {
+                  overlaps[ st ][ site ]->create( mpsOut[ site ], states[ st ][ site ] );
+               } else {
+                  overlaps[ st ][ site ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site - 1 ] );
+               }
             }
          }
       }
@@ -417,7 +436,7 @@ void CheMPS2::HamiltonianOperator::SSSum( int statesToAdd,
       }
       delete[] overlaps[ st ];
    }
-   delete overlaps;
+   delete[] overlaps;
    deleteAllBoundaryOperators();
 }
 

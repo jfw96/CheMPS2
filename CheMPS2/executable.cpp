@@ -315,20 +315,8 @@ cout << "\n"
 "       SWEEP_DVDSON_RTOL = flt, flt, flt\n"
 "              Set the residual norm tolerance for the Davidson algorithm for the successive sweep instructions (positive floats).\n"
 "\n"
-"       SWEEP_TIME_STEP = flt, flt, flt\n"
-"              Set the time step size for the time propagation. Neccessary when TIME_EVOLU = TRUE (positive floats).\n"
-"\n"
-"       SWEEP_TIME_FINAL = flt, flt, flt\n"
-"              Set the final time to propgate to. Neccessary when TIME_EVOLU = TRUE (positive floats).\n"
-"\n"
-"       SWEEP_TIME_KRYSIZ = int, int, int\n"
-"              Set the maximum Krylov space dimension of a time propagation step. Neccessary when TIME_EVOLU = TRUE (positive integers).\n"
-"\n"
-"       SWEEP_TIME_KRYCUT = flt, flt, flt\n"
+"       SWEEP_CUTOFF = flt, flt, flt\n"
 "              Set the cut off parameter for the Krylov space generation. Neccessary when TIME_EVOLU = TRUE (positive integers).\n"
-"\n"
-"       SWEEP_TIME_MAXSWE = int, int, int\n"
-"              Set the maximum number of sweeps for the variational algorithms in the propagation algorithm. Neccessary when TIME_EVOLU = TRUE (positive integers).\n"
 "\n"
 "       NOCC = int, int, int, int\n"
 "              Set the number of occupied (external core) orbitals per irrep (psi4 irrep ordering).\n"
@@ -402,17 +390,23 @@ cout << "\n"
 "       TIME_EVOLU = bool\n"
 "              Perfrom a time evolution calculation.\n"
 "\n"
+"       TIME_STEP = flt\n"
+"              Set the time step (DT) for the time evolution calculation. Neccessary when TIME_EVOLU = TRUE (positive float).\n"
+"\n"
+"       TIME_FINAL = flt\n"
+"              Set the final time for the time evolution calculation. Neccessary when TIME_EVOLU = TRUE (positive float). \n"
+"\n"
 "       TIME_NINIT = int, int, int\n"
 "              Set the occupation numbers for the inital state. Neccessary when TIME_EVOLU = TRUE. Ordered as in the FCIDUMP file. (positive integers).\n"
+"\n"
+"       TIME_KRYSIZE = int\n"
+"              Set the maximum Krylov space dimension of a time propagation step. Neccessary when TIME_EVOLU = TRUE (positive integer).\n"
 "\n"
 "       TIME_HDF5OUTPUT = /path/to/hdf5/destination\n"
 "              Set the file path for the HDF5 output when specified (default unspecified).\n"
 "\n"
 "       TIME_DUMPFCI = bool\n"
 "              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_EVOLU = TRUE and TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
-"\n"
-"       TIME_NOISE = flt, flt, flt\n"
-"              Set the noise prefactor for optimization sweeps (Hamiltonian application and addition of MPS). Length must be smaller than number of sweeps and will be filled with zeros (default 0.0). \n"
 "\n"
 "       PRINT_CORR = bool\n"
 "              Print correlation functions (TRUE or FALSE; default FALSE).\n"
@@ -454,16 +448,12 @@ int main( int argc, char ** argv ){
    int irrep        = -1;
    int excitation   = 0;
 
-   string sweep_states      = "";
-   string sweep_econv       = "";
-   string sweep_maxit       = "";
-   string sweep_noise       = "";
-   string sweep_rtol        = "";
-   string sweep_time_step   = "";
-   string sweep_time_final  = "";
-   string sweep_time_krysiz = "";
-   string sweep_time_krycut = "";
-   string sweep_time_maxswe = "";
+   string sweep_states  = "";
+   string sweep_econv   = "";
+   string sweep_maxit   = "";
+   string sweep_noise   = "";
+   string sweep_rtol    = "";
+   string sweep_cutoff = "";
 
    string nocc = "";
    string nact = "";
@@ -493,10 +483,12 @@ int main( int argc, char ** argv ){
    bool   caspt2_cumul   = false;
 
    bool time_evolu        = false;
+   double time_step       = 0.0;
+   double time_final      = 0.0;
    string time_ninit      = "";
+   int time_krysize       = 0;
    string time_hdf5output = "";
    bool time_dumpfci      = false;
-   string time_noise      = "";
 
    bool   print_corr = false;
    string tmp_folder = "/tmp";
@@ -604,6 +596,7 @@ int main( int argc, char ** argv ){
       if ( find_double( &caspt2_ipea,  line, "CASPT2_IPEA",  true, 0.0 ) == false ){ return clean_exit( -1 ); }
       if ( find_double( &caspt2_imag,  line, "CASPT2_IMAG",  true, 0.0 ) == false ){ return clean_exit( -1 ); }
 
+
       char options1[] = { 'I', 'N', 'L', 'F' };
       char options2[] = { 'A', 'P' };
       if ( find_character( &scf_active_space, line, "SCF_ACTIVE_SPACE", options1, 4 ) == false ){ return clean_exit( -1 ); }
@@ -645,29 +638,9 @@ int main( int argc, char ** argv ){
          sweep_rtol = line.substr( pos, line.length() - pos );
       }
 
-      if ( line.find( "SWEEP_TIME_STEP" ) != string::npos ){
+      if ( line.find( "SWEEP_CUTOFF" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
-         sweep_time_step = line.substr( pos, line.length() - pos );
-      }
-
-      if ( line.find( "SWEEP_TIME_FINAL" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         sweep_time_final = line.substr( pos, line.length() - pos );
-      }
-
-      if ( line.find( "SWEEP_TIME_KRYSIZ" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         sweep_time_krysiz = line.substr( pos, line.length() - pos );
-      }
-
-      if ( line.find( "SWEEP_TIME_KRYCUT" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         sweep_time_krycut = line.substr( pos, line.length() - pos );
-      }
-
-      if ( line.find( "SWEEP_TIME_MAXSWE" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         sweep_time_maxswe = line.substr( pos, line.length() - pos );
+         sweep_cutoff = line.substr( pos, line.length() - pos );
       }
 
       if ( line.find( "NOCC" ) != string::npos ){
@@ -695,16 +668,22 @@ int main( int argc, char ** argv ){
          return clean_exit( -1 );
       }
 
+      if ( line.find( "TIME_STEP" ) != string::npos ){
+         find_double( &time_step, line, "TIME_STEP", true, 0.0 );
+      }
+
+      if ( line.find( "TIME_FINAL" ) != string::npos ){
+         find_double( &time_final, line, "TIME_FINAL", true, 0.0 );
+      }
+
       if ( line.find( "TIME_NINIT" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
          time_ninit = line.substr( pos, line.length() - pos );
       }
 
-      if ( line.find( "TIME_NOISE" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         time_noise = line.substr( pos, line.length() - pos );
+      if ( line.find( "TIME_KRYSIZE" ) != string::npos ){
+         find_integer( &time_krysize, line, "TIME_KRYSIZE", true, 1, false, -1 );
       }
-
    }
    input.close();
 
@@ -768,8 +747,8 @@ int main( int argc, char ** argv ){
       return clean_exit( -1 );
    }
 
-   if ( time_evolu && ((sweep_time_final.length() == 0) || (sweep_time_step.length() == 0) ||  (sweep_time_krysiz.length() == 0) || (sweep_time_krycut.length() == 0) ||  (sweep_time_maxswe.length() == 0) ) ){
-      if ( am_i_master ){ cerr << "SWEEP_TIME_* are mandatory options when TIME_EVOLU = TRUE !" << endl; }
+   if ( time_evolu && ( sweep_cutoff.length() == 0 ) ){
+      if ( am_i_master ){ cerr << "SWEEP_CUTOFF is a mandatory option when TIME_EVOLU = TRUE !" << endl; }
       return clean_exit( -1 );
    }   
    
@@ -781,12 +760,8 @@ int main( int argc, char ** argv ){
 
    bool num_eq  = (( ni_d == ni_econv ) && ( ni_d == ni_maxit ) && ( ni_d == ni_noise ) && ( ni_d == ni_rtol ));
    if ( time_evolu ){
-      const int ni_step   = count( sweep_time_step.begin(),      sweep_time_step.end(),     ',' ) + 1;
-      const int ni_final  = count( sweep_time_final.begin(),     sweep_time_final.end(),    ',' ) + 1;
-      const int ni_krysiz  = count( sweep_time_krysiz.begin(),   sweep_time_krysiz.end(),   ',' ) + 1;
-      const int ni_krycut  = count( sweep_time_krycut.begin(),   sweep_time_krycut.end(),   ',' ) + 1;
-      const int ni_maxswe  = count( sweep_time_maxswe.begin(),   sweep_time_maxswe.end(),   ',' ) + 1;
-      num_eq = num_eq && ( ni_d == ni_step ) && ( ni_d == ni_final ) && ( ni_d == ni_krysiz ) && ( ni_d == ni_krycut ) && ( ni_d == ni_maxswe );
+      const int ni_cutoff = count( sweep_cutoff.begin(), sweep_cutoff.end(), ',' ) + 1;
+      num_eq = num_eq && ( ni_d == ni_cutoff );
    }
 
    if ( num_eq == false ){
@@ -800,17 +775,9 @@ int main( int argc, char ** argv ){
    double * value_noise      = new double[ ni_d ]; fetch_doubles( sweep_noise,  value_noise,  ni_d );
    double * value_rtol       = new double[ ni_d ]; fetch_doubles( sweep_rtol,   value_rtol,   ni_d );
 
-   double * value_time_step   = new double[ ni_d ];
-   double * value_time_final  = new double[ ni_d ];
-   int * value_time_krysiz    = new int[ ni_d ];
-   double * value_time_krycut = new double[ ni_d ];
-   int * value_time_maxswe    = new int[ ni_d ];
+   double * value_cutoff     = new double[ ni_d ];
    if ( time_evolu ){
-      fetch_doubles( sweep_time_step,     value_time_step,     ni_d );
-      fetch_doubles( sweep_time_final,    value_time_final,    ni_d );
-         fetch_ints( sweep_time_krysiz,   value_time_krysiz,   ni_d );
-      fetch_doubles( sweep_time_krycut,   value_time_krycut,   ni_d );
-         fetch_ints( sweep_time_maxswe,   value_time_maxswe,   ni_d );
+      fetch_doubles( sweep_cutoff,     value_cutoff,     ni_d );
    }
    /*****************************************
    *  Check the active space specification  *
@@ -880,6 +847,16 @@ int main( int argc, char ** argv ){
 
    if ( time_evolu ){
       
+      if ( time_step <= 0 ){
+         if ( am_i_master ){ cerr << "TIME_STEP should be greater than zero !" << endl; }
+         return clean_exit( -1 );
+      }
+
+      if ( time_final <= 0 ){
+         if ( am_i_master ){ cerr << "TIME_FINAL should be greater than zero !" << endl; }
+         return clean_exit( -1 );
+      }
+
       time_ninit_parsed = new int[ n_orbs ];
 
       if ( time_ninit.length() == 0 ){
@@ -910,22 +887,9 @@ int main( int argc, char ** argv ){
          return clean_exit( - 1 );
       }
 
-      if ( ni_d > 1 ){
-         if ( am_i_master ) { cerr << "TIME_NOISE not implemented if number of instructions > 0!" << endl; }
-         return clean_exit( - 1 );
-      }
-
-      time_noise_parsed = new double[ sweep_time_maxswe[ 0 ] ];
-      if ( time_noise.length() > 0 ){
-         const int n_noi  = count( time_noise.begin(), time_noise.end(), ',' ) + 1;
-         fetch_doubles( time_noise, time_noise_parsed, n_noi );
-         for( int idx = n_noi; idx < sweep_time_maxswe[ 0 ]; idx++ ){
-            time_noise_parsed[ idx ] = 0.0;
-         }
-      } else {
-         for( int idx = 0; idx < sweep_time_maxswe[ 0 ]; idx++ ){
-            time_noise_parsed[ idx ] = 0.0;
-         }
+      if ( time_krysize <= 0 ){
+         if ( am_i_master ){ cerr << "TIME_KRYSIZE should be greater than zero !" << endl; }
+         return clean_exit( -1 );
       }
    }
 
@@ -947,11 +911,7 @@ int main( int argc, char ** argv ){
       cout << "   SWEEP_NOISE_PREFAC = [ " << value_noise [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_noise [ cnt ]; } cout << " ]" << endl;
       cout << "   SWEEP_DVDSON_RTOL  = [ " << value_rtol  [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_rtol  [ cnt ]; } cout << " ]" << endl;
       if ( time_evolu ){
-         cout << "   SWEEP_TIME_STEP    = [ " << value_time_step    [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_time_step   [ cnt ]; } cout << " ]" << endl;
-         cout << "   SWEEP_TIME_FINAL   = [ " << value_time_final   [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_time_final  [ cnt ]; } cout << " ]" << endl;
-         cout << "   SWEEP_TIME_KRYSIZ  = [ " << value_time_krysiz  [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_time_krysiz [ cnt ]; } cout << " ]" << endl;
-         cout << "   SWEEP_TIME_KRYCUT  = [ " << value_time_krycut  [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_time_krycut [ cnt ]; } cout << " ]" << endl;
-         cout << "   SWEEP_TIME_MAXSWE  = [ " << value_time_maxswe  [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_time_maxswe [ cnt ]; } cout << " ]" << endl;
+         cout << "   SWEEP_CUTOFF       = [ " << value_cutoff[ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_cutoff[ cnt ]; } cout << " ]" << endl;
       }
       
       cout << "   NOCC               = [ " << nocc_parsed[ 0 ]; for ( int cnt = 1; cnt < num_irreps; cnt++ ){ cout << " ; " << nocc_parsed[ cnt ]; } cout << " ]" << endl;
@@ -987,10 +947,12 @@ int main( int argc, char ** argv ){
       }
       cout << "   TIME_EVOLU         = " << (( time_evolu        ) ? "TRUE" : "FALSE" ) << endl;
       if ( time_evolu ){
+         cout << "   TIME_STEP          = " << time_step     << endl;
+         cout << "   TIME_FINAL         = " << time_final    << endl;
          cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < n_orbs; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
+         cout << "   TIME_KRYSIZE       = " << time_krysize    << endl;
          cout << "   TIME_HDF5OUTPUT    = " << time_hdf5output << endl;
          cout << "   TIME_DUMPFCI       = " << (( time_dumpfci    ) ? "TRUE" : "FALSE" ) << endl;
-         cout << "   TIME_NOISE         = [ " << time_noise_parsed[ 0 ]; for ( int cnt = 1; cnt < sweep_time_maxswe[ 0 ]; cnt++ ){ cout << " ; " << time_noise_parsed[ cnt ]; } cout << " ]" << endl;
       }
       cout << "   PRINT_CORR         = " << (( print_corr     ) ? "TRUE" : "FALSE" ) << endl;
       cout << "   TMP_FOLDER         = " << tmp_folder << endl;
@@ -1014,24 +976,19 @@ int main( int argc, char ** argv ){
 
       } else {
          opt_scheme->set_instruction( count, value_states[ count ],
-                                             value_time_step[ count ],
-                                             value_time_final[ count ],
-                                             value_time_krysiz[ count ],
-                                             value_time_krycut[ count ],
-                                             value_time_maxswe[ count ],
-                                             time_noise_parsed);
+                                             value_cutoff[ count ],
+                                             value_econv [ count ],
+                                             value_maxit [ count ],
+                                             value_noise [ count ],
+                                             value_rtol  [ count ]);
       }
    }
    delete [] value_states;
+   delete [] value_cutoff;
    delete [] value_econv;
    delete [] value_maxit;
    delete [] value_noise;
    delete [] value_rtol;
-   delete [] value_time_step;
-   delete [] value_time_final;
-   delete [] value_time_krysiz;
-   delete [] value_time_krycut;
-   delete [] value_time_maxswe;
 
    if ( full_active_space_calculation || time_evolu ){
 
@@ -1138,7 +1095,7 @@ int main( int argc, char ** argv ){
          if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
 
          CheMPS2::TimeTaylor * taylor = new CheMPS2::TimeTaylor( prob, opt_scheme, fileID );
-         taylor->Propagate( initBK, initMPS, false, time_dumpfci );
+         taylor->Propagate( initBK, initMPS, time_step, time_final, time_krysize, false, time_dumpfci );
 
          if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
 

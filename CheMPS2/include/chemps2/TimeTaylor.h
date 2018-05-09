@@ -32,7 +32,9 @@ namespace CheMPS2 {
 
       ~TimeTaylor();
 
-      void Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary = false, const bool doDumpFCI = false );
+      void Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, 
+                      const double time_step, const double time_final, 
+                      const int kry_size, const bool doImaginary = false, const bool doDumpFCI = false );
 
       void fitApplyH( dcomplex factor, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut, const int nSweeps = 5, const int D = 100, const double cut_off = 1e-10 );
 
@@ -124,7 +126,7 @@ namespace CheMPS2 {
       void doStep_taylor_1site( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
       void doStep_rk_4( const int currentInstruction, const bool doImaginary, const double offset );
       void doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
-      int doStep_arnoldi( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
+      void doStep_arnoldi( const double time_step, const double time_final, const int kry_size, const bool doImaginary, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
    };
 } // namespace CheMPS2
 

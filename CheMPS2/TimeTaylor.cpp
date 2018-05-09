@@ -1121,11 +1121,11 @@ void CheMPS2::TimeTaylor::doStep_rk_4( const int currentInstruction, const bool 
    abort();
 }
 
-int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+void CheMPS2::TimeTaylor::doStep_arnoldi( const double time_step, const double time_final, const int kry_size, const bool doImaginary, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
-   int krylovSpaceDimension = scheme->get_krylov_dimension( currentInstruction );
+   int krylovSpaceDimension = kry_size;
 
-   dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * scheme->get_time_step( currentInstruction ) );
+   dcomplex step = doImaginary ? -time_step : dcomplex( 0.0, -1.0 * time_step );
 
    HamiltonianOperator * op = new HamiltonianOperator( prob );
 
@@ -1162,10 +1162,7 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
       op->SSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
                          kry, coefs, states, bookkeepers,
                          mpsTemp, bkTemp,
-                         scheme->get_max_sweeps( currentInstruction ),
-                         scheme->get_D( currentInstruction ),
-                         scheme->get_cut_off( currentInstruction ),
-                         scheme->get_noise_prefactors( currentInstruction ) );
+                         scheme );
 
       delete[] coefs;
       delete[] states;
@@ -1233,10 +1230,7 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
 
    op->SSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisSyBookkeepers[ 0 ],
               mpsOut, bkOut,
-              scheme->get_max_sweeps( currentInstruction ),
-              scheme->get_D( currentInstruction ),
-              scheme->get_cut_off( currentInstruction ),
-              scheme->get_noise_prefactors( currentInstruction ) );
+              scheme );
 
    delete[] result;
    delete[] wsp;
@@ -1259,7 +1253,6 @@ int CheMPS2::TimeTaylor::doStep_arnoldi( const int currentInstruction, const boo
    delete[] krylovBasisSyBookkeepers;
 
    delete op;
-   return krylovSpaceDimension;
 }
 
 void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
@@ -1581,23 +1574,23 @@ void CheMPS2::TimeTaylor::doStep_krylov( const int currentInstruction, const boo
 
 void CheMPS2::TimeTaylor::doStep_euler_g( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
-   CheMPS2::SyBookkeeper * denHPsi = new CheMPS2::SyBookkeeper( prob, scheme->get_D( currentInstruction ) );
-   CheMPS2::CTensorT ** HPsi       = new CheMPS2::CTensorT *[ prob->gL() ];
-   for ( int index = 0; index < prob->gL(); index++ ) {
-      HPsi[ index ] = new CheMPS2::CTensorT( index, denHPsi );
-      HPsi[ index ]->random();
-   }
-   dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
+   // CheMPS2::SyBookkeeper * denHPsi = new CheMPS2::SyBookkeeper( prob, scheme->get_D( currentInstruction ) );
+   // CheMPS2::CTensorT ** HPsi       = new CheMPS2::CTensorT *[ prob->gL() ];
+   // for ( int index = 0; index < prob->gL(); index++ ) {
+   //    HPsi[ index ] = new CheMPS2::CTensorT( index, denHPsi );
+   //    HPsi[ index ]->random();
+   // }
+   // dcomplex step = doImaginary ? -scheme->get_time_step( currentInstruction ) : dcomplex( 0.0, -1.0 * -scheme->get_time_step( currentInstruction ) );
 
-   // fitApplyH( step, offset, mpsIn, bkIn, HPsi, denHPsi );
-   fitApplyH_1site( mpsIn, bkIn, HPsi, denHPsi, 5 );
-   // fitAddMPS( step, mpsIn, bkIn, HPsi, denHPsi, mpsOut, bkOut );
+   // // fitApplyH( step, offset, mpsIn, bkIn, HPsi, denHPsi );
+   // fitApplyH_1site( mpsIn, bkIn, HPsi, denHPsi, 5 );
+   // // fitAddMPS( step, mpsIn, bkIn, HPsi, denHPsi, mpsOut, bkOut );
 
-   for ( int idx = 0; idx < prob->gL(); idx++ ) {
-      delete HPsi[ idx ];
-   }
-   delete[] HPsi;
-   delete denHPsi;
+   // for ( int idx = 0; idx < prob->gL(); idx++ ) {
+   //    delete HPsi[ idx ];
+   // }
+   // delete[] HPsi;
+   // delete denHPsi;
 }
 
 void CheMPS2::TimeTaylor::doStep_taylor_1site( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
@@ -1751,7 +1744,9 @@ void CheMPS2::TimeTaylor::doStep_taylor_1( const int currentInstruction, const b
    // }
 }
 
-void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, const bool doImaginary, const bool doDumpFCI ) {
+void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS, 
+                                     const double time_step, const double time_final, 
+                                     const int kry_size, const bool doImaginary, const bool doDumpFCI ) {
 
    std::cout << "\n";
    std::cout << "   Starting to propagate MPS\n";
@@ -1768,32 +1763,9 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
       MPS[ index ] = new CTensorT( initMPS[ index ] );
    }
 
-   double t                 = 0.0;
    double firstEnergy       = 0;
-   int krylovSpaceDimension = 0;
-
-   for ( int inst = 0; inst < scheme->get_number(); inst++ ) {
-
-      std::cout << "\n";
-      std::cout << "   NEW INSTRUCTION " << inst << "\n";
-      std::cout << "\n";
-
-      std::cout << "   inital matrix product state dimensions for new states of instruction:\n";
-      std::cout << "   ";
-      for ( int i = 0; i < L + 1; i++ ) {
-         std::cout << std::setw( 5 ) << i;
-      }
-      std::cout << "\n";
-      std::cout << "   ";
-      SyBookkeeper * dummyBK = new SyBookkeeper( prob, scheme->get_D( inst ) );
-      for ( int i = 0; i < L + 1; i++ ) {
-         std::cout << std::setw( 5 ) << dummyBK->gTotDimAtBound( i );
-      }
-      std::cout << "\n";
-      delete dummyBK;
-      std::cout << "\n";
-
-      for ( ; t < scheme->get_max_time( inst ); t += scheme->get_time_step( inst ) ) {
+   
+   for ( double t = 0.0 ; t < time_final; t += time_step ) {
          char dataPointname[ 1024 ];
          sprintf( dataPointname, "/Output/DataPoint%.5f", t );
          hid_t dataPointID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
@@ -1803,16 +1775,16 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          std::cout << "   t = " << t << "\n";
          HDF5_MAKE_DATASET( dataPointID, "t", 1, &dimarray1, H5T_NATIVE_DOUBLE, &t );
 
-         double Tmax = scheme->get_max_time( inst );
+         double Tmax = time_final;
          std::cout << "   Tmax = " << Tmax << "\n";
          HDF5_MAKE_DATASET( dataPointID, "Tmax", 1, &dimarray1, H5T_NATIVE_DOUBLE, &Tmax );
 
-         double dt = scheme->get_time_step( inst );
+         double dt = time_step;
          std::cout << "   dt = " << dt << "\n";
          HDF5_MAKE_DATASET( dataPointID, "dt", 1, &dimarray1, H5T_NATIVE_DOUBLE, &dt );
 
-         std::cout << "   KryS = " << krylovSpaceDimension << "\n";
-         HDF5_MAKE_DATASET( dataPointID, "KryS", 1, &dimarray1, H5T_STD_I32LE, &krylovSpaceDimension );
+         std::cout << "   KryS = " << kry_size << "\n";
+         HDF5_MAKE_DATASET( dataPointID, "KryS", 1, &dimarray1, H5T_STD_I32LE, &kry_size );
 
          std::cout << "\n";
 
@@ -1835,24 +1807,37 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
 
          std::cout << "\n";
 
-         int MaxM = scheme->get_D( inst );
-         std::cout << "   MaxM = " << MaxM << "\n";
-         HDF5_MAKE_DATASET( dataPointID, "MaxM", 1, &dimarray1, H5T_STD_I32LE, &MaxM );
-
-         double CutO = scheme->get_cut_off( inst );
-         std::cout << "   CutO = " << CutO << "\n";
-         HDF5_MAKE_DATASET( dataPointID, "CutO", 1, &dimarray1, H5T_NATIVE_DOUBLE, &CutO );
-
-         int NSwe = scheme->get_max_sweeps( inst );
-         std::cout << "   NSwe = " << NSwe << "\n";
-         HDF5_MAKE_DATASET( dataPointID, "NSwe", 1, &dimarray1, H5T_STD_I32LE, &NSwe );
-
-         double* noise = scheme->get_noise_prefactors( inst );
-         hsize_t noisSize = NSwe;
-         std::cout << "   Nois = ";
-         for ( int idx = 0; idx < NSwe; idx++ ) { std::cout << noise[ idx ] << " "; }
+         std::cout << "   MaxM = ";
+         hsize_t numInst = scheme->get_number();
+         int* MaxMs = new int[ numInst ];
+         for( int inst = 0; inst < numInst; inst++ ){
+            MaxMs[ inst ] = scheme->get_D( inst );
+            std::cout << MaxMs[ inst ] << " ";
+         }
          std::cout << "\n";
-         HDF5_MAKE_DATASET( dataPointID, "Noise", 1, &noisSize, H5T_NATIVE_DOUBLE, noise );
+         HDF5_MAKE_DATASET( dataPointID, "MaxMs", 1, &numInst, H5T_STD_I32LE, MaxMs );
+         delete[] MaxMs;
+
+         std::cout << "   CutO = ";
+         int* CutOs = new int[ numInst ];
+         for( int inst = 0; inst < numInst; inst++ ){
+            CutOs[ inst ] = scheme->get_cut_off( inst );
+            std::cout << CutOs[ inst ] << " ";
+         }
+         std::cout << "\n";
+         HDF5_MAKE_DATASET( dataPointID, "CutOs", 1, &numInst, H5T_STD_I32LE, CutOs );
+         delete[] CutOs;
+
+
+         std::cout << "   NSwes = ";
+         int* NSwes = new int[ numInst ];
+         for( int inst = 0; inst < numInst; inst++ ){
+            NSwes[ inst ] = scheme->get_max_sweeps( inst );
+            std::cout << NSwes[ inst ] << " ";
+         }
+         std::cout << "\n";
+         HDF5_MAKE_DATASET( dataPointID, "NSwes", 1, &numInst, H5T_STD_I32LE, NSwes );
+         delete[] NSwes;
 
          std::cout << "\n";
 
@@ -1914,7 +1899,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          }
          std::cout << "\n";
 
-         if ( t + scheme->get_time_step( inst ) < scheme->get_max_time( inst ) ) {
+         if ( t + time_step < time_final ) {
             SyBookkeeper * MPSBKDT = new SyBookkeeper( *MPSBK );
             CTensorT ** MPSDT      = new CTensorT *[ L ];
             for ( int index = 0; index < L; index++ ) {
@@ -1922,7 +1907,7 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
                MPSDT[ index ]->random();
             }
 
-            krylovSpaceDimension = doStep_arnoldi( inst, doImaginary, firstEnergy, MPS, MPSBK, MPSDT, MPSBKDT );
+            doStep_arnoldi( time_step, time_final, kry_size, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
 
             for ( int site = 0; site < L; site++ ) {
                delete MPS[ site ];
@@ -1940,7 +1925,6 @@ void CheMPS2::TimeTaylor::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
          }
 
          std::cout << hashline;
-      }
    }
 
    for ( int site = 0; site < L; site++ ) {

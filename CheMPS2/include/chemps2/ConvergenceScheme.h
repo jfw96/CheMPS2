@@ -69,7 +69,7 @@ namespace CheMPS2 {
              \param max_time the max. time to use this scheme to
              \param noise_prefactor the noise prefactor for that instruction
              \param davidson_rtol the Davidson residual tolerance for that instruction */
-      void set_instruction( const int instruction, const int D, const double time_step, const double max_time, const int krylov_dimension, const double cut_off, const int max_sweeps, double* noise_prefactors );
+      void set_instruction( const int instruction, const int D, const double cut_off, const double energy_conv, const int max_sweeps, const double noise_prefactor, const double davidson_rtol );
 
       //! Set an instruction
       /** \param instruction the number of the instruction
@@ -86,30 +86,15 @@ namespace CheMPS2 {
              \return the number of renormalized states for this instruction */
       int get_D( const int instruction ) const;
 
-      //! Get the maximum time to use this scheme to
+      //! Get the energy convergence threshold for a particular instruction
       /** \param instruction the number of the instruction
-             \return the maximum time for this instruction */
-      double get_time_step( const int instruction ) const;
-
-      //! Get the maximum time to use this scheme to
-      /** \param instruction the number of the instruction
-             \return the maximum time for this instruction */
-      double get_max_time( const int instruction ) const;
-
-      //! Get the maximum time to use this scheme to
-      /** \param instruction the number of the instruction
-             \return the maximum time for this instruction */
-      int get_krylov_dimension( const int instruction ) const;
+          \return the energy convergence threshold for this instruction */
+      double get_cut_off( const int instruction ) const;
 
       //! Get the energy convergence threshold for a particular instruction
       /** \param instruction the number of the instruction
              \return the energy convergence threshold for this instruction */
       double get_energy_conv( const int instruction ) const;
-
-      //! Get the energy convergence threshold for a particular instruction
-      /** \param instruction the number of the instruction
-          \return the energy convergence threshold for this instruction */
-      double get_cut_off( const int instruction ) const;
 
       //! Get the maximum number of sweeps for a particular instruction
       /** \param instruction the number of the instruction
@@ -120,11 +105,6 @@ namespace CheMPS2 {
       /** \param instruction the number of the instruction
              \return the noise prefactor for this instruction */
       double get_noise_prefactor( const int instruction ) const;
-
-      //! Get the noise prefactor for a particular instruction
-      /** \param instruction the number of the instruction
-             \return the noise prefactor for this instruction */
-      double * get_noise_prefactors( const int instruction ) const;
 
       //! Get the Davidson residual tolerance for a particular instruction
       /** \param instruction the number of the instruction
@@ -139,28 +119,16 @@ namespace CheMPS2 {
       int * num_D;
 
       //Energy convergence thresholds
-      double * energy_convergence;
+      double * cut_offs;
 
       //Energy convergence thresholds
-      double * cut_offs;
+      double * energy_convergence;
 
       //Maximum number of sweeps per instruction
       int * num_max_sweeps;
 
-      //Maximum number of sweeps per instruction
-      double * time_steps;
-
-      //Maximum number of sweeps per instruction
-      double * max_times;
-
-      //Maximum number of sweeps per instruction
-      double * krylov_dimensions;
-
       //The noise prefactor for each instruction
       double * noise_prefac;
-
-      //The noise prefactor for time sweeps
-      double ** noise_prefacs;
 
       //The Davidson residual tolerance for each instruction
       double * dvdson_rtol;

@@ -35,6 +35,7 @@
 #include "CTensorT.h"
 #include "CTensorX.h"
 #include "Problem.h"
+#include "ConvergenceScheme.h"
 
 namespace CheMPS2 {
    /** HamiltonianOperator class.
@@ -61,12 +62,12 @@ namespace CheMPS2 {
       void SSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
                           int statesToAdd, dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
                           CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                          int numberOfSweeps, int maxM, double cutOff, double * noise );
+                          ConvergenceScheme * scheme );
 
       void SSSum( int statesToAdd,
                   dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
                   CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                  int numberOfSweeps, int maxM, double cutOff, double * noise );
+                  ConvergenceScheme * scheme );
 
       // Double Site functions
       void DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
