@@ -165,7 +165,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
    overlaps[ 0 + 0 * krylovSpaceDimension ]          = overlap( krylovBasisVectors[ 0 ], krylovBasisVectors[ 0 ] );
 
    for ( int kry = 1; kry < krylovSpaceDimension; kry++ ) {
-      SyBookkeeper * bkTemp = new SyBookkeeper( *krylovBasisSyBookkeepers[ kry - 1 ] );
+      SyBookkeeper * bkTemp = new SyBookkeeper( prob, scheme->get_D( 0 ) );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
       for ( int index = 0; index < L; index++ ) {
          mpsTemp[ index ] = new CTensorT( index, bkTemp );
@@ -750,7 +750,7 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
       std::cout << "\n";
 
       if ( t + time_step < time_final ) {
-         SyBookkeeper * MPSBKDT = new SyBookkeeper( *MPSBK );
+         SyBookkeeper * MPSBKDT = new SyBookkeeper( prob, scheme->get_D( 0 ) );
          CTensorT ** MPSDT      = new CTensorT *[ L ];
          for ( int index = 0; index < L; index++ ) {
             MPSDT[ index ] = new CTensorT( index, MPSBKDT );
