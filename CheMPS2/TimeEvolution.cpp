@@ -182,7 +182,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
          bookkeepers[ i ] = krylovBasisSyBookkeepers[ i ];
       }
 
-      op->SSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
+      op->DSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
                          kry, coefs, states, bookkeepers,
                          mpsTemp, bkTemp,
                          scheme );
@@ -252,7 +252,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
       result[ i ] = exph[ i + krylovSpaceDimension * 0 ];
    }
 
-   op->SSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisSyBookkeepers[ 0 ],
+   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisSyBookkeepers[ 0 ],
               mpsOut, bkOut,
               scheme );
 

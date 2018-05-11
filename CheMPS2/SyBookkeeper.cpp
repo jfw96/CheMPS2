@@ -262,6 +262,16 @@ void CheMPS2::SyBookkeeper::SetDim( const int boundary, const int N, const int T
    }
 }
 
+void CheMPS2::SyBookkeeper::allToZeroAtLink( const int index ){
+   for ( int N = gNmin( index ); N <= gNmax( index ); N++ ) {
+      for ( int TwoS = gTwoSmin( index, N ); TwoS <= gTwoSmax( index, N ); TwoS += 2 ) {
+         for ( int irrep = 0; irrep < num_irreps; irrep++ ) {
+            SetDim( index, N, TwoS, irrep, 0 );
+         }
+      }
+   }
+}
+
 void CheMPS2::SyBookkeeper::fillFCIdim() {
 
    // On the left-hand side only the trivial symmetry sector is allowed

@@ -206,14 +206,14 @@ namespace CheMPS2 {
    void right_normalize( CTensorT * left_mps, CTensorT * right_mps );
 
    void decomposeMovingLeft( bool change, int virtualdimensionD, double cut_off,
-                             CTensorT * expandedLeft, SyBookkeeper * expandedLeftBK,
-                             CTensorT * expandedRight, SyBookkeeper * expandedRightBK,
+                             CTensorT * oldLeft, SyBookkeeper * oldLeftBK,
+                             CTensorT * oldRight, SyBookkeeper * oldRightBK,
                              CTensorT * newLeft, SyBookkeeper * newLeftBK,
                              CTensorT * newRight, SyBookkeeper * newRightBK );
 
    void decomposeMovingRight( bool change, int virtualdimensionD, double cut_off,
-                              CTensorT * expandedLeft, SyBookkeeper * expandedLeftBK,
-                              CTensorT * expandedRight, SyBookkeeper * expandedRightBK,
+                              CTensorT * oldLeft, SyBookkeeper * oldLeftBK,
+                              CTensorT * oldRight, SyBookkeeper * oldRightBK,
                               CTensorT * newLeft, SyBookkeeper * newLeftBK,
                               CTensorT * newRight, SyBookkeeper * newRightBK );
 } // namespace CheMPS2

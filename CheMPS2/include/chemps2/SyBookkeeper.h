@@ -155,6 +155,8 @@ namespace CheMPS2 {
              \param virtual_dim The total virtual dimension to rescale the newly created symmetry sectors */
       void restart( const int start, const int stop, const int virtual_dim );
 
+      void allToZeroAtLink( const int index );
+
       private:
       // Pointer to the Problem --> constructed and destructed outside of this class
       const Problem * Prob;
