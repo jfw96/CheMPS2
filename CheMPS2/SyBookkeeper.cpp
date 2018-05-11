@@ -19,8 +19,8 @@
 
 #include <algorithm>
 #include <assert.h>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <math.h>
 #include <stdlib.h>
 
@@ -158,7 +158,7 @@ CheMPS2::SyBookkeeper::SyBookkeeper( const Problem * Prob, const int * occupatio
    assert( IsPossible() );
 }
 
-CheMPS2::SyBookkeeper::SyBookkeeper( const int site, SyBookkeeper * orig ){
+CheMPS2::SyBookkeeper::SyBookkeeper( const int site, SyBookkeeper * orig ) {
 
    this->Prob = orig->gProb();
    Irreps temp( Prob->gSy() );
@@ -175,10 +175,14 @@ CheMPS2::SyBookkeeper::SyBookkeeper( const int site, SyBookkeeper * orig ){
       for ( int N = gNmin( boundary ); N <= gNmax( boundary ); N++ ) {
          for ( int TwoS = gTwoSmin( boundary, N ); TwoS <= gTwoSmax( boundary, N ); TwoS += 2 ) {
             for ( int irrep = 0; irrep < num_irreps; irrep++ ) {
-               if ( boundary != site ){
+               if ( boundary != site ) {
                   CURdim[ boundary ][ N - gNmin( boundary ) ][ ( TwoS - gTwoSmin( boundary, N ) ) / 2 ][ irrep ] = orig->gCurrentDim( boundary, N, TwoS, irrep );
                } else {
-                  CURdim[ boundary ][ N - gNmin( boundary ) ][ ( TwoS - gTwoSmin( boundary, N ) ) / 2 ][ irrep ] = orig->gFCIdim( boundary, N, TwoS, irrep );                  
+                  if ( orig->gCurrentDim( boundary, N, TwoS, irrep ) > 0 ) {
+                     CURdim[ boundary ][ N - gNmin( boundary ) ][ ( TwoS - gTwoSmin( boundary, N ) ) / 2 ][ irrep ] = orig->gCurrentDim( boundary, N, TwoS, irrep );
+                  } else {
+                     CURdim[ boundary ][ N - gNmin( boundary ) ][ ( TwoS - gTwoSmin( boundary, N ) ) / 2 ][ irrep ] = orig->gFCIdim( boundary, N, TwoS, irrep );
+                  }
                }
             }
          }
@@ -440,7 +444,7 @@ std::ostream & CheMPS2::operator<<( std::ostream & os, const CheMPS2::SyBookkeep
    std::cout << "\n";
    std::cout << "   ";
    for ( int i = 0; i < bk.gL() + 1; i++ ) {
-      std::cout << std::setw( 10 ) <<  bk.gTotDimAtBound( i );
+      std::cout << std::setw( 10 ) << bk.gTotDimAtBound( i );
    }
    return os;
 }

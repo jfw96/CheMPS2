@@ -221,8 +221,8 @@ void CheMPS2::CTensorT::add( CTensorT * toAdd ) {
          int dimRNON = toAdd->gBK()->gCurrentDim( index + 1, NR, TwoSR, IR );
 
          // If nonExpanded has the block it has to have the same size
-         // assert( dimLEXP == dimLNON );
-         // assert( dimREXP == dimRNON );
+         assert( dimLEXP == dimLNON );
+         assert( dimREXP == dimRNON );
 
          int dim      = dimLEXP * dimREXP;
          int inc      = 1;
