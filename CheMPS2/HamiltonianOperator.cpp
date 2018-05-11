@@ -530,7 +530,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                }
             }
          }
-
+         std::cout <<  norm( mpsOut ) << std::endl;
          for ( int site = 0; site < L - 2; site++ ) {
             CSobject * fromAdded = new CSobject( site, bkOut );
             fromAdded->Clear();
@@ -583,6 +583,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                   overlaps[ st ][ site ]->update_ownmem( mpsOut[ site ], states[ st ][ site ], overlaps[ st ][ site - 1 ] );
                }
             }
+            std::cout << norm( mpsOut ) << std::endl;            
          }
       }
    }
@@ -595,6 +596,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
       delete[] overlaps[ st ];
    }
    delete[] overlaps;
+         std::cout <<  norm( mpsOut ) << std::endl;   
 }
 
 void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
