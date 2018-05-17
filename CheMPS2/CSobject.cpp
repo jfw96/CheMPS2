@@ -663,7 +663,7 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
          zgesdd_( &jobz, DimLtotal + iCenter, DimRtotal + iCenter, mem, DimLtotal + iCenter,
                   Lambdas[ iCenter ], Us[ iCenter ], DimLtotal + iCenter, VTs[ iCenter ],
                   CenterDims + iCenter, work, &lwork, rwork, iwork, &info );
-
+         assert( info == 0 );
          delete[] work;
          delete[] rwork;
          delete[] iwork;
@@ -701,7 +701,7 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
       int info;
       dlasrt_( &ID, &totalDimSVD, values, &info ); // Quicksort
 
-      int maxD = 0;
+      int maxD = 1;
       while ( maxD < totalDimSVD && maxD < virtualdimensionD && cut_off <= values[ maxD ] ) {
          maxD++;
       }

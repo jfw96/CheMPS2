@@ -163,14 +163,23 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
    krylovBasisSyBookkeepers[ 0 ]                     = bkIn;
    krylovHamiltonian[ 0 + 0 * krylovSpaceDimension ] = op->Overlap( krylovBasisVectors[ 0 ], krylovBasisSyBookkeepers[ 0 ], krylovBasisVectors[ 0 ], krylovBasisSyBookkeepers[ 0 ] );
    overlaps[ 0 + 0 * krylovSpaceDimension ]          = overlap( krylovBasisVectors[ 0 ], krylovBasisVectors[ 0 ] );
+   
+   std::cout << 0;
+   for (int i = 0; i < prob->gL(); i++){
+      std::cout << " " << krylovBasisSyBookkeepers[0]->gTotDimAtBound( i );
+   }
+   std::cout << std::endl;
 
    for ( int kry = 1; kry < krylovSpaceDimension; kry++ ) {
+
       SyBookkeeper * bkTemp = new SyBookkeeper( prob, scheme->get_D( 0 ) );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
       for ( int index = 0; index < L; index++ ) {
          mpsTemp[ index ] = new CTensorT( index, bkTemp );
          mpsTemp[ index ]->random();
       }
+      double normTemp = norm( mpsTemp );
+      mpsTemp[ 0 ]->number_operator( 0.0, 1.0 / normTemp );
 
       dcomplex * coefs            = new dcomplex[ kry ];
       CTensorT *** states         = new CTensorT **[ kry ];
@@ -200,6 +209,12 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
          krylovHamiltonian[ i + kry * krylovSpaceDimension ] = op->Overlap( krylovBasisVectors[ i ], krylovBasisSyBookkeepers[ i ], krylovBasisVectors[ kry ], krylovBasisSyBookkeepers[ kry ] );
          krylovHamiltonian[ kry + i * krylovSpaceDimension ] = std::conj( krylovHamiltonian[ i + kry * krylovSpaceDimension ] );
       }
+      std::cout << kry;
+      for (int i = 0; i < prob->gL(); i++){
+         std::cout << " " << krylovBasisSyBookkeepers[kry]->gTotDimAtBound( i );
+      }
+      std::cout << std::endl;
+      
    }
 
    if ( std::abs( overlaps[ krylovSpaceDimension ] ) > 1e-6 ) {
@@ -756,6 +771,8 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
             MPSDT[ index ] = new CTensorT( index, MPSBKDT );
             MPSDT[ index ]->random();
          }
+         double normDT = norm( MPSDT );
+         MPSDT[ 0 ]->number_operator( 0.0, 1.0 / normDT );
 
          doStep_arnoldi( time_step, time_final, kry_size, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
 
