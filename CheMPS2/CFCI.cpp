@@ -2020,16 +2020,19 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
          H5LTmake_dataset( FCIID, "FCI_IMAG", 1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsImagOut[ l ] );
       }
 
-
-      dcomplex * rdm = new dcomplex [ L * L * L * L ];
-      Fill2RDM(act, rdm);
+      dcomplex * applied = new dcomplex [ veclength ];
+      ActWithNumberOperator(0, applied, act);
+      std::cout << FCIddot( veclength, act, applied ) << std::endl;
+      
+      // dcomplex * rdm = new dcomplex [ L * L * L * L ];
+      // Fill2RDM(act, rdm);
 
       // H5LTmake_dataset( setID, name, rank, dims, typeID, data );
 
       ArnoldiTimeStep( timeStep, krylovSize, act, next);
       FCIdcopy( veclength, next, act );
 
-      delete[] rdm;
+      // delete[] rdm;
 
    }
 
