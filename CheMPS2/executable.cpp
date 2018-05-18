@@ -1082,65 +1082,64 @@ int main( int argc, char ** argv ){
          delete dmrgsolver;
 
       } else {
-         // CheMPS2::SyBookkeeper * initBK  = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
-         // CheMPS2::CTensorT    ** initMPS = new CheMPS2::CTensorT *[ prob->gL() ];
+         CheMPS2::SyBookkeeper * initBK  = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
+         CheMPS2::CTensorT    ** initMPS = new CheMPS2::CTensorT *[ prob->gL() ];
 
-         // for ( int index = 0; index < n_orbs; index++ ) {
-         //    initMPS[ index ] = new CheMPS2::CTensorT( index, initBK );
-         //    initMPS[ index ]->gStorage()[ 0 ] = 1.0;
-         // }
-
-         // double normDT2 = norm( initMPS ); initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
-
-         // hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
-         // if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
-
-         // CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
-         // taylor->Propagate( initBK, initMPS, time_step, time_final, time_krysize, false, time_dumpfci );
-
-         // if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
-
-         // delete taylor;
-         // for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
-         //    delete initMPS[ cnt ];
-         // }
-         // delete [] initMPS;
-         // delete initBK;
-
-         // FCI(CheMPS2::Hamiltonian * Ham, const unsigned int Nel_up, const unsigned int Nel_down, const int TargetIrrep, const double maxMemWorkMB=100.0, const int FCIverbose=2);
-         CheMPS2::CFCI * fcisolver = new CheMPS2::CFCI( ham, 1, 1, 0 );
-
-         int * bits_up = new int[ prob->gL() ];
-         int * bits_down = new int[ prob->gL() ];
-
-         for( int orb = 0; orb < prob->gL(); orb++ ){
-            if( time_ninit_parsed[ orb ] == 2 ){
-               bits_up[ orb ] = 1;
-               bits_down[ orb ] = 1;
-            } else if ( time_ninit_parsed[ orb ] == 1 ) {
-               bits_up[ orb ] = 1;
-               bits_down[ orb ] = 0;
-            } else{
-               bits_up[ orb ] = 0;
-               bits_down[ orb ] = 0;
-            }
+         for ( int index = 0; index < n_orbs; index++ ) {
+            initMPS[ index ] = new CheMPS2::CTensorT( index, initBK );
+            initMPS[ index ]->gStorage()[ 0 ] = 1.0;
          }
 
-         int length = fcisolver->getVecLength(0);
-         dcomplex * start = new dcomplex [ length ];
-         fcisolver->ClearVector( length, start );
-         fcisolver->setFCIcoeff( bits_up, bits_down, 1.0, start );
-
-         dcomplex * end = new dcomplex [ length ];
+         double normDT2 = norm( initMPS ); initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
 
          hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
          if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
-         
-         fcisolver->TimeEvolution( time_step, time_final, time_krysize, start, fileID );
 
-         delete[] bits_up;
-         delete[] bits_down;
-         delete fcisolver;
+         CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
+         taylor->Propagate( initBK, initMPS, time_step, time_final, time_krysize, false, time_dumpfci );
+
+         if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
+
+         delete taylor;
+         for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
+            delete initMPS[ cnt ];
+         }
+         delete [] initMPS;
+         delete initBK;
+
+         // CheMPS2::CFCI * fcisolver = new CheMPS2::CFCI( ham, 1, 1, 0 );
+
+         // int * bits_up = new int[ prob->gL() ];
+         // int * bits_down = new int[ prob->gL() ];
+
+         // for( int orb = 0; orb < prob->gL(); orb++ ){
+         //    if( time_ninit_parsed[ orb ] == 2 ){
+         //       bits_up[ orb ] = 1;
+         //       bits_down[ orb ] = 1;
+         //    } else if ( time_ninit_parsed[ orb ] == 1 ) {
+         //       bits_up[ orb ] = 1;
+         //       bits_down[ orb ] = 0;
+         //    } else{
+         //       bits_up[ orb ] = 0;
+         //       bits_down[ orb ] = 0;
+         //    }
+         // }
+
+         // int length = fcisolver->getVecLength(0);
+         // dcomplex * start = new dcomplex [ length ];
+         // fcisolver->ClearVector( length, start );
+         // fcisolver->setFCIcoeff( bits_up, bits_down, 1.0, start );
+
+         // dcomplex * end = new dcomplex [ length ];
+
+         // hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
+         // if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
+         
+         // fcisolver->TimeEvolution( time_step, time_final, time_krysize, start, fileID );
+
+         // delete[] bits_up;
+         // delete[] bits_down;
+         // delete fcisolver;
       }
 
       delete prob;

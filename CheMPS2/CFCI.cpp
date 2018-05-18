@@ -1907,9 +1907,10 @@ dcomplex CheMPS2::CFCI::FCIaHb(const unsigned int vecLength, dcomplex * vec1, dc
 
    int length = vecLength; // Checked "assert( max_integer >= maxVecLength );" at FCI::StartupIrrepCenter()
 
+   dcomplex over = FCIddot( length, vec1, vec2 );
    dcomplex * applied = new dcomplex[ length ];
    matvec( vec2, applied );
-   return FCIddot( length, vec1, applied );
+   return FCIddot( length, vec1, applied ) + over * getEconst();
 
 }
 
@@ -1993,6 +1994,7 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
    FCIdcopy( veclength, input, act );
 
    for( double t = 0.0; t < finalTime; t+=timeStep ){
+
       char dataPointname[ 1024 ];
       sprintf( dataPointname, "/Output/DataPoint%.5f", t );
       hid_t dataPointID = H5Gcreate( HDF5FILEIDIN, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
@@ -2014,25 +2016,14 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
          char dataFCINameN[ 1024 ];
          sprintf( dataFCINameN, "%s/FCICOEF/%i", dataPointname, l );
          hid_t FCIID = H5Gcreate( HDF5FILEIDIN, dataFCINameN, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
-         H5LTmake_dataset( FCIID, "FCI_ALPHAS", 1, &Lsize, H5T_NATIVE_INT, &alphasOut[ l ][ 0 ] );
-         H5LTmake_dataset( FCIID, "FCI_BETAS", 1, &Lsize, H5T_NATIVE_INT, &betasOut[ l ][ 0 ] );
+         H5LTmake_dataset( FCIID, "FCI_ALPHAS", 1, &Lsize, H5T_NATIVE_INT, &betasOut[ l ][ 0 ] );
+         H5LTmake_dataset( FCIID, "FCI_BETAS", 1, &Lsize, H5T_NATIVE_INT, &alphasOut[ l ][ 0 ] );
          H5LTmake_dataset( FCIID, "FCI_REAL", 1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsRealOut[ l ] );
          H5LTmake_dataset( FCIID, "FCI_IMAG", 1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsImagOut[ l ] );
       }
 
-      dcomplex * applied = new dcomplex [ veclength ];
-      ActWithNumberOperator(0, applied, act);
-      std::cout << FCIddot( veclength, act, applied ) << std::endl;
-      
-      // dcomplex * rdm = new dcomplex [ L * L * L * L ];
-      // Fill2RDM(act, rdm);
-
-      // H5LTmake_dataset( setID, name, rank, dims, typeID, data );
-
       ArnoldiTimeStep( timeStep, krylovSize, act, next);
       FCIdcopy( veclength, next, act );
-
-      // delete[] rdm;
 
    }
 
@@ -2062,6 +2053,7 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
 
       dcomplex * newKrylov = new dcomplex [ veclength ];
       matvec( krylovBasisVectors[ kry - 1 ], newKrylov );
+      FCIdaxpy( veclength, getEconst(), krylovBasisVectors[ kry - 1 ], newKrylov );
 
       for ( int i = 0; i < kry; i++ ) {
 
@@ -2189,12 +2181,12 @@ void CheMPS2::CFCI::recusion( dcomplex * state, int L,
    for ( int i = 0; i < betas.size(); i++ ) {
       sumBeta += betas[ i ];
    }
-   if ( sumAlpha + sumBeta > Nel_up +  Nel_down ) {
+   if ( sumAlpha + sumBeta > (Nel_up + Nel_down) ) {
       return;
    }
 
    if ( alphas.size() == L && betas.size() == L ) {
-      if ( sumAlpha + sumBeta == Nel_up +  Nel_down ) {
+      if ( sumAlpha + sumBeta == Nel_up + Nel_down ) {
          alphasOut.push_back( alphas );
          betasOut.push_back( betas );
          coefsRealOut.push_back( std::real( getFCIcoeff( &alphas[ 0 ], &betas[ 0 ], state ) ) );
