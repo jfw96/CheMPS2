@@ -1997,6 +1997,8 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
       sprintf( dataPointname, "/Output/DataPoint%.5f", t );
       hid_t dataPointID = H5Gcreate( HDF5FILEIDIN, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
 
+      H5LTmake_dataset( dataPointID, "t", 1, &dimarray1, H5T_NATIVE_DOUBLE, &t );
+
       std::vector< std::vector< int > > alphasOut;
       std::vector< std::vector< int > > betasOut;
       std::vector< double > coefsRealOut;
