@@ -85,6 +85,7 @@ endif()
 check_cxx_compiler_flag (-ipo HAS_IPO)
 if (HAS_IPO)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ipo")
+    set (CMAKE_FORTRAN_FLAGS "-ipo")
 endif()
 
 check_cxx_compiler_flag (-flto HAS_FLTO)
