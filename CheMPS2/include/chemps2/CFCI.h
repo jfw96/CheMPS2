@@ -22,13 +22,14 @@
 
 #include <complex>
 #include <vector>
+#include <ctime>
 #include "hdf5_hl.h"
 
 typedef std::complex< double > dcomplex;
 
 #include "MyHDF5.h"
 #include "Hamiltonian.h"
-
+#include "Options.h"
 
 namespace CheMPS2{
 /** FCI class.
@@ -48,7 +49,7 @@ namespace CheMPS2{
              \param TargetIrrep The targeted point group irrep
              \param maxMemWorkMB Maximum workspace size in MB to be used for matrix vector product (this does not include the FCI vectors as stored for example in GSDavidson!!)
              \param FCIverbose The FCI verbose level: 0 print nothing, 1 print start and solution, 2 print everything */
-         CFCI(CheMPS2::Hamiltonian * Ham, const unsigned int Nel_up, const unsigned int Nel_down, const int TargetIrrep, const double maxMemWorkMB=100.0, const int FCIverbose=2);
+         CFCI(CheMPS2::Hamiltonian * Ham, const unsigned int Nel_up, const unsigned int Nel_down, const int TargetIrrep, const double maxMemWorkMB=100.0, const int FCIverbose=2, const hid_t HDF5FILEIDIN=H5_CHEMPS2_TIME_NO_H5OUT );
          
          //! Destructor
          virtual ~CFCI();
@@ -101,7 +102,7 @@ namespace CheMPS2{
          
 //==========> The core routines for users
          
-         void TimeEvolution( double timeStep, double finalTime, unsigned int krylovSize, dcomplex * input, hid_t HDF5FILEIDIN);
+         void TimeEvolution( double timeStep, double finalTime, unsigned int krylovSize, dcomplex * input, const bool doDumpFCI );
 
 
 //          //! Calculates the FCI ground state with Davidson's algorithm
@@ -310,6 +311,8 @@ namespace CheMPS2{
 
       protected:
       
+         void HDF5_MAKE_DATASET( hid_t setID, const char * name, int rank, const hsize_t * dims, hid_t typeID, const void * data );
+
          void getFCITensor( dcomplex * state, 
                             std::vector< std::vector< int > >& alphasOut,
                             std::vector< std::vector< int > >& betasOut,
@@ -570,6 +573,12 @@ namespace CheMPS2{
          //! Work space of size HXVsizeWorkspace
          dcomplex * HXVworkbig2;
          
+         //! The file id for the HDF5 file
+         hid_t HDF5FILEID;
+
+         //! The start time
+         std::time_t start;
+
          //! Initialize a part of the private variables
          void StartupCountersVsBitstrings();
          

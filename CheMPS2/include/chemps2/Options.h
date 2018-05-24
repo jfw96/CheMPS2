@@ -84,6 +84,8 @@ namespace CheMPS2{
    const int    EDMISTONRUED_maxIter          = 1000;
    const int    EDMISTONRUED_maxIterBackTfo   = 15;
 
+   const std::string hashline = "#################################################################\n";
+
 }
 
 #endif

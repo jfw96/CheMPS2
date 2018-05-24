@@ -389,7 +389,10 @@ cout << "\n"
 "              Use a cumulant approximation for the CASPT2 4-RDM and overwrite CASPT2_CHECKPT to FALSE (TRUE or FALSE; default FALSE).\n"
 "\n"
 "       TIME_EVOLU = bool\n"
-"              Perfrom a time evolution calculation.\n"
+"              Perfrom a time evolution calculation (TRUE or FALSE; default FALSE).\n"
+"\n"
+"       TIME_FCI = bool\n"
+"              Perfroms a FCI time evolution calculation instead of using the DMRG code (TRUE or FALSE; default FALSE).\n"
 "\n"
 "       TIME_STEP = flt\n"
 "              Set the time step (DT) for the time evolution calculation. Neccessary when TIME_EVOLU = TRUE (positive float).\n"
@@ -484,6 +487,7 @@ int main( int argc, char ** argv ){
    bool   caspt2_cumul   = false;
 
    bool time_evolu        = false;
+   bool time_fci          = false;
    double time_step       = 0.0;
    double time_final      = 0.0;
    string time_ninit      = "";
@@ -611,6 +615,7 @@ int main( int argc, char ** argv ){
       if ( find_boolean( &caspt2_checkpt,   line, "CASPT2_CHECKPT"   ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &caspt2_cumul,     line, "CASPT2_CUMUL"     ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &time_evolu,       line, "TIME_EVOLU"       ) == false ){ return clean_exit( -1 ); }
+      if ( find_boolean( &time_fci,         line, "TIME_FCI"         ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"     ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &print_corr,       line, "PRINT_CORR"       ) == false ){ return clean_exit( -1 ); }
 
@@ -1082,64 +1087,77 @@ int main( int argc, char ** argv ){
          delete dmrgsolver;
 
       } else {
-         CheMPS2::SyBookkeeper * initBK  = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
-         CheMPS2::CTensorT    ** initMPS = new CheMPS2::CTensorT *[ prob->gL() ];
+         if( time_fci ){
 
-         for ( int index = 0; index < n_orbs; index++ ) {
-            initMPS[ index ] = new CheMPS2::CTensorT( index, initBK );
-            initMPS[ index ]->gStorage()[ 0 ] = 1.0;
+            int sum_up      = 0;
+            int sum_down    = 0;
+            int * bits_up   = new int[ prob->gL() ];
+            int * bits_down = new int[ prob->gL() ];
+
+            for( int orb = 0; orb < prob->gL(); orb++ ){
+               if( time_ninit_parsed[ orb ] == 2 ){
+                  bits_up[ orb ] = 1;
+                  bits_down[ orb ] = 1;
+                  sum_up++;
+                  sum_down++;
+               } else if ( time_ninit_parsed[ orb ] == 1 ) {
+                  bits_up[ orb ] = 1;
+                  bits_down[ orb ] = 0;
+                  sum_up++;
+               } else{
+                  bits_up[ orb ] = 0;
+                  bits_down[ orb ] = 0;
+               }
+            }
+
+            hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
+            if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
+
+            CheMPS2::CFCI * fcisolver = new CheMPS2::CFCI( ham, sum_up, sum_down, irrep, 1000.0, 0, fileID );
+
+            int length = fcisolver->getVecLength( 0 );
+            dcomplex * start = new dcomplex [ length ];
+            fcisolver->ClearVector( length, start );
+            fcisolver->setFCIcoeff( bits_up, bits_down, 1.0, start );
+
+            dcomplex * end = new dcomplex [ length ];
+
+            fcisolver->TimeEvolution( time_step, time_final, time_krysize, start, time_dumpfci );
+
+            delete[] end;
+            delete[] start;
+
+            delete[] bits_up;
+            delete[] bits_down;
+            delete fcisolver;
+
+         } else {
+            CheMPS2::SyBookkeeper * initBK  = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
+            CheMPS2::CTensorT    ** initMPS = new CheMPS2::CTensorT *[ prob->gL() ];
+
+            for ( int index = 0; index < n_orbs; index++ ) {
+               initMPS[ index ] = new CheMPS2::CTensorT( index, initBK );
+               initMPS[ index ]->gStorage()[ 0 ] = 1.0;
+            }
+
+            double normDT2 = norm( initMPS ); initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
+
+            hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
+            if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
+
+            CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
+            taylor->Propagate( initBK, initMPS, time_step, time_final, time_krysize, false, time_dumpfci );
+
+            if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
+
+            delete taylor;
+            for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
+               delete initMPS[ cnt ];
+            }
+            delete [] initMPS;
+            delete initBK;
          }
 
-         double normDT2 = norm( initMPS ); initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
-
-         hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
-         if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
-
-         CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
-         taylor->Propagate( initBK, initMPS, time_step, time_final, time_krysize, false, time_dumpfci );
-
-         if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
-
-         delete taylor;
-         for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
-            delete initMPS[ cnt ];
-         }
-         delete [] initMPS;
-         delete initBK;
-
-         // CheMPS2::CFCI * fcisolver = new CheMPS2::CFCI( ham, 1, 1, 0 );
-
-         // int * bits_up = new int[ prob->gL() ];
-         // int * bits_down = new int[ prob->gL() ];
-
-         // for( int orb = 0; orb < prob->gL(); orb++ ){
-         //    if( time_ninit_parsed[ orb ] == 2 ){
-         //       bits_up[ orb ] = 1;
-         //       bits_down[ orb ] = 1;
-         //    } else if ( time_ninit_parsed[ orb ] == 1 ) {
-         //       bits_up[ orb ] = 1;
-         //       bits_down[ orb ] = 0;
-         //    } else{
-         //       bits_up[ orb ] = 0;
-         //       bits_down[ orb ] = 0;
-         //    }
-         // }
-
-         // int length = fcisolver->getVecLength(0);
-         // dcomplex * start = new dcomplex [ length ];
-         // fcisolver->ClearVector( length, start );
-         // fcisolver->setFCIcoeff( bits_up, bits_down, 1.0, start );
-
-         // dcomplex * end = new dcomplex [ length ];
-
-         // hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
-         // if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
-         
-         // fcisolver->TimeEvolution( time_step, time_final, time_krysize, start, fileID );
-
-         // delete[] bits_up;
-         // delete[] bits_down;
-         // delete fcisolver;
       }
 
       delete prob;

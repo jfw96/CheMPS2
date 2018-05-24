@@ -37,8 +37,8 @@
 #include <math.h>
 #include <omp.h>
 
-CheMPS2::CTwoDMBuilder::CTwoDMBuilder( Logger * LoggerIn, Problem * ProbIn, CTensorT ** MpsIn, SyBookkeeper * bk_in )
-    : logger( LoggerIn ), Prob( ProbIn ), L( ProbIn->gL() ), denBK( bk_in ) {
+CheMPS2::CTwoDMBuilder::CTwoDMBuilder( Problem * ProbIn, CTensorT ** MpsIn, SyBookkeeper * bk_in )
+    : Prob( ProbIn ), L( ProbIn->gL() ), denBK( bk_in ) {
 
    Ltensors    = new CTensorL **[ L - 1 ];
    F0tensors   = new CTensorF0 ***[ L - 1 ];

@@ -30,7 +30,6 @@
 #include "CTensorX.h"
 #include "CTwoDM.h"
 #include "Irreps.h"
-#include "Logger.h"
 #include "SyBookkeeper.h"
 
 namespace CheMPS2 {
@@ -38,7 +37,7 @@ namespace CheMPS2 {
    class CTwoDMBuilder {
 
       public:
-      CTwoDMBuilder( Logger * LoggerIn, Problem * ProbIn, CTensorT ** MpsIn, SyBookkeeper * bk_in );
+      CTwoDMBuilder( Problem * ProbIn, CTensorT ** MpsIn, SyBookkeeper * bk_in );
 
       //! Destructor
       virtual ~CTwoDMBuilder();
@@ -46,8 +45,6 @@ namespace CheMPS2 {
       void Build2RDM( CTwoDM * rdm );
 
       private:
-      // Logger
-      Logger * logger;
 
       //Pointer to the Problem --> constructed and destructed outside of this class
       Problem * Prob;

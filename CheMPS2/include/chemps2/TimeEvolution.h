@@ -8,6 +8,7 @@
 #include "Problem.h"
 #include "SyBookkeeper.h"
 #include "hdf5_hl.h"
+#include <ctime>
 
 namespace CheMPS2 {
 
