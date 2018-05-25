@@ -391,8 +391,8 @@ cout << "\n"
 "       TIME_EVOLU = bool\n"
 "              Perfrom a time evolution calculation (TRUE or FALSE; default FALSE).\n"
 "\n"
-"       TIME_FCI = bool\n"
-"              Perfroms a FCI time evolution calculation instead of using the DMRG code (TRUE or FALSE; default FALSE).\n"
+"       TIME_TYPE = char\n"
+"              Set the type of time evolution calculation to be performed. Options are (K) for Krylov (default), (R) for Runge-Kutta, (E) for Euler, and (F) for FCI.\n"
 "\n"
 "       TIME_STEP = flt\n"
 "              Set the time step (DT) for the time evolution calculation. Neccessary when TIME_EVOLU = TRUE (positive float).\n"
@@ -486,14 +486,14 @@ int main( int argc, char ** argv ){
    bool   caspt2_checkpt = false;
    bool   caspt2_cumul   = false;
 
-   bool time_evolu        = false;
-   bool time_fci          = false;
+   bool   time_evolu      = false;
+   char   time_type       = 'K';
    double time_step       = 0.0;
    double time_final      = 0.0;
    string time_ninit      = "";
-   int time_krysize       = 0;
    string time_hdf5output = "";
-   bool time_dumpfci      = false;
+   int    time_krysize    = 0;
+   bool   time_dumpfci    = false;
 
    bool   print_corr = false;
    string tmp_folder = "/tmp";
@@ -604,8 +604,10 @@ int main( int argc, char ** argv ){
 
       char options1[] = { 'I', 'N', 'L', 'F' };
       char options2[] = { 'A', 'P' };
+      char options3[] = { 'K', 'R', 'E', 'F' };
       if ( find_character( &scf_active_space, line, "SCF_ACTIVE_SPACE", options1, 4 ) == false ){ return clean_exit( -1 ); }
       if ( find_character( &caspt2_orbs,      line, "CASPT2_ORBS",      options2, 2 ) == false ){ return clean_exit( -1 ); }
+      if ( find_character( &time_type,        line, "TIME_TYPE",        options3, 4 ) == false ){ return clean_exit( -1 ); }
 
       if ( find_boolean( &molcas_fiedler,   line, "MOLCAS_FIEDLER"   ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &molcas_mps,       line, "MOLCAS_MPS"       ) == false ){ return clean_exit( -1 ); }
@@ -615,7 +617,6 @@ int main( int argc, char ** argv ){
       if ( find_boolean( &caspt2_checkpt,   line, "CASPT2_CHECKPT"   ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &caspt2_cumul,     line, "CASPT2_CUMUL"     ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &time_evolu,       line, "TIME_EVOLU"       ) == false ){ return clean_exit( -1 ); }
-      if ( find_boolean( &time_fci,         line, "TIME_FCI"         ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"     ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &print_corr,       line, "PRINT_CORR"       ) == false ){ return clean_exit( -1 ); }
 
@@ -893,8 +894,8 @@ int main( int argc, char ** argv ){
          return clean_exit( - 1 );
       }
 
-      if ( time_krysize <= 0 ){
-         if ( am_i_master ){ cerr << "TIME_KRYSIZE should be greater than zero !" << endl; }
+      if ( time_type == 'K' && time_krysize <= 0 ){
+         if ( am_i_master ){ cerr << "TIME_KRYSIZE should be greater than zero if TIME_TYPE = K!" << endl; }
          return clean_exit( -1 );
       }
    }
@@ -953,6 +954,7 @@ int main( int argc, char ** argv ){
       }
       cout << "   TIME_EVOLU         = " << (( time_evolu        ) ? "TRUE" : "FALSE" ) << endl;
       if ( time_evolu ){
+         cout << "   TIME_TYPE          = " << time_type     << endl;
          cout << "   TIME_STEP          = " << time_step     << endl;
          cout << "   TIME_FINAL         = " << time_final    << endl;
          cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < n_orbs; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
@@ -1087,7 +1089,7 @@ int main( int argc, char ** argv ){
          delete dmrgsolver;
 
       } else {
-         if( time_fci ){
+         if( time_type == 'F' ){
 
             int sum_up      = 0;
             int sum_down    = 0;
@@ -1132,30 +1134,35 @@ int main( int argc, char ** argv ){
             delete fcisolver;
 
          } else {
-            CheMPS2::SyBookkeeper * initBK  = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
-            CheMPS2::CTensorT    ** initMPS = new CheMPS2::CTensorT *[ prob->gL() ];
+            if ( time_type == 'K' ){
+               CheMPS2::SyBookkeeper * initBK  = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
+               CheMPS2::CTensorT    ** initMPS = new CheMPS2::CTensorT *[ prob->gL() ];
 
-            for ( int index = 0; index < n_orbs; index++ ) {
-               initMPS[ index ] = new CheMPS2::CTensorT( index, initBK );
-               initMPS[ index ]->gStorage()[ 0 ] = 1.0;
+               for ( int index = 0; index < n_orbs; index++ ) {
+                  initMPS[ index ] = new CheMPS2::CTensorT( index, initBK );
+                  initMPS[ index ]->gStorage()[ 0 ] = 1.0;
+               }
+
+               double normDT2 = norm( initMPS ); initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
+
+               hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
+               if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
+
+               CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
+               taylor->Propagate( initBK, initMPS, time_step, time_final, time_krysize, false, time_dumpfci );
+
+               if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
+
+               delete taylor;
+               for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
+                  delete initMPS[ cnt ];
+               }
+               delete [] initMPS;
+               delete initBK;
+            } else {
+               cerr << "TIME_TYPE different from K is not implemented yet" << std::endl;
+               clean_exit( 1 );
             }
-
-            double normDT2 = norm( initMPS ); initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
-
-            hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
-            if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
-
-            CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
-            taylor->Propagate( initBK, initMPS, time_step, time_final, time_krysize, false, time_dumpfci );
-
-            if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
-
-            delete taylor;
-            for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
-               delete initMPS[ cnt ];
-            }
-            delete [] initMPS;
-            delete initBK;
          }
 
       }
