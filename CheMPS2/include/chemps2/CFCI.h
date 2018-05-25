@@ -23,11 +23,11 @@
 #include <complex>
 #include <vector>
 #include <ctime>
+#include "MyHDF5.h"
 #include "hdf5_hl.h"
 
 typedef std::complex< double > dcomplex;
 
-#include "MyHDF5.h"
 #include "Hamiltonian.h"
 #include "Options.h"
 
