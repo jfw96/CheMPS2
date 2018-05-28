@@ -1976,7 +1976,15 @@ dcomplex CheMPS2::CFCI::FCIddot(const unsigned int vecLength, dcomplex * vec1, d
 
    int length = vecLength; // Checked "assert( max_integer >= maxVecLength );" at FCI::StartupIrrepCenter()
    int inc = 1;
-   return zdotc_( &length , vec1 , &inc , vec2 , &inc );
+
+   #ifdef CHEMPS2_MKL
+   dcomplex result;
+   zdotc_( &result, &length , vec1 , &inc , vec2 , &inc );
+   #else
+      dcomplex result = zdotc_( &length , vec1 , &inc , vec2 , &inc );
+   #endif
+   
+   return result;
 
 }
 

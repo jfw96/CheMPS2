@@ -628,7 +628,15 @@ dcomplex CheMPS2::CTwoDM::doD1( CTensorT * denT ) {
 
                int length = dimL * dimR;
                int inc    = 1;
-               total += static_cast< dcomplex >( TwoSL + 1 ) * std::conj( zdotc_( &length, Tblock, &inc, Tblock, &inc ) );
+
+               #ifdef CHEMPS2_MKL
+               dcomplex result;
+               zdotc_( &result, &length , Tblock , &inc , Tblock , &inc );
+               #else
+                  dcomplex result = zdotc_( &length , Tblock , &inc , Tblock , &inc );
+               #endif
+
+               total += static_cast< dcomplex >( TwoSL + 1 ) * std::conj( result );
             }
          }
       }
@@ -670,7 +678,15 @@ dcomplex CheMPS2::CTwoDM::doD2( CTensorT * denT, CTensorL * Lright, dcomplex * w
 
                   int length = dimL * dimRup;
                   int inc    = 1;
-                  total += factor * std::conj( zdotc_( &length, workmem, &inc, Tup, &inc ) );
+
+                  #ifdef CHEMPS2_MKL
+                  dcomplex result;
+                  zdotc_( &result, &length , workmem , &inc , Tup , &inc );
+                  #else
+                     dcomplex result = zdotc_( &length , workmem , &inc , Tup , &inc );
+                  #endif
+
+                  total += factor * std::conj( result );
                }
             }
          }
@@ -709,7 +725,15 @@ dcomplex CheMPS2::CTwoDM::doD3( CTensorT * denT, CTensorS0 * S0right, dcomplex *
 
                int length = dimL * dimRup;
                int inc    = 1;
-               total += factor * std::conj( zdotc_( &length, workmem, &inc, Tup, &inc ) );
+
+               #ifdef CHEMPS2_MKL
+               dcomplex result;
+               zdotc_( &result, &length , workmem , &inc , Tup , &inc );
+               #else
+                  const dcomplex result = zdotc_( &length , workmem , &inc , Tup , &inc );
+               #endif
+
+               total += factor * std::conj( result );
             }
          }
       }
@@ -745,7 +769,15 @@ dcomplex CheMPS2::CTwoDM::doD4( CTensorT * denT, CTensorF0 * F0right, dcomplex *
 
                int length = dimL * dimR;
                int inc    = 1;
-               total += factor * std::conj( zdotc_( &length, workmem, &inc, Tblock, &inc ) );
+
+               #ifdef CHEMPS2_MKL
+               dcomplex result;
+               zdotc_( &result, &length , workmem , &inc , Tblock , &inc );
+               #else
+                  const dcomplex result = zdotc_( &length , workmem , &inc , Tblock , &inc );
+               #endif
+
+               total += factor * std::conj( result );
             }
          }
       }
@@ -783,7 +815,15 @@ dcomplex CheMPS2::CTwoDM::doD5( CTensorT * denT, CTensorF0 * F0right, dcomplex *
 
                   int length = dimL * dimR;
                   int inc    = 1;
-                  total += factor * std::conj( zdotc_( &length, workmem, &inc, Tblock, &inc ) );
+
+                  #ifdef CHEMPS2_MKL
+                  dcomplex result;
+                  zdotc_( &result, &length , workmem , &inc , Tblock , &inc );
+                  #else
+                     const dcomplex result = zdotc_( &length , workmem , &inc , Tblock , &inc );
+                  #endif
+
+                  total += factor * std::conj( result );
                }
             }
          }
@@ -825,7 +865,15 @@ dcomplex CheMPS2::CTwoDM::doD6( CTensorT * denT, CTensorF1 * F1right, dcomplex *
 
                      int length = dimL * dimRup;
                      int inc    = 1;
-                     total += factor * std::conj( zdotc_( &length, workmem, &inc, Tup, &inc ) );
+
+                     #ifdef CHEMPS2_MKL
+                     dcomplex result;
+                     zdotc_( &result, &length , workmem , &inc , Tup , &inc );
+                     #else
+                        const dcomplex result = zdotc_( &length , workmem , &inc , Tup , &inc );
+                     #endif
+
+                     total += factor * std::conj( result );
                   }
                }
             }
@@ -870,7 +918,15 @@ dcomplex CheMPS2::CTwoDM::doD7( CTensorT * denT, CTensorL * Lleft, dcomplex * wo
 
                   int length = dimLup * dimR;
                   int inc    = 1;
-                  total += factor * std::conj( zdotc_( &length, workmem, &inc, Tup, &inc ) );
+
+                  #ifdef CHEMPS2_MKL
+                  dcomplex result;
+                  zdotc_( &result, &length , workmem , &inc , Tup , &inc );
+                  #else
+                     const dcomplex result = zdotc_( &length , workmem , &inc , Tup , &inc );
+                  #endif
+
+                  total += factor * std::conj( result );
                }
             }
          }
@@ -1039,7 +1095,15 @@ dcomplex CheMPS2::CTwoDM::doD12( CTensorT * denT, CTensorL * Lleft, CTensorL * L
 
                      int length = dimLup * dimRup;
                      int inc    = 1;
-                     d12 += factor * std::conj( zdotc_( &length, workmem2, &inc, T_up, &inc ) );
+
+                     #ifdef CHEMPS2_MKL
+                     dcomplex result;
+                     zdotc_( &result, &length , workmem , &inc , T_up , &inc );
+                     #else
+                        const dcomplex result = zdotc_( &length , workmem , &inc , T_up , &inc );
+                     #endif
+
+                     d12 += factor * std::conj( result );
                   }
                }
             }
@@ -1093,7 +1157,15 @@ dcomplex CheMPS2::CTwoDM::doD13( CTensorT * denT, CTensorL * Lleft, CTensorS0 * 
 
                      int length = dimLup * dimRup;
                      int inc    = 1;
-                     d13 += factor * std::conj( zdotc_( &length, workmem2, &inc, T_up, &inc ) );
+
+                     #ifdef CHEMPS2_MKL
+                     dcomplex result;
+                     zdotc_( &result, &length , workmem , &inc , T_up , &inc );
+                     #else
+                        const dcomplex result = zdotc_( &length , workmem , &inc , T_up , &inc );
+                     #endif
+
+                     d13 += factor * std::conj( result );
                   }
                }
             }
@@ -1147,7 +1219,15 @@ dcomplex CheMPS2::CTwoDM::doD14( CTensorT * denT, CTensorL * Lleft, CTensorS0 * 
 
                      int length = dimLup * dimRup;
                      int inc    = 1;
-                     d14 += factor * std::conj( zdotc_( &length, workmem2, &inc, T_up, &inc ) );
+
+                     #ifdef CHEMPS2_MKL
+                     dcomplex result;
+                     zdotc_( &result, &length , workmem , &inc , T_up , &inc );
+                     #else
+                        const dcomplex result = zdotc_( &length , workmem , &inc , T_up , &inc );
+                     #endif
+
+                     d14 += factor * std::conj( result );
                   }
                }
             }
@@ -1202,7 +1282,15 @@ dcomplex CheMPS2::CTwoDM::doD15( CTensorT * denT, CTensorL * Lleft, CTensorS1 * 
 
                         int length = dimLup * dimRup;
                         int inc    = 1;
-                        d15 += factor * std::conj( zdotc_( &length, workmem2, &inc, T_up, &inc ) );
+
+                        #ifdef CHEMPS2_MKL
+                        dcomplex result;
+                        zdotc_( &result, &length , workmem , &inc , T_up , &inc );
+                        #else
+                           const dcomplex result = zdotc_( &length , workmem , &inc , T_up , &inc );
+                        #endif
+
+                        d15 += factor * std::conj( result );
                      }
                   }
                }
@@ -1258,7 +1346,15 @@ dcomplex CheMPS2::CTwoDM::doD16( CTensorT * denT, CTensorL * Lleft, CTensorS1 * 
 
                         int length = dimLup * dimRup;
                         int inc    = 1;
-                        d16 += factor * std::conj( zdotc_( &length, workmem2, &inc, T_up, &inc ) );
+
+                        #ifdef CHEMPS2_MKL
+                        dcomplex result;
+                        zdotc_( &result, &length , workmem , &inc , T_up , &inc );
+                        #else
+                           const dcomplex result = zdotc_( &length , workmem , &inc , T_up , &inc );
+                        #endif
+
+                        d16 += factor * std::conj( result );
                      }
                   }
                }
@@ -1314,7 +1410,15 @@ dcomplex CheMPS2::CTwoDM::doD17orD21( CTensorT * denT, CTensorL * Lleft, CTensor
 
                      int length = dimLup * dimRup;
                      int inc    = 1;
-                     total += sqrt( 0.5 ) * 0.5 * ( TwoSLup + 1 ) * std::conj( zdotc_( &length, workmem2, &inc, T_up, &inc ) );
+
+                     #ifdef CHEMPS2_MKL
+                     dcomplex result;
+                     zdotc_( &result, &length , workmem , &inc , T_up , &inc );
+                     #else
+                        const dcomplex result = zdotc_( &length , workmem , &inc , T_up , &inc );
+                     #endif
+
+                     total += sqrt( 0.5 ) * 0.5 * ( TwoSLup + 1 ) * std::conj( result );
                   }
                }
             }
@@ -1371,7 +1475,15 @@ dcomplex CheMPS2::CTwoDM::doD18orD22( CTensorT * denT, CTensorL * Lleft, CTensor
 
                      int length = dimLup * dimRup;
                      int inc    = 1;
-                     total += factor * std::conj( zdotc_( &length, workmem2, &inc, T_up, &inc ) );
+
+                     #ifdef CHEMPS2_MKL
+                     dcomplex result;
+                     zdotc_( &result, &length , workmem , &inc , T_up , &inc );
+                     #else
+                        const dcomplex result = zdotc_( &length , workmem , &inc , T_up , &inc );
+                     #endif
+
+                     total += factor * std::conj( result );
                   }
                }
             }
@@ -1434,7 +1546,15 @@ dcomplex CheMPS2::CTwoDM::doD19orD23( CTensorT * denT, CTensorL * Lleft, CTensor
 
                         int length = dimLup * dimRup;
                         int inc    = 1;
-                        total += factor * std::conj( zdotc_( &length, workmem2, &inc, T_up, &inc ) );
+
+                        #ifdef CHEMPS2_MKL
+                        dcomplex result;
+                        zdotc_( &result, &length , workmem , &inc , T_up , &inc );
+                        #else
+                           const dcomplex result = zdotc_( &length , workmem , &inc , T_up , &inc );
+                        #endif
+
+                        total += factor * std::conj( result );
                      }
                   }
                }
@@ -1498,7 +1618,15 @@ dcomplex CheMPS2::CTwoDM::doD20orD24( CTensorT * denT, CTensorL * Lleft, CTensor
 
                         int length = dimLup * dimRup;
                         int inc    = 1;
-                        total += factor * std::conj( zdotc_( &length, workmem2, &inc, T_up, &inc ) );
+
+                        #ifdef CHEMPS2_MKL
+                        dcomplex result;
+                        zdotc_( &result, &length , workmem , &inc , T_up , &inc );
+                        #else
+                           const dcomplex result = zdotc_( &length , workmem , &inc , T_up , &inc );
+                        #endif
+
+                        total += factor * std::conj( result );
                      }
                   }
                }
