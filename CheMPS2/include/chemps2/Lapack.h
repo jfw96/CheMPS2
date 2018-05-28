@@ -60,7 +60,7 @@ void zgpadm_( int * ideg, int * m, double * t, dcomplex * H, int * ldh, dcomplex
 void zpotri_( char * uplo, int * n, dcomplex * a, int * lda, int * info );
 void zgetri_( int * n, dcomplex * a, int * lda, int * ipiv, dcomplex * work, int * lwork, int * info );
 void zgetrf_( int * m, int * n, dcomplex * a, int * lda, int * ipiv, int * info );
-void zlansy_( char * norm, char * uplo, int * dimR, dcomplex * mx, int * lda, dcomplex * work );
+double zlansy_( char * norm, char * uplo, int * dimR, dcomplex * mx, int * lda, dcomplex * work );
 
 #ifdef CHEMPS2_MKL
 void zdotc_( dcomplex * r, int * n, dcomplex * x, int * incx, dcomplex * y, int * incy );
