@@ -2083,6 +2083,9 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
    const hid_t outputID    = H5Gcreate( HDF5FILEID, "/Output", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
    const hsize_t dimarray1 = 1;
 
+   struct timeval start, end;
+   gettimeofday( &start, NULL );
+
    const int veclength = getVecLength( 0 );
 
    dcomplex * act  = new dcomplex [ veclength ];
@@ -2093,6 +2096,10 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
       dcomplex * terdm   = new dcomplex[ L * L * L * L];
       const double energy      = std::real( Fill2RDM( act, terdm ) );
       const double normOfState = std::real( FCIddot( veclength, act, act ) );
+
+      struct timeval end;
+      gettimeofday( &end, NULL );
+      const double elapsed = ( end.tv_sec - start.tv_sec ) + 1e-6 * ( end.tv_usec - start.tv_usec );
 
       double * oedmre = new double[ L * L ];
       double * oedmim = new double[ L * L ];
@@ -2110,33 +2117,36 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
       }
 
       std::cout << hashline;
-      std::cout                                     << "\n";
-      std::cout << "   FCI time step"               << "\n";
-      std::cout                                     << "\n";
-      std::cout << "   t         = " << t           << "\n";
-      std::cout << "   Tmax      = " << finalTime   << "\n";
-      std::cout << "   dt        = " << timeStep    << "\n";
-      std::cout << "   KryS      = " << krylovSize  << "\n";
-      std::cout                                     << "\n";
-      std::cout << "   Norm      = " << normOfState << "\n";
-      std::cout << "   Energy    = " << energy      << "\n";
-      std::cout                                     << "\n";
-      std::cout << "  occupation numbers of molecular orbitals:\n";
+      std::cout                                                  << "\n";
+      std::cout << "   FCI time step"                            << "\n";
+      std::cout                                                  << "\n";
+      std::cout << "   Duration since start " << elapsed << " seconds\n";
+      std::cout                                                  << "\n";
+      std::cout << "   t         = " << t                        << "\n";
+      std::cout << "   Tmax      = " << finalTime                << "\n";
+      std::cout << "   dt        = " << timeStep                 << "\n";
+      std::cout << "   KryS      = " << krylovSize               << "\n";
+      std::cout                                                  << "\n";
+      std::cout << "   Norm      = " << normOfState              << "\n";
+      std::cout << "   Energy    = " << energy                   << "\n";
+      std::cout                                                  << "\n";
+      std::cout << "  occupation numbers of molecular orbitals:      \n";
       std::cout << "   "; for ( int i = 0; i < L; i++ ) { std::cout << std::setw( 20 ) << oedmre[ i + L * i ];  }
-      std::cout                                     << "\n";
+      std::cout                                                  << "\n";
 
       char dataPointname[ 1024 ];
       sprintf( dataPointname, "/Output/DataPoint%.5f", t );
       const hid_t dataPointID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
       hsize_t Lsq[ 2 ]; Lsq[ 0 ] = L; Lsq[ 1 ] = L;
-      HDF5_MAKE_DATASET( dataPointID, "t",      1, &dimarray1, H5T_NATIVE_DOUBLE, &t           );
-      HDF5_MAKE_DATASET( dataPointID, "Tmax",   1, &dimarray1, H5T_NATIVE_DOUBLE, &finalTime   );
-      HDF5_MAKE_DATASET( dataPointID, "dt",     1, &dimarray1, H5T_NATIVE_DOUBLE, &timeStep    );
-      HDF5_MAKE_DATASET( dataPointID, "KryS",   1, &dimarray1, H5T_STD_I32LE,     &krylovSize  );
-      HDF5_MAKE_DATASET( dataPointID, "Norm",   1, &dimarray1, H5T_NATIVE_DOUBLE, &normOfState );
-      HDF5_MAKE_DATASET( dataPointID, "Energy", 1, &dimarray1, H5T_NATIVE_DOUBLE, &energy      );
-      HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL", 2, Lsq, H5T_NATIVE_DOUBLE, oedmre );
-      HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG", 2, Lsq, H5T_NATIVE_DOUBLE, oedmim );
+      HDF5_MAKE_DATASET( dataPointID, "chrono",    1, &dimarray1, H5T_NATIVE_DOUBLE, &elapsed     );
+      HDF5_MAKE_DATASET( dataPointID, "t",         1, &dimarray1, H5T_NATIVE_DOUBLE, &t           );
+      HDF5_MAKE_DATASET( dataPointID, "Tmax",      1, &dimarray1, H5T_NATIVE_DOUBLE, &finalTime   );
+      HDF5_MAKE_DATASET( dataPointID, "dt",        1, &dimarray1, H5T_NATIVE_DOUBLE, &timeStep    );
+      HDF5_MAKE_DATASET( dataPointID, "KryS",      1, &dimarray1, H5T_STD_I32LE,     &krylovSize  );
+      HDF5_MAKE_DATASET( dataPointID, "Norm",      1, &dimarray1, H5T_NATIVE_DOUBLE, &normOfState );
+      HDF5_MAKE_DATASET( dataPointID, "Energy",    1, &dimarray1, H5T_NATIVE_DOUBLE, &energy      );
+      HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL", 2, Lsq,        H5T_NATIVE_DOUBLE, oedmre       );
+      HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG", 2, Lsq,        H5T_NATIVE_DOUBLE, oedmim       );
 
       delete[] terdm;
       delete[] oedmre;
@@ -2158,10 +2168,10 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
             char dataFCINameN[ 1024 ];
             sprintf( dataFCINameN, "%s/FCICOEF/%i", dataPointname, l );
             const hid_t FCIID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataFCINameN, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
-            HDF5_MAKE_DATASET( FCIID, "FCI_ALPHAS", 1, &Lsize, H5T_NATIVE_INT, &betasOut[ l ][ 0 ] );
-            HDF5_MAKE_DATASET( FCIID, "FCI_BETAS", 1, &Lsize, H5T_NATIVE_INT, &alphasOut[ l ][ 0 ] );
-            HDF5_MAKE_DATASET( FCIID, "FCI_REAL", 1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsRealOut[ l ] );
-            HDF5_MAKE_DATASET( FCIID, "FCI_IMAG", 1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsImagOut[ l ] );
+            HDF5_MAKE_DATASET( FCIID, "FCI_ALPHAS", 1, &Lsize,     H5T_NATIVE_INT,    &betasOut[ l ][ 0 ]  );
+            HDF5_MAKE_DATASET( FCIID, "FCI_BETAS",  1, &Lsize,     H5T_NATIVE_INT,    &alphasOut[ l ][ 0 ] );
+            HDF5_MAKE_DATASET( FCIID, "FCI_REAL",   1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsRealOut[ l ]   );
+            HDF5_MAKE_DATASET( FCIID, "FCI_IMAG",   1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsImagOut[ l ]   );
          }
       }
       std::cout << "\n";

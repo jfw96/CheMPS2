@@ -285,6 +285,9 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
    const hid_t outputID    = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, "/Output", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
    const hsize_t dimarray1 = 1;
 
+   struct timeval start;
+   gettimeofday( &start, NULL );
+
    HamiltonianOperator * hamOp = new HamiltonianOperator( prob );
 
    SyBookkeeper * MPSBK = new SyBookkeeper( *initBK );
@@ -305,19 +308,26 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
       COneDM * theodm        = new COneDM( MPS, MPSBK );
       double * oedmre        = new double[ L * L ];
       double * oedmim        = new double[ L * L ];
+
+      struct timeval end;
+      gettimeofday( &end, NULL );
+      const double elapsed = ( end.tv_sec - start.tv_sec ) + 1e-6 * ( end.tv_usec - start.tv_usec );
+
       theodm->gOEDMRe( oedmre );
       theodm->gOEDMIm( oedmim );
 
       std::cout << hashline;
-      std::cout                                                  << "\n";
-      std::cout << "   MPS time step"                            << "\n";
-      std::cout                                                  << "\n";
-      std::cout << "   t    = " << t                             << "\n";
-      std::cout << "   Tmax = " << time_final                    << "\n";
-      std::cout << "   dt   = " << time_step                     << "\n";
-      std::cout << "   KryS = " << kry_size                      << "\n";
-      std::cout                                                  << "\n";
-      std::cout << "   matrix product state dimensions:\n";
+      std::cout                                                 << "\n";
+      std::cout << "   MPS time step"                           << "\n";
+      std::cout                                                 << "\n";
+      std::cout << "   Duration since start " << elapsed << " seconds\n";
+      std::cout                                                 << "\n";
+      std::cout << "   t    = " << t                            << "\n";
+      std::cout << "   Tmax = " << time_final                   << "\n";
+      std::cout << "   dt   = " << time_step                    << "\n";
+      std::cout << "   KryS = " << kry_size                     << "\n";
+      std::cout                                                 << "\n";
+      std::cout << "   matrix product state dimensions:             \n";
       std::cout << "   ";
       for ( int i = 0; i < L + 1; i++ ) { std::cout << std::setw( 5 ) << i; }
       std::cout                                                 << "\n";
@@ -348,6 +358,7 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
       const hid_t dataPointID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
       const hsize_t Lposize = L + 1;
       hsize_t Lsq[ 2 ]; Lsq[ 0 ] = L; Lsq[ 1 ] = L;
+      HDF5_MAKE_DATASET( dataPointID, "chrono",    1, &dimarray1, H5T_NATIVE_DOUBLE,  &elapsed    );
       HDF5_MAKE_DATASET( dataPointID, "t",         1, &dimarray1, H5T_NATIVE_DOUBLE,  &t          );
       HDF5_MAKE_DATASET( dataPointID, "Tmax",      1, &dimarray1, H5T_NATIVE_DOUBLE,  &time_final );
       HDF5_MAKE_DATASET( dataPointID, "dt",        1, &dimarray1, H5T_NATIVE_DOUBLE,  &time_step  );
