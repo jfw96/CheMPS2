@@ -1115,7 +1115,7 @@ int main( int argc, char ** argv ){
             hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
             if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
 
-            CheMPS2::CFCI * fcisolver = new CheMPS2::CFCI( ham, sum_up, sum_down, irrep, 1000.0, 0, fileID );
+            CheMPS2::CFCI * fcisolver = new CheMPS2::CFCI( ham, sum_up, sum_down, irrep, 1000.0, 2, fileID );
 
             int length = fcisolver->getVecLength( 0 );
             dcomplex * start = new dcomplex [ length ];
