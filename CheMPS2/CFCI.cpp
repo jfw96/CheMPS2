@@ -103,6 +103,8 @@ CheMPS2::CFCI::CFCI(Hamiltonian * Ham, const unsigned int theNel_up, const unsig
    StartupLookupTables();
    StartupIrrepCenter();
 
+   cout << std::endl;
+
    cout << "\n";
    cout << "   System Properties\n";
    cout << "\n";
