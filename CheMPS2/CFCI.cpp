@@ -463,6 +463,10 @@ void CheMPS2::CFCI::StartupIrrepCenter(){
    HXVworkbig1  = new dcomplex[ HXVsizeWorkspace ];
    HXVworkbig2  = new dcomplex[ HXVsizeWorkspace ];
 
+   if ( FCIverbose > 0 ){
+      cout << "FCI::Startup : Workspace allocation done" << endl;
+   }
+
 }
 
 void CheMPS2::CFCI::str2bits(const unsigned int Lval, const unsigned int bitstring, int * bits){
