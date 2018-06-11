@@ -103,24 +103,24 @@ CheMPS2::CFCI::CFCI(Hamiltonian * Ham, const unsigned int theNel_up, const unsig
    StartupLookupTables();
    StartupIrrepCenter();
 
-   std::cout << "\n";
-   std::cout << "   System Properties\n";
-   std::cout << "\n";
-   std::cout << "\n";
-   std::cout << "   L = " << L << "\n";
-   std::cout << "   Nup = " << Nel_up << "\n";
-   std::cout << "   Ndown = " << Nel_down << "\n";
-   std::cout << "   Irreps =";
+   cout << "\n";
+   cout << "   System Properties\n";
+   cout << "\n";
+   cout << "\n";
+   cout << "   L = " << L << "\n";
+   cout << "   Nup = " << Nel_up << "\n";
+   cout << "   Ndown = " << Nel_down << "\n";
+   cout << "   Irreps =";
    int * irreps = new int[ L ];
    for ( int i = 0; i < L; i++ ) {
       irreps[ i ] = Ham->getOrbitalIrrep( i );
-      std::cout << std::setfill( ' ' ) << std::setw( 10 ) << irreps[ i ];
+      cout << std::setfill( ' ' ) << std::setw( 10 ) << irreps[ i ];
    }
-   std::cout << "\n";
-   std::cout << "   N = " << Nel_up + Nel_down << "\n";
-   std::cout << "   I = " << TargetIrrep << "\n";
-   std::cout << "\n";
-   std::cout << hashline;
+   cout << "\n";
+   cout << "   N = " << Nel_up + Nel_down << "\n";
+   cout << "   I = " << TargetIrrep << "\n";
+   cout << "\n";
+   cout << hashline;
 
    const hsize_t Lsize = L;
    const double Econst = Ham->getEconst();
