@@ -2109,16 +2109,22 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
 
       double * oedmre = new double[ L * L ];
       double * oedmim = new double[ L * L ];
+
       for( int idxA = 0; idxA < L; idxA++ ){
          for( int idxB = idxA; idxB < L; idxB++ ){
+            oedmre[ idxA + L * idxB ] = 0.0;
+            oedmre[ idxB + L * idxA ] = 0.0;
+            oedmim[ idxA + L * idxB ] = 0.0;
+            oedmim[ idxB + L * idxA ] = 0.0;
+
             dcomplex sum = 0.0;
             for( int sumIdx = 0; sumIdx < L; sumIdx++ ){
-               sum += terdm[ idxA + L * ( sumIdx + L * ( idxB + L * sumIdx ) ) ];
+               sum += terdm[ idxA + L * ( sumIdx + L * ( idxB + L * sumIdx ) ) ] * ( 1.0 / ( Nel_up + Nel_down - 1.0 ) );
             }
             oedmre[ idxA + L * idxB ] =  std::real( sum );
             oedmre[ idxB + L * idxA ] =  std::real( sum );
             oedmim[ idxA + L * idxB ] =  std::imag( sum );
-            oedmim[ idxB + L * idxA ] = -std::imag( sum );            
+            oedmim[ idxB + L * idxA ] = -std::imag( sum );
          }
       }
 
