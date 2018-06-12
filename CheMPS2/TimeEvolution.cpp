@@ -405,7 +405,7 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
       }
 
       if ( doDump2RDM ) {
-         const hsize_t Lsize = L;
+         const hsize_t Lsize =  L * L * L * L;
 
          CTwoDM * thetdm = new CTwoDM( MPSBK, prob );
          CTwoDMBuilder * thetdmbuilder = new CTwoDMBuilder( prob, MPS, MPSBK );
@@ -424,8 +424,8 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
             }
          }
 
-         HDF5_MAKE_DATASET( dataPointID, "TEDM_REAL", 4, &Lsize, H5T_NATIVE_DOUBLE, tedm_real );
-         HDF5_MAKE_DATASET( dataPointID, "TEDM_IMAG", 4, &Lsize, H5T_NATIVE_DOUBLE, tedm_imag );
+         HDF5_MAKE_DATASET( dataPointID, "TEDM_REAL", 1, &Lsize, H5T_NATIVE_DOUBLE, tedm_real );
+         HDF5_MAKE_DATASET( dataPointID, "TEDM_IMAG", 1, &Lsize, H5T_NATIVE_DOUBLE, tedm_imag );
 
          delete[] tedm_real;
          delete[] tedm_imag;

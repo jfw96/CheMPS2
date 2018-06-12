@@ -2185,15 +2185,15 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
       }
 
       if( doDump2RDM ){
-         const hsize_t Lsize = L;
+         const hsize_t Lsize = L * L * L * L;
          double * tedm_real  = new double[ L * L * L * L ];
          double * tedm_imag  = new double[ L * L * L * L ];
          for( int idx = 0; idx < L * L * L * L; idx++ ){
             tedm_real[ idx ] = std::real( terdm[ idx ] );
             tedm_imag[ idx ] = std::imag( terdm[ idx ] );
          }
-         HDF5_MAKE_DATASET( dataPointID, "TEDM_REAL", 4, &Lsize, H5T_NATIVE_DOUBLE, tedm_real );
-         HDF5_MAKE_DATASET( dataPointID, "TEDM_IMAG", 4, &Lsize, H5T_NATIVE_DOUBLE, tedm_imag );
+         HDF5_MAKE_DATASET( dataPointID, "TEDM_REAL", 1, &Lsize, H5T_NATIVE_DOUBLE, tedm_real );
+         HDF5_MAKE_DATASET( dataPointID, "TEDM_IMAG", 1, &Lsize, H5T_NATIVE_DOUBLE, tedm_imag );
          delete tedm_real;
          delete tedm_imag;
       }
@@ -2201,7 +2201,7 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
       delete[] terdm;
       delete[] oedmre;
       delete[] oedmim;
-      
+
       std::cout << "\n";
 
       if ( t + timeStep < finalTime ) {
