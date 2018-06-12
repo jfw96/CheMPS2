@@ -22,7 +22,7 @@ namespace CheMPS2 {
 
       void Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
                       const double time_step, const double time_final,
-                      const int kry_size, const bool doImaginary, const bool doDumpFCI );
+                      const int kry_size, const bool doImaginary, const bool doDumpFCI, const bool doDump2RDM );
 
       private:
       void HDF5_MAKE_DATASET( hid_t setID, const char * name, int rank,

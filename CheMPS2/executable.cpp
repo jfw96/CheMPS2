@@ -412,6 +412,9 @@ cout << "\n"
 "       TIME_DUMPFCI = bool\n"
 "              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_EVOLU = TRUE and TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
 "\n"
+"       TIME_DUMP2RDM = bool\n"
+"              Set if the 2RDM is dumped into the HDF5 file. Only has affect if TIME_EVOLU = TRUE and TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
+"\n"
 "       PRINT_CORR = bool\n"
 "              Print correlation functions (TRUE or FALSE; default FALSE).\n"
 "\n"
@@ -494,6 +497,7 @@ int main( int argc, char ** argv ){
    string time_hdf5output = "";
    int    time_krysize    = 0;
    bool   time_dumpfci    = false;
+   bool   time_dump2rdm   = false;
 
    bool   print_corr = false;
    string tmp_folder = "/tmp";
@@ -618,6 +622,7 @@ int main( int argc, char ** argv ){
       if ( find_boolean( &caspt2_cumul,     line, "CASPT2_CUMUL"     ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &time_evolu,       line, "TIME_EVOLU"       ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"     ) == false ){ return clean_exit( -1 ); }
+      if ( find_boolean( &time_dump2rdm,    line, "TIME_DUMP2RDM"    ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &print_corr,       line, "PRINT_CORR"       ) == false ){ return clean_exit( -1 ); }
 
       if ( line.find( "SWEEP_STATES" ) != string::npos ){
@@ -961,6 +966,7 @@ int main( int argc, char ** argv ){
          cout << "   TIME_KRYSIZE       = " << time_krysize    << endl;
          cout << "   TIME_HDF5OUTPUT    = " << time_hdf5output << endl;
          cout << "   TIME_DUMPFCI       = " << (( time_dumpfci    ) ? "TRUE" : "FALSE" ) << endl;
+         cout << "   TIME_2RDM          = " << (( time_dump2rdm   ) ? "TRUE" : "FALSE" ) << endl;
       }
       cout << "   PRINT_CORR         = " << (( print_corr     ) ? "TRUE" : "FALSE" ) << endl;
       cout << "   TMP_FOLDER         = " << tmp_folder << endl;
@@ -1124,7 +1130,7 @@ int main( int argc, char ** argv ){
 
             dcomplex * end = new dcomplex [ length ];
 
-            fcisolver->TimeEvolution( time_step, time_final, time_krysize, start, time_dumpfci );
+            fcisolver->TimeEvolution( time_step, time_final, time_krysize, start, time_dumpfci, time_dump2rdm );
 
             delete[] end;
             delete[] start;
@@ -1149,7 +1155,7 @@ int main( int argc, char ** argv ){
                if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
 
                CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
-               taylor->Propagate( initBK, initMPS, time_step, time_final, time_krysize, false, time_dumpfci );
+               taylor->Propagate( initBK, initMPS, time_step, time_final, time_krysize, false, time_dumpfci, time_dump2rdm );
 
                if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
 

@@ -6,6 +6,7 @@
 #include <sys/time.h>
 
 #include "COneDM.h"
+#include "CTwoDMBuilder.h"
 #include "HamiltonianOperator.h"
 #include "Lapack.h"
 #include "TwoDMBuilder.h"
@@ -277,7 +278,8 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
 
 void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
                                         const double time_step, const double time_final,
-                                        const int kry_size, const bool doImaginary, const bool doDumpFCI ) {
+                                        const int kry_size, const bool doImaginary, 
+                                        const bool doDumpFCI, const bool doDump2RDM ) {
    std::cout << "\n";
    std::cout << "   Starting to propagate MPS\n";
    std::cout << "\n";
@@ -308,13 +310,12 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
       COneDM * theodm        = new COneDM( MPS, MPSBK );
       double * oedmre        = new double[ L * L ];
       double * oedmim        = new double[ L * L ];
+      theodm->gOEDMRe( oedmre );
+      theodm->gOEDMIm( oedmim );
 
       struct timeval end;
       gettimeofday( &end, NULL );
       const double elapsed = ( end.tv_sec - start.tv_sec ) + 1e-6 * ( end.tv_usec - start.tv_usec );
-
-      theodm->gOEDMRe( oedmre );
-      theodm->gOEDMIm( oedmim );
 
       std::cout << hashline;
       std::cout                                                 << "\n";
@@ -402,6 +403,35 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
             HDF5_MAKE_DATASET( FCIID, "FCI_IMAG",   1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsImagOut[ l ]      );
          }
       }
+
+      if ( doDump2RDM ) {
+         const hsize_t Lsize = L;
+
+         CTwoDM * thetdm = new CTwoDM( MPSBK, prob );
+         CTwoDMBuilder * thetdmbuilder = new CTwoDMBuilder( prob, MPS, MPSBK );
+         thetdmbuilder->Build2RDM( thetdm );
+
+         double * tedm_real  = new double[ L * L * L * L ];
+         double * tedm_imag  = new double[ L * L * L * L ];
+         for( int idxA = 0; idxA < L; idxA++ ){
+            for( int idxB = 0; idxB < L; idxB++ ){
+               for( int idxC = 0; idxC < L; idxC++ ){
+                  for( int idxD = 0; idxD < L; idxD++ ){
+                     tedm_real[ idxA + L * ( idxB + L * ( idxC + L * idxD ) ) ] = std::real( thetdm->getTwoDMA_HAM( idxA, idxB, idxC, idxD ) );
+                     tedm_imag[ idxA + L * ( idxB + L * ( idxC + L * idxD ) ) ] = std::imag( thetdm->getTwoDMA_HAM( idxA, idxB, idxC, idxD ) );
+                  }
+               }
+            }
+         }
+
+         HDF5_MAKE_DATASET( dataPointID, "TEDM_REAL", 4, &Lsize, H5T_NATIVE_DOUBLE, tedm_real );
+         HDF5_MAKE_DATASET( dataPointID, "TEDM_IMAG", 4, &Lsize, H5T_NATIVE_DOUBLE, tedm_imag );
+
+         delete[] tedm_real;
+         delete[] tedm_imag;
+         delete thetdmbuilder;
+         delete thetdm;
+      }      
       std::cout << "\n";
 
       if ( t + time_step < time_final ) {

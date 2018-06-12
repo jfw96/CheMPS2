@@ -69,7 +69,7 @@ CheMPS2::CFCI::CFCI(Hamiltonian * Ham, const unsigned int theNel_up, const unsig
    const hid_t inputGroupID             = ( HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ) ? H5Gcreate( HDF5FILEID, "/Input", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
    const hid_t systemPropertiesID       = ( HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ) ? H5Gcreate( HDF5FILEID, "/Input/SystemProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
    const hid_t waveFunctionPropertiesID = ( HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ) ? H5Gcreate( HDF5FILEID, "/Input/WaveFunctionProperties", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
-   const hsize_t dimarray1              = 1;
+   const hsize_t dimScalar              = 1;
 
 
    TargetIrrep = TargetIrrep_in;
@@ -128,13 +128,13 @@ CheMPS2::CFCI::CFCI(Hamiltonian * Ham, const unsigned int theNel_up, const unsig
    const double Econst = Ham->getEconst();
    const int N = theNel_up + theNel_down;
 
-   HDF5_MAKE_DATASET( systemPropertiesID, "L", 1, &dimarray1, H5T_STD_I32LE, &L );
-   HDF5_MAKE_DATASET( systemPropertiesID, "Nup", 1, &dimarray1, H5T_STD_I32LE, &Nel_up );
-   HDF5_MAKE_DATASET( systemPropertiesID, "Ndown", 1, &dimarray1, H5T_STD_I32LE, &Nel_down );
+   HDF5_MAKE_DATASET( systemPropertiesID, "L", 1, &dimScalar, H5T_STD_I32LE, &L );
+   HDF5_MAKE_DATASET( systemPropertiesID, "Nup", 1, &dimScalar, H5T_STD_I32LE, &Nel_up );
+   HDF5_MAKE_DATASET( systemPropertiesID, "Ndown", 1, &dimScalar, H5T_STD_I32LE, &Nel_down );
    HDF5_MAKE_DATASET( systemPropertiesID, "Irrep", 1, &Lsize, H5T_STD_I32LE, irreps );
-   HDF5_MAKE_DATASET( systemPropertiesID, "Econst", 1, &dimarray1, H5T_NATIVE_DOUBLE, &Econst );
-   HDF5_MAKE_DATASET( waveFunctionPropertiesID, "N", 1, &dimarray1, H5T_STD_I32LE, &N );
-   HDF5_MAKE_DATASET( waveFunctionPropertiesID, "I", 1, &dimarray1, H5T_STD_I32LE, &TargetIrrep );
+   HDF5_MAKE_DATASET( systemPropertiesID, "Econst", 1, &dimScalar, H5T_NATIVE_DOUBLE, &Econst );
+   HDF5_MAKE_DATASET( waveFunctionPropertiesID, "N", 1, &dimScalar, H5T_STD_I32LE, &N );
+   HDF5_MAKE_DATASET( waveFunctionPropertiesID, "I", 1, &dimScalar, H5T_STD_I32LE, &TargetIrrep );
 
    delete[] irreps;
 
@@ -2080,14 +2080,14 @@ void CheMPS2::CFCI::HDF5_MAKE_DATASET( hid_t setID, const char * name, int rank,
    }
 }
 
-void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned int krylovSize, dcomplex * input, const bool doDumpFCI ){
+void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned int krylovSize, dcomplex * input, const bool doDumpFCI, const bool doDump2RDM ){
 
    std::cout << "\n";
    std::cout << "   Starting to propagate FCI wave function\n";
    std::cout << "\n";
 
    const hid_t outputID    = H5Gcreate( HDF5FILEID, "/Output", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
-   const hsize_t dimarray1 = 1;
+   const hsize_t dimScalar = 1;
 
    struct timeval start, end;
    gettimeofday( &start, NULL );
@@ -2150,19 +2150,16 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
       sprintf( dataPointname, "/Output/DataPoint%.5f", t );
       const hid_t dataPointID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
       hsize_t Lsq[ 2 ]; Lsq[ 0 ] = L; Lsq[ 1 ] = L;
-      HDF5_MAKE_DATASET( dataPointID, "chrono",    1, &dimarray1, H5T_NATIVE_DOUBLE, &elapsed     );
-      HDF5_MAKE_DATASET( dataPointID, "t",         1, &dimarray1, H5T_NATIVE_DOUBLE, &t           );
-      HDF5_MAKE_DATASET( dataPointID, "Tmax",      1, &dimarray1, H5T_NATIVE_DOUBLE, &finalTime   );
-      HDF5_MAKE_DATASET( dataPointID, "dt",        1, &dimarray1, H5T_NATIVE_DOUBLE, &timeStep    );
-      HDF5_MAKE_DATASET( dataPointID, "KryS",      1, &dimarray1, H5T_STD_I32LE,     &krylovSize  );
-      HDF5_MAKE_DATASET( dataPointID, "Norm",      1, &dimarray1, H5T_NATIVE_DOUBLE, &normOfState );
-      HDF5_MAKE_DATASET( dataPointID, "Energy",    1, &dimarray1, H5T_NATIVE_DOUBLE, &energy      );
+      HDF5_MAKE_DATASET( dataPointID, "chrono",    1, &dimScalar, H5T_NATIVE_DOUBLE, &elapsed     );
+      HDF5_MAKE_DATASET( dataPointID, "t",         1, &dimScalar, H5T_NATIVE_DOUBLE, &t           );
+      HDF5_MAKE_DATASET( dataPointID, "Tmax",      1, &dimScalar, H5T_NATIVE_DOUBLE, &finalTime   );
+      HDF5_MAKE_DATASET( dataPointID, "dt",        1, &dimScalar, H5T_NATIVE_DOUBLE, &timeStep    );
+      HDF5_MAKE_DATASET( dataPointID, "KryS",      1, &dimScalar, H5T_STD_I32LE,     &krylovSize  );
+      HDF5_MAKE_DATASET( dataPointID, "Norm",      1, &dimScalar, H5T_NATIVE_DOUBLE, &normOfState );
+      HDF5_MAKE_DATASET( dataPointID, "Energy",    1, &dimScalar, H5T_NATIVE_DOUBLE, &energy      );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL", 2, Lsq,        H5T_NATIVE_DOUBLE, oedmre       );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG", 2, Lsq,        H5T_NATIVE_DOUBLE, oedmim       );
 
-      delete[] terdm;
-      delete[] oedmre;
-      delete[] oedmim;
 
       if( doDumpFCI ){
          std::vector< std::vector< int > > alphasOut;
@@ -2182,10 +2179,29 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
             const hid_t FCIID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataFCINameN, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
             HDF5_MAKE_DATASET( FCIID, "FCI_ALPHAS", 1, &Lsize,     H5T_NATIVE_INT,    &betasOut[ l ][ 0 ]  );
             HDF5_MAKE_DATASET( FCIID, "FCI_BETAS",  1, &Lsize,     H5T_NATIVE_INT,    &alphasOut[ l ][ 0 ] );
-            HDF5_MAKE_DATASET( FCIID, "FCI_REAL",   1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsRealOut[ l ]   );
-            HDF5_MAKE_DATASET( FCIID, "FCI_IMAG",   1, &dimarray1, H5T_NATIVE_DOUBLE, &coefsImagOut[ l ]   );
+            HDF5_MAKE_DATASET( FCIID, "FCI_REAL",   1, &dimScalar, H5T_NATIVE_DOUBLE, &coefsRealOut[ l ]   );
+            HDF5_MAKE_DATASET( FCIID, "FCI_IMAG",   1, &dimScalar, H5T_NATIVE_DOUBLE, &coefsImagOut[ l ]   );
          }
       }
+
+      if( doDump2RDM ){
+         const hsize_t Lsize = L;
+         double * tedm_real  = new double[ L * L * L * L ];
+         double * tedm_imag  = new double[ L * L * L * L ];
+         for( int idx = 0; idx < L * L * L * L; idx++ ){
+            tedm_real[ idx ] = std::real( terdm[ idx ] );
+            tedm_imag[ idx ] = std::imag( terdm[ idx ] );
+         }
+         HDF5_MAKE_DATASET( dataPointID, "TEDM_REAL", 4, &Lsize, H5T_NATIVE_DOUBLE, tedm_real );
+         HDF5_MAKE_DATASET( dataPointID, "TEDM_IMAG", 4, &Lsize, H5T_NATIVE_DOUBLE, tedm_imag );
+         delete tedm_real;
+         delete tedm_imag;
+      }
+
+      delete[] terdm;
+      delete[] oedmre;
+      delete[] oedmim;
+      
       std::cout << "\n";
 
       if ( t + timeStep < finalTime ) {
