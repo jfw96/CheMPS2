@@ -148,11 +148,12 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
       struct timeval start, end;
       gettimeofday( &start, NULL );
 
-      SyBookkeeper * bkTemp = new SyBookkeeper( prob, scheme->get_D( 0 ) );
+      SyBookkeeper * bkTemp = new SyBookkeeper( *krylovBasisSyBookkeepers[ kry - 1 ] );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
       for ( int index = 0; index < L; index++ ) {
-         mpsTemp[ index ] = new CTensorT( index, bkTemp );
-         mpsTemp[ index ]->random();
+         // mpsTemp[ index ] = new CTensorT( index, bkTemp );
+         // mpsTemp[ index ]->random();
+         mpsTemp[ index ] = new CTensorT( krylovBasisVectors[ kry - 1 ][ index ] );
       }
       double normTemp = norm( mpsTemp );
       mpsTemp[ 0 ]->number_operator( 0.0, 1.0 / normTemp );
