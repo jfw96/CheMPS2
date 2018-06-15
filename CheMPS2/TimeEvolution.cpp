@@ -192,7 +192,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
 
       std::cout << "      i = " << kry << " ";
       std::cout << "MPS dimensions:";
-      for (int i = 0; i < prob->gL(); i++){
+      for (int i = 0; i <= prob->gL(); i++){
          std::cout << " " << krylovBasisSyBookkeepers[ kry ]->gTotDimAtBound( i );
       }
       std::cout << " time elapsed: " << elapsed << " seconds\n";
