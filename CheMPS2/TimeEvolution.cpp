@@ -308,11 +308,11 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
       int * NSwes            = new int[ numInst ];
       const double normOfMPS = norm( MPS );
       const double energy    = std::real( hamOp->ExpectationValue( MPS, MPSBK ) );
-      COneDM * theodm        = new COneDM( MPS, MPSBK );
+      COneDM * theodm        = new COneDM( MPS, MPSBK, prob );
       double * oedmre        = new double[ L * L ];
       double * oedmim        = new double[ L * L ];
-      theodm->gOEDMRe( oedmre );
-      theodm->gOEDMIm( oedmim );
+      theodm->gOEDMReHamil( oedmre );
+      theodm->gOEDMImHamil( oedmim );
 
       struct timeval end;
       gettimeofday( &end, NULL );

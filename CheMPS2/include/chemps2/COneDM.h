@@ -25,6 +25,7 @@
 #include "CTensorL.h"
 #include "CTensorOperator.h"
 #include "CTensorT.h"
+#include "Problem.h"
 
 namespace CheMPS2 {
 
@@ -34,15 +35,20 @@ namespace CheMPS2 {
       //! Constructor
       /** \param denBKIn Symmetry sector bookkeeper
              \param ProbIn The problem to be solved */
-      COneDM( CTensorT ** mps, const SyBookkeeper * denBKIn );
+      COneDM( CTensorT ** mps, const SyBookkeeper * denBKIn, const Problem * ProbIn );
 
       ~COneDM();
 
-      void gOEDMRe( double * array );
+      void gOEDMReDMRG( double * array );
 
-      void gOEDMIm( double * array );
+      void gOEDMImDMRG( double * array );
+
+      void gOEDMReHamil( double * array );
+
+      void gOEDMImHamil( double * array );
 
       private:
+
       void updateMovingRightSafe( const int cnt );
 
       void updateMovingRight( const int index );
@@ -59,6 +65,8 @@ namespace CheMPS2 {
       int * isAllocated;
 
       const SyBookkeeper * denBK;
+
+      const Problem * Prob;
 
       CTensorT ** mps;
 

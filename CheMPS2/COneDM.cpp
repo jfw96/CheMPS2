@@ -4,8 +4,8 @@
 #include "Special.h"
 #include "Wigner.h"
 
-CheMPS2::COneDM::COneDM( CTensorT ** mpsIn, const SyBookkeeper * denBKIn )
-    : L( denBKIn->gL() ), denBK( denBKIn ) {
+CheMPS2::COneDM::COneDM( CTensorT ** mpsIn, const SyBookkeeper * denBKIn, const Problem * ProbIn )
+    : L( denBKIn->gL() ), denBK( denBKIn ), Prob(ProbIn) {
 
    matrix      = new dcomplex[ L * L ];
    Ltensors    = new CTensorL **[ L ];
@@ -51,17 +51,35 @@ CheMPS2::COneDM::~COneDM() {
    delete[] mps;
 }
 
-void CheMPS2::COneDM::gOEDMRe( double * array ) {
+void CheMPS2::COneDM::gOEDMReDMRG( double * array ) {
    for ( int i = 0; i < L * L; i++ ) {
       array[ i ] = std::real( matrix[ i ] );
    }
 }
 
-void CheMPS2::COneDM::gOEDMIm( double * array ) {
+void CheMPS2::COneDM::gOEDMImDMRG( double * array ) {
    for ( int i = 0; i < L * L; i++ ) {
       array[ i ] = std::imag( matrix[ i ] );
    }
 }
+
+
+void CheMPS2::COneDM::gOEDMReHamil( double * array ) {
+   for ( int i = 0; i < L; i++ ) {
+      for ( int j = 0; j < L; j++ ) {
+         array[ i + L * j ] = std::real( matrix[ Prob->gf1( i ) + L * Prob->gf1( j ) ] );
+      }
+   }
+}
+
+void CheMPS2::COneDM::gOEDMImHamil( double * array ) {
+   for ( int i = 0; i < L; i++ ) {
+      for ( int j = 0; j < L; j++ ) {
+         array[ i + L * j ] = std::imag( matrix[ Prob->gf1( i ) + L * Prob->gf1( j ) ] );
+      }
+   }
+}
+
 
 void CheMPS2::COneDM::updateMovingRightSafe( const int cnt ) {
    allocateTensors( cnt );
