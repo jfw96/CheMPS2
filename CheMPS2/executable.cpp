@@ -317,7 +317,7 @@ cout << "\n"
 "              Set the residual norm tolerance for the Davidson algorithm for the successive sweep instructions (positive floats).\n"
 "\n"
 "       SWEEP_CUTOFF = flt, flt, flt\n"
-"              Set the cut off parameter for the Krylov space generation. Neccessary when TIME_EVOLU = TRUE (positive integers).\n"
+"              Set the cut off parameter for the Krylov space generation. Necessary when TIME_EVOLU = TRUE (positive integers).\n"
 "\n"
 "       NOCC = int, int, int, int\n"
 "              Set the number of occupied (external core) orbitals per irrep (psi4 irrep ordering).\n"
@@ -395,22 +395,18 @@ cout << "\n"
 "              Set the type of time evolution calculation to be performed. Options are (K) for Krylov (default), (R) for Runge-Kutta, (E) for Euler, and (F) for FCI.\n"
 "\n"
 "       TIME_STEP = flt\n"
-"              Set the time step (DT) for the time evolution calculation. Neccessary when TIME_EVOLU = TRUE (positive float).\n"
+"              Set the time step (DT) for the time evolution calculation. Necessary when TIME_EVOLU = TRUE (positive float).\n"
 "\n"
 "       TIME_FINAL = flt\n"
-"              Set the final time for the time evolution calculation. Neccessary when TIME_EVOLU = TRUE (positive float). \n"
+"              Set the final time for the time evolution calculation. Necessary when TIME_EVOLU = TRUE (positive float). \n"
 "\n"
-"       TIME_NINIT = int, int, int\n"
-"              Set the occupation numbers for the inital state. Neccessary when TIME_EVOLU = TRUE. Ordered as in the FCIDUMP file. (positive integers).\n"
-"\n"
-"       TIME_FCI_ALPHA = int, int, int\n"
-"              Set the occupation numbers for the alpha orbitals. Neccessary when TIME_EVOLU = TRUE and TIME_TYPE = F. Ordered as in the FCIDUMP file. (positive integers).\n"
-"\n"
-"       TIME_FCI_BETA = int, int, int\n"
-"              Set the occupation numbers for the beta orbitals. Neccessary when TIME_EVOLU = TRUE and TIME_TYPE = F. Ordered as in the FCIDUMP file. (positive integers).\n"
+"       TIME_NINIT = custom\n"
+"              Set the inital state. Necessary when TIME_EVOLU = TRUE. Options are: (HF) for Hartree-Fock (default) = Fills the orbitals from below until all electrons are distributed.\n"
+"                                                                                   (PS) for paired singlet = Half filling with each site holding one electron which is in an S=0 state with its neighbor. Requires NELECTRONS = N_ORB and MULTIPLICITY = 1.\n"
+"                                                                                   (int, int, int, ...)  occupation numbers of orbtails (positive integers).\n"
 "\n"
 "       TIME_KRYSIZE = int\n"
-"              Set the maximum Krylov space dimension of a time propagation step. Neccessary when TIME_EVOLU = TRUE (positive integer).\n"
+"              Set the maximum Krylov space dimension of a time propagation step. Necessary when TIME_EVOLU = TRUE (positive integer).\n"
 "\n"
 "       TIME_HDF5OUTPUT = /path/to/hdf5/destination\n"
 "              Set the file path for the HDF5 output when specified (default unspecified).\n"
@@ -500,8 +496,6 @@ int main( int argc, char ** argv ){
    double time_step       = 0.0;
    double time_final      = 0.0;
    string time_ninit      = "";
-   string time_fci_alpha  = "";
-   string time_fci_beta   = "";
    string time_hdf5output = "";
    int    time_krysize    = 0;
    bool   time_dumpfci    = false;
@@ -701,16 +695,6 @@ int main( int argc, char ** argv ){
          time_ninit = line.substr( pos, line.length() - pos );
       }
 
-      if ( line.find( "TIME_FCI_ALPHA" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         time_fci_alpha = line.substr( pos, line.length() - pos );
-      }
-
-      if ( line.find( "TIME_FCI_BETA" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         time_fci_beta = line.substr( pos, line.length() - pos );
-      }
-
       if ( line.find( "TIME_KRYSIZE" ) != string::npos ){
          find_integer( &time_krysize, line, "TIME_KRYSIZE", true, 1, false, -1 );
       }
@@ -872,8 +856,8 @@ int main( int argc, char ** argv ){
    int n_orbs        = 0;
    for ( int cnt = 0; cnt < num_irreps; cnt++ ) { n_orbs += nocc_parsed[ cnt ] + nact_parsed[ cnt ] + nvir_parsed[ cnt ]; }
 
+   int*    time_ninit_parsed = NULL;
    double* time_noise_parsed = NULL;
-
    if ( time_evolu ){
       
       if ( time_step <= 0 ){
@@ -887,14 +871,9 @@ int main( int argc, char ** argv ){
       }
 
       if ( time_type == 'K' && time_krysize <= 0 ){
-         if ( am_i_master ){ cerr << "TIME_KRYSIZE should be greater than zero if TIME_TYPE = K!" << endl; }
+         if ( am_i_master ){ cerr << "TIME_KRYSIZE should be greater than zero if TIME_TYPE = K !" << endl; }
          return clean_exit( -1 );
       }
-   }
-
-   int *   time_ninit_parsed = NULL;
-   if ( time_evolu && time_type != 'F' ){
-      time_ninit_parsed = new int[ n_orbs ];
 
       if ( time_ninit.length() == 0 ){
          if ( am_i_master ){ cerr << "TIME_NINIT is mandatory options when TIME_EVOLU = TRUE !" << endl; }
@@ -902,76 +881,36 @@ int main( int argc, char ** argv ){
       }
 
       const int ni_ini  = count( time_ninit.begin(), time_ninit.end(), ',' ) + 1;
-      const bool init_ok = ( n_orbs == ni_ini );
+      const bool init_ok = ( n_orbs == ni_ini || time_ninit.compare("HF") || time_ninit.compare("PS") );
 
       if ( init_ok == false ){
-         if ( am_i_master ){ cerr << "There should be " << n_orbs << " numbers in TIME_NINIT when TIME_EVOLU = TRUE !" << endl; }
+         if ( am_i_master ){ cerr << "TIME_NINIT should hold one of the allowed options when TIME_EVOLU = TRUE !" << endl; }
          return clean_exit( -1 );
       }
 
-      fetch_ints( time_ninit, time_ninit_parsed, n_orbs );
-
-      for ( int cnt = 0; cnt < n_orbs; cnt ++ ){
-         if ( time_ninit_parsed[ cnt ] < 0 || time_ninit_parsed[ cnt ] > 2 ){
-            if ( am_i_master ) { cerr << "The occupation number in TIME_NINIT has to be 0, 1 or 2 !" << endl; }
-            return clean_exit( - 1 );
-         }
+      if ( init_ok && time_ninit.compare("PS") && ( n_orbs != nelectrons || multiplicity != 1 ) ){
+         if ( am_i_master ){ cerr << "TIME_NINIT = PS requires NELECTRONS = NORBS and MULTIPLICITY = 1 !" << endl; }
+         return clean_exit( -1 );
       }
 
-      int elec_sum = 0; for ( int cnt = 0; cnt < n_orbs; cnt++ ) { elec_sum += time_ninit_parsed[ cnt ];  }
-      if ( elec_sum != nelectrons ){
-         if ( am_i_master ) { cerr << "There should be " << nelectrons << " distributed over the molecular orbitals in TIME_NINIT !" << endl; }
-         return clean_exit( - 1 );
+      if( init_ok && ni_ini == n_orbs ){
+         time_ninit_parsed = new int[ n_orbs ];
+         fetch_ints( time_ninit, time_ninit_parsed, n_orbs );
+
+         for ( int cnt = 0; cnt < n_orbs; cnt ++ ){
+            if ( time_ninit_parsed[ cnt ] < 0 || time_ninit_parsed[ cnt ] > 2 ){
+               if ( am_i_master ) { cerr << "The occupation number in TIME_NINIT has to be 0, 1 or 2 !" << endl; }
+               return clean_exit( - 1 );
+            }
+         }
+
+         int elec_sum = 0; for ( int cnt = 0; cnt < n_orbs; cnt++ ) { elec_sum += time_ninit_parsed[ cnt ];  }
+         if ( elec_sum != nelectrons ){
+            if ( am_i_master ) { cerr << "There should be " << nelectrons << " distributed over the molecular orbitals in TIME_NINIT !" << endl; }
+            return clean_exit( - 1 );
+         }
       }
    }
-
-   int *   time_fci_alpha_parsed = NULL;
-   int *   time_fci_beta_parsed = NULL;
-   if ( time_evolu && time_type == 'F' ){
-      time_fci_alpha_parsed = new int[ n_orbs ];
-      time_fci_beta_parsed = new int[ n_orbs ];
-
-      if ( time_fci_alpha.length() == 0 ){
-         if ( am_i_master ){ cerr << "TIME_FCI_ALPHA is mandatory options when TIME_EVOLU = TRUE and TIME_TYPE = F !" << endl; }
-         return clean_exit( -1 );
-      }
-
-      if ( time_fci_beta.length() == 0 ){
-         if ( am_i_master ){ cerr << "TIME_FCI_BETA is mandatory options when TIME_EVOLU = TRUE and TIME_TYPE = F !" << endl; }
-         return clean_exit( -1 );
-      }
-
-      const int alpha_ini  = count( time_fci_alpha.begin(), time_fci_alpha.end(), ',' ) + 1;
-      const int beta_ini  = count( time_fci_alpha.begin(), time_fci_alpha.end(), ',' ) + 1;
-      const bool init_ok = ( n_orbs == alpha_ini && n_orbs == beta_ini );
-
-      if ( init_ok == false ){
-         if ( am_i_master ){ cerr << "There should be " << n_orbs << " numbers in TIME_FCI_ALPHA and TIME_FCI_BETA when TIME_EVOLU = TRUE and TIME_TYPE = F !" << endl; }
-         return clean_exit( -1 );
-      }
-
-      fetch_ints( time_fci_alpha, time_fci_alpha_parsed, n_orbs );
-      fetch_ints( time_fci_beta,  time_fci_beta_parsed,  n_orbs );
-
-      for ( int cnt = 0; cnt < n_orbs; cnt ++ ){
-         if ( time_fci_alpha_parsed[ cnt ] < 0 || time_fci_alpha_parsed[ cnt ] > 1 ){
-            if ( am_i_master ) { cerr << "The occupation number in TIME_FCI_ALPHA has to be 0 or 1!" << endl; }
-            return clean_exit( - 1 );
-         }
-         if ( time_fci_beta_parsed[ cnt ] < 0 || time_fci_beta_parsed[ cnt ] > 1 ){
-            if ( am_i_master ) { cerr << "The occupation number in TIME_FCI_BETA has to be 0 or 1!" << endl; }
-            return clean_exit( - 1 );
-         }
-      }
-
-      int elec_sum = 0; for ( int cnt = 0; cnt < n_orbs; cnt++ ) { elec_sum += time_fci_alpha_parsed[ cnt ] + time_fci_beta_parsed[ cnt ];  }
-      if ( elec_sum != nelectrons ){
-         if ( am_i_master ) { cerr << "There should be " << nelectrons << " distributed over the molecular orbitals in TIME_FCI_ALPHA and TIME_FCI_BETA !" << endl; }
-         return clean_exit( - 1 );
-      }
-
-   }
-
 
    /**********************
    *  Print the options  *
@@ -1027,15 +966,10 @@ int main( int argc, char ** argv ){
       }
       cout << "   TIME_EVOLU         = " << (( time_evolu        ) ? "TRUE" : "FALSE" ) << endl;
       if ( time_evolu ){
-         cout << "   TIME_TYPE          = " << time_type     << endl;
-         cout << "   TIME_STEP          = " << time_step     << endl;
-         cout << "   TIME_FINAL         = " << time_final    << endl;
-         if( time_type != 'F' ){
-            cout << "   TIME_NINIT         = [ " << time_ninit_parsed    [ 0 ]; for ( int cnt = 1; cnt < n_orbs; cnt++ ){ cout << " ; " << time_ninit_parsed    [ cnt ]; } cout << " ]" << endl;
-         } else {
-            cout << "   TIME_FCI_ALPHA     = [ " << time_fci_alpha_parsed[ 0 ]; for ( int cnt = 1; cnt < n_orbs; cnt++ ){ cout << " ; " << time_fci_alpha_parsed[ cnt ]; } cout << " ]" << endl;
-            cout << "   TIME_FCI_BETA      = [ " << time_fci_beta_parsed [ 0 ]; for ( int cnt = 1; cnt < n_orbs; cnt++ ){ cout << " ; " << time_fci_beta_parsed [ cnt ]; } cout << " ]" << endl;
-         }
+         cout << "   TIME_TYPE          = " << time_type       << endl;
+         cout << "   TIME_STEP          = " << time_step       << endl;
+         cout << "   TIME_FINAL         = " << time_final      << endl;
+         cout << "   TIME_NINIT         = " << time_ninit      << endl;
          cout << "   TIME_KRYSIZE       = " << time_krysize    << endl;
          cout << "   TIME_HDF5OUTPUT    = " << time_hdf5output << endl;
          cout << "   TIME_DUMPFCI       = " << (( time_dumpfci    ) ? "TRUE" : "FALSE" ) << endl;
@@ -1173,9 +1107,12 @@ int main( int argc, char ** argv ){
             int sum_alpha   = 0;
             int sum_beta    = 0;
 
-            for( int orb = 0; orb < prob->gL(); orb++ ){
-               sum_alpha += time_fci_alpha_parsed[ orb ];
-               sum_beta  += time_fci_beta_parsed [ orb ];
+            if( time_ninit.find( "HF" ) != string::npos ){
+               sum_alpha = nelectrons / 2 + (nelectrons % 2 == 1);
+               sum_beta  = nelectrons / 2;
+            } else if( time_ninit.find( "PS" ) != string::npos ){
+               sum_alpha = nelectrons / 2;
+               sum_beta  = nelectrons / 2;
             }
 
             hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
@@ -1186,19 +1123,64 @@ int main( int argc, char ** argv ){
             int length = fcisolver->getVecLength( 0 );
             dcomplex * start = new dcomplex [ length ];
             fcisolver->ClearVector( length, start );
-            fcisolver->setFCIcoeff( time_fci_alpha_parsed, time_fci_beta_parsed, 1.0, start );
 
-            dcomplex * end = new dcomplex [ length ];
+            if( time_ninit.find( "HF" ) != string::npos ){
+               int* alphas = new int[ n_orbs ];
+               int* betas  = new int[ n_orbs ];
+               for(int iorb = 0; iorb < n_orbs; iorb++ ){ alphas[ iorb ] = 0; betas[ iorb ] = 0; }
+
+               for( int nidx = 0; nidx < nelectrons / 2; nidx++ ){
+                  alphas[ nidx ] = 1;
+                  betas [ nidx ] = 1;
+               }
+               if( nelectrons % 2 == 1 ){ alphas[ nelectrons / 2 ] = 1; }
+
+               fcisolver->setFCIcoeff( alphas, betas, 1.0, start );
+
+               delete [] alphas;
+               delete [] betas;
+
+            } else if( time_ninit.find( "PS" ) != string::npos ){
+               int* alphas = new int[ n_orbs ];
+               int* betas  = new int[ n_orbs ];
+
+               for( int idx = 0; idx < std::pow( 2 , n_orbs / 2); idx++ ){
+                  for(int iorb = 0; iorb < n_orbs; iorb++ ){ alphas[ iorb ] = 0; betas[ iorb ] = 0; }
+
+                  for( int iorb = 0; iorb < n_orbs; iorb+=2 ){ 
+                     alphas[ iorb ] = ( idx >> ( iorb / 2 ) ) & 1;
+                     betas [ iorb ] = !alphas[ iorb ];
+
+                     alphas[ iorb + 1 ] = (alphas[ iorb ] == 0) ? 1 : 0;
+                     betas [ iorb + 1 ] = (betas [ iorb ] == 0) ? 1 : 0;
+                  }
+
+                  fcisolver->setFCIcoeff( alphas, betas, std::pow( 2.0, -n_orbs / 4.0), start );
+               }
+               delete [] alphas;
+               delete [] betas;
+            }
 
             fcisolver->TimeEvolution( time_step, time_final, time_krysize, start, time_dumpfci, time_dump2rdm );
 
-            delete[] end;
             delete[] start;
-
             delete fcisolver;
 
-         } else {
-            if ( time_type == 'K' ){
+         } else if ( time_type == 'K' ){
+
+               if( time_ninit.find( "HF" ) != string::npos ){
+                  time_ninit_parsed = new int[ n_orbs ]; 
+                  for(int iorb = 0; iorb < n_orbs; iorb++ ){ time_ninit_parsed[ iorb ] = 0; }
+                  for( int nidx = 0; nidx < nelectrons; nidx++ ){
+                     time_ninit_parsed[ nidx / 2 ]++;
+                  }
+               } else if( time_ninit.find( "PS" ) != string::npos ){
+                  time_ninit_parsed = new int[ n_orbs ];
+                  for( int iorb = 0; iorb < n_orbs; iorb++ ){
+                     time_ninit_parsed[ iorb ] = 1;
+                  }
+               }
+
                CheMPS2::SyBookkeeper * initBK  = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
                CheMPS2::CTensorT    ** initMPS = new CheMPS2::CTensorT *[ prob->gL() ];
 
@@ -1223,12 +1205,10 @@ int main( int argc, char ** argv ){
                }
                delete [] initMPS;
                delete initBK;
-            } else {
-               cerr << "TIME_TYPE different from K is not implemented yet" << std::endl;
-               clean_exit( 1 );
-            }
+         } else {
+            cerr << "TIME_TYPE different from K is not implemented yet" << std::endl;
+            clean_exit( 1 );
          }
-
       }
 
       delete prob;
@@ -1284,8 +1264,6 @@ int main( int argc, char ** argv ){
    delete [] nact_parsed;
    delete [] nvir_parsed;
    delete [] time_ninit_parsed;
-   delete [] time_fci_alpha_parsed;
-   delete [] time_fci_beta_parsed;
    delete [] time_noise_parsed;
    delete opt_scheme;
    delete ham;
