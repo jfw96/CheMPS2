@@ -881,14 +881,14 @@ int main( int argc, char ** argv ){
       }
 
       const int ni_ini  = count( time_ninit.begin(), time_ninit.end(), ',' ) + 1;
-      const bool init_ok = ( n_orbs == ni_ini || time_ninit.compare("HF") || time_ninit.compare("PS") );
+      const bool init_ok = ( n_orbs == ni_ini || time_ninit.find( "HF" ) != string::npos || time_ninit.find( "PS" ) != string::npos );
 
       if ( init_ok == false ){
          if ( am_i_master ){ cerr << "TIME_NINIT should hold one of the allowed options when TIME_EVOLU = TRUE !" << endl; }
          return clean_exit( -1 );
       }
 
-      if ( init_ok && time_ninit.compare("PS") && ( n_orbs != nelectrons || multiplicity != 1 ) ){
+      if ( init_ok && time_ninit.find( "PS" ) != string::npos && ( n_orbs != nelectrons || multiplicity != 1 ) ){
          if ( am_i_master ){ cerr << "TIME_NINIT = PS requires NELECTRONS = NORBS and MULTIPLICITY = 1 !" << endl; }
          return clean_exit( -1 );
       }
