@@ -1040,7 +1040,7 @@ int main( int argc, char ** argv ){
       } else {
          dmrg2ham = new int[ ham->getL() ];
          assert( fcidump_norb == ham->getL() );
-         for( int i = 0; i < ham->getL(); i++ ){ dmrh2ham[ i ] = i; }
+         for( int i = 0; i < ham->getL(); i++ ){ dmrg2ham[ i ] = i; }
          prob->setup_reorder_custom( dmrg2ham );
          delete [] dmrg2ham;
       }
