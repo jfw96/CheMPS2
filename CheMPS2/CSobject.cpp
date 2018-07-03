@@ -781,11 +781,11 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
          int info;
          dlasrt_( &ID, &totalDimSVD, values, &info ); // Quicksort
 
-         // The D+1'th value becomes the lower bound Schmidt value. Every value smaller than or equal to the D+1'th value is thrown out (hence Dactual <= Ddesired).
+         // The D+1'th value becomes the lower bound Schmidt value. Every value smaller than the D+1'th value is thrown out (hence Dactual <= Ddesired).
          const double lowerBound = values[ virtualdimensionD ];
          for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ){
             for ( int cnt = 0; cnt < NewDims[ iCenter ]; cnt++ ){
-               if ( Lambdas[ iCenter ][ cnt ] <= lowerBound ){ NewDims[ iCenter ] = cnt; }
+               if ( Lambdas[ iCenter ][ cnt ] < lowerBound ){ NewDims[ iCenter ] = cnt; }
             }
          }
 
