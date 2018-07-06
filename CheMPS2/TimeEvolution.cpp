@@ -419,7 +419,7 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
                for( int idxC = 0; idxC < L; idxC++ ){
                   for( int idxD = 0; idxD < L; idxD++ ){
                      tedm_real[ idxA + L * ( idxB + L * ( idxC + L * idxD ) ) ] = std::real( thetdm->getTwoDMA_HAM( idxA, idxB, idxC, idxD ) );
-                     tedm_imag[ idxA + L * ( idxB + L * ( idxC + L * idxD ) ) ] = std::imag( thetdm->getTwoDMA_HAM( idxA, idxB, idxC, idxD ) );
+                     tedm_imag[ idxA + L * ( idxB + L * ( idxC + L * idxD ) ) ] = (-1.0) * std::imag( thetdm->getTwoDMA_HAM( idxA, idxB, idxC, idxD ) );
                   }
                }
             }

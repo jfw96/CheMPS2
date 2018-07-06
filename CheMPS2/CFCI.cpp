@@ -103,26 +103,26 @@ CheMPS2::CFCI::CFCI(Hamiltonian * Ham, const unsigned int theNel_up, const unsig
    StartupLookupTables();
    StartupIrrepCenter();
 
-   cout << std::endl;
+   std::cout << std::endl;
 
-   cout << "\n";
-   cout << "   System Properties\n";
-   cout << "\n";
-   cout << "\n";
-   cout << "   L = " << L << "\n";
-   cout << "   Nup = " << Nel_up << "\n";
-   cout << "   Ndown = " << Nel_down << "\n";
-   cout << "   Irreps =";
+   std::cout << "\n";
+   std::cout << "   System Properties\n";
+   std::cout << "\n";
+   std::cout << "\n";
+   std::cout << "   L = " << L << "\n";
+   std::cout << "   Nup = " << Nel_up << "\n";
+   std::cout << "   Ndown = " << Nel_down << "\n";
+   std::cout << "   Irreps =";
    int * irreps = new int[ L ];
    for ( int i = 0; i < L; i++ ) {
       irreps[ i ] = Ham->getOrbitalIrrep( i );
-      cout << std::setfill( ' ' ) << std::setw( 10 ) << irreps[ i ];
+      std::cout << std::setfill( ' ' ) << std::setw( 10 ) << irreps[ i ];
    }
-   cout << "\n";
-   cout << "   N = " << Nel_up + Nel_down << "\n";
-   cout << "   I = " << TargetIrrep << "\n";
-   cout << "\n";
-   cout << hashline;
+   std::cout << "\n";
+   std::cout << "   N = " << Nel_up + Nel_down << "\n";
+   std::cout << "   I = " << TargetIrrep << "\n";
+   std::cout << "\n";
+   std::cout << hashline;
 
    const hsize_t Lsize = L;
    const double Econst = Ham->getEconst();
@@ -273,8 +273,8 @@ void CheMPS2::CFCI::StartupCountersVsBitstrings(){
    for ( unsigned int irrep = 0; irrep < num_irreps; irrep++ ){
    
       if ( FCIverbose>1 ){
-         cout << "FCI::Startup : For irrep " << irrep << " there are " << numPerIrrep_up  [ irrep ] << " alpha Slater determinants and "
-                                                                       << numPerIrrep_down[ irrep ] <<  " beta Slater determinants." << endl;
+         std::cout << "FCI::Startup : For irrep " << irrep << " there are " << numPerIrrep_up  [ irrep ] << " alpha Slater determinants and "
+                                                                       << numPerIrrep_down[ irrep ] <<  " beta Slater determinants." << std::endl;
       }
       
       cnt2str_up  [ irrep ] = new unsigned int[ numPerIrrep_up  [ irrep ] ];
@@ -452,13 +452,13 @@ void CheMPS2::CFCI::StartupIrrepCenter(){
       assert( check <= ((unsigned int) INT_MAX ) ); // Length of FCI vectors should be less then the SIGNED integer size (to be able to call lapack)
    }
    if ( FCIverbose > 0 ){
-      cout << "FCI::Startup : Number of variables in the FCI vector = " << getVecLength( 0 ) << endl;
+      std::cout << "FCI::Startup : Number of variables in the FCI vector = " << getVecLength( 0 ) << std::endl;
       double num_megabytes = ( 2.0 * sizeof(double) * HXVsizeWorkspace ) / 1048576;
-      cout << "FCI::Startup : Without additional loops the FCI matrix-vector product requires a workspace of " << num_megabytes << " MB memory." << endl;
+      std::cout << "FCI::Startup : Without additional loops the FCI matrix-vector product requires a workspace of " << num_megabytes << " MB memory." << std::endl;
       if ( maxMemWorkMB < num_megabytes ){
          HXVsizeWorkspace = (unsigned int) ceil( ( maxMemWorkMB * 1048576 ) / ( 2 * sizeof(double) ) );
          num_megabytes = ( 2.0 * sizeof(double) * HXVsizeWorkspace ) / 1048576;
-         cout << "               For practical purposes, the workspace is constrained to " << num_megabytes << " MB memory." << endl;
+         std::cout << "               For practical purposes, the workspace is constrained to " << num_megabytes << " MB memory." << std::endl;
       }
    }
    HXVworksmall = new dcomplex[ L * L * L * L ];
@@ -466,8 +466,10 @@ void CheMPS2::CFCI::StartupIrrepCenter(){
    HXVworkbig2  = new dcomplex[ HXVsizeWorkspace ];
 
    if ( FCIverbose > 0 ){
-      cout << "FCI::Startup : Workspace allocation done" << endl;
+      std::cout << "FCI::Startup : Workspace allocation done" << std::endl;
    }
+   std::cout << "Haha" << std::endl;
+
 
 }
 
@@ -581,7 +583,7 @@ void CheMPS2::CFCI::setFCIcoeff(int * bits_up, int * bits_down, dcomplex value, 
 //       RMSdiagdifference += diff * diff;
 //    }
 //    RMSdiagdifference = sqrt( RMSdiagdifference );
-//    cout << "The RMS difference of DiagHam() and diag(HamHXV) = " << RMSdiagdifference << endl;
+//    std::cout << "The RMS difference of DiagHam() and diag(HamHXV) = " << RMSdiagdifference << std::endl;
    
 //    // Building Ham by getMatrixElement
 //    int * work     = new int[ 8 ];
@@ -598,7 +600,7 @@ void CheMPS2::CFCI::setFCIcoeff(int * bits_up, int * bits_down, dcomplex value, 
 //          RMSconstructiondiff += tempvar * tempvar;
 //       }
 //    }
-//    cout << "The RMS difference of HamHXV - HamMXELEM = " << RMSconstructiondiff << endl;
+//    std::cout << "The RMS difference of HamHXV - HamMXELEM = " << RMSconstructiondiff << std::endl;
 //    delete [] work;
 //    delete [] ket_up;
 //    delete [] ket_down;
@@ -624,7 +626,7 @@ void CheMPS2::CFCI::setFCIcoeff(int * bits_up, int * bits_down, dcomplex value, 
 //       RMSdiagdifference2 += diff * diff;
 //    }
 //    RMSdiagdifference2 = sqrt( RMSdiagdifference2 );
-//    cout << "The RMS difference of DiagHamSquared() and diag(HamSquared by HXV) = " << RMSdiagdifference2 << endl;
+//    std::cout << "The RMS difference of DiagHamSquared() and diag(HamSquared by HXV) = " << RMSdiagdifference2 << std::endl;
    
 //    delete [] workspace2;
 //    delete [] workspace;
@@ -870,7 +872,7 @@ void CheMPS2::CFCI::matvec( dcomplex * input, dcomplex * output ) const{
 
    gettimeofday( &end, NULL );
    const double elapsed = ( end.tv_sec - start.tv_sec ) + 1e-6 * ( end.tv_usec - start.tv_usec );
-   if ( FCIverbose >= 1 ){ cout << "FCI::matvec : Wall time = " << elapsed << " seconds" << endl; }
+   if ( FCIverbose >= 1 ){ std::cout << "FCI::matvec : Wall time = " << elapsed << " seconds" << std::endl; }
 
 }
 
@@ -992,8 +994,8 @@ dcomplex CheMPS2::CFCI::Fill2RDM(dcomplex * vector, dcomplex * two_rdm) const{
    
    gettimeofday(&end, NULL);
    const double elapsed = (end.tv_sec - start.tv_sec) + 1e-6 * (end.tv_usec - start.tv_usec);
-   if ( FCIverbose > 0 ){ cout << "FCI::Fill2RDM : Wall time = " << elapsed << " seconds" << endl; }
-   if ( FCIverbose > 0 ){ cout << "FCI::Fill2RDM : Energy (Ham * 2-RDM) = " << FCIenergy << endl; }
+   if ( FCIverbose > 0 ){ std::cout << "FCI::Fill2RDM : Wall time = " << elapsed << " seconds" << std::endl; }
+   if ( FCIverbose > 0 ){ std::cout << "FCI::Fill2RDM : Energy (Ham * 2-RDM) = " << FCIenergy << std::endl; }
    return FCIenergy;
 
 }
@@ -1258,7 +1260,7 @@ dcomplex CheMPS2::CFCI::Fill2RDM(dcomplex * vector, dcomplex * two_rdm) const{
    
 //    gettimeofday(&end, NULL);
 //    const double elapsed = (end.tv_sec - start.tv_sec) + 1e-6 * (end.tv_usec - start.tv_usec);
-//    if ( FCIverbose > 0 ){ cout << "FCI::Fill4RDM : Wall time = " << elapsed << " seconds" << endl; }
+//    if ( FCIverbose > 0 ){ std::cout << "FCI::Fill4RDM : Wall time = " << elapsed << " seconds" << std::endl; }
 
 // }
 
@@ -1266,7 +1268,7 @@ dcomplex CheMPS2::CFCI::Fill2RDM(dcomplex * vector, dcomplex * two_rdm) const{
 
 //    assert( Nel_up + Nel_down >= 4 );
 //    const double elapsed = Driver3RDM( vector, output, three_rdm, fock, L + 1 );
-//    if ( FCIverbose > 0 ){ cout << "FCI::Fock4RDM : Wall time = " << elapsed << " seconds" << endl; }
+//    if ( FCIverbose > 0 ){ std::cout << "FCI::Fock4RDM : Wall time = " << elapsed << " seconds" << std::endl; }
 
 // }
 
@@ -1274,7 +1276,7 @@ dcomplex CheMPS2::CFCI::Fill2RDM(dcomplex * vector, dcomplex * two_rdm) const{
 
 //    assert( Nel_up + Nel_down >= 3 );
 //    const double elapsed = Driver3RDM( vector, output, NULL, NULL, L + 1 );
-//    if ( FCIverbose > 0 ){ cout << "FCI::Fill3RDM : Wall time = " << elapsed << " seconds" << endl; }
+//    if ( FCIverbose > 0 ){ std::cout << "FCI::Fill3RDM : Wall time = " << elapsed << " seconds" << std::endl; }
 
 // }
 
@@ -1282,7 +1284,7 @@ dcomplex CheMPS2::CFCI::Fill2RDM(dcomplex * vector, dcomplex * two_rdm) const{
 
 //    assert( Nel_up + Nel_down >= 4 );
 //    const double elapsed = Driver3RDM( vector, output, three_rdm, NULL, orbz );
-//    if ( FCIverbose > 0 ){ cout << "FCI::Diag4RDM : Wall time = " << elapsed << " seconds" << endl; }
+//    if ( FCIverbose > 0 ){ std::cout << "FCI::Diag4RDM : Wall time = " << elapsed << " seconds" << std::endl; }
 
 // }
 
@@ -1562,8 +1564,8 @@ dcomplex CheMPS2::CFCI::Fill2RDM(dcomplex * vector, dcomplex * two_rdm) const{
    
 //    if ( FCIverbose > 0 ){
 //       const double intendedS = fabs( 0.5 * Nel_up - 0.5 * Nel_down ); // Be careful with subtracting unsigned integers...
-//       cout << "FCI::CalcSpinSquared : For intended spin " << intendedS
-//            << " the measured S(S+1) = " << result << " and intended S(S+1) = " << intendedS * (intendedS + 1.0) << endl;
+//       std::cout << "FCI::CalcSpinSquared : For intended spin " << intendedS
+//            << " the measured S(S+1) = " << result << " and intended S(S+1) = " << intendedS * (intendedS + 1.0) << std::endl;
 //    }
 //    return result;
 
@@ -1797,7 +1799,7 @@ dcomplex CheMPS2::CFCI::Fill2RDM(dcomplex * vector, dcomplex * two_rdm) const{
    
 //    gettimeofday(&end, NULL);
 //    const double elapsed = (end.tv_sec - start.tv_sec) + 1e-6 * (end.tv_usec - start.tv_usec);
-//    if ( FCIverbose > 0 ){ cout << "FCI::DiagHamSquared : Wall time = " << elapsed << " seconds" << endl; }
+//    if ( FCIverbose > 0 ){ std::cout << "FCI::DiagHamSquared : Wall time = " << elapsed << " seconds" << std::endl; }
 
 // }
 
@@ -2067,8 +2069,8 @@ void CheMPS2::CFCI::FillRandom(const unsigned int vecLength, dcomplex * vec){
 //    assert( instruction == 'C' );
 //    if ( inoutput != NULL ){ FCIdcopy( veclength, whichpointers[0], inoutput ); }
 //    const double FCIenergy = whichpointers[1][0] + getEconst();
-//    if ( FCIverbose > 1 ){ cout << "FCI::GSDavidson : Required number of matrix-vector multiplications = " << deBoskabouter.GetNumMultiplications() << endl; }
-//    if ( FCIverbose > 0 ){ cout << "FCI::GSDavidson : Converged ground state energy = " << FCIenergy << endl; }
+//    if ( FCIverbose > 1 ){ std::cout << "FCI::GSDavidson : Required number of matrix-vector multiplications = " << deBoskabouter.GetNumMultiplications() << std::endl; }
+//    if ( FCIverbose > 0 ){ std::cout << "FCI::GSDavidson : Converged ground state energy = " << FCIenergy << std::endl; }
 //    delete [] whichpointers;
 //    return FCIenergy;
 
@@ -2562,7 +2564,7 @@ void CheMPS2::CFCI::recusion( dcomplex * state, int L,
 //    delete [] diag;
 
 //    if (( checkError ) && ( FCIverbose > 0 )){
-//       cout << "FCI::CGSolveSystem : RMS error when checking the solution = " << RMSerror << endl;
+//       std::cout << "FCI::CGSolveSystem : RMS error when checking the solution = " << RMSerror << std::endl;
 //    }
 
 // }
@@ -2610,8 +2612,8 @@ void CheMPS2::CFCI::recusion( dcomplex * state, int L,
 //          if ( diagonal[ cnt ] > maxval ){ maxval = diagonal[ cnt ]; }
 //          if ( diagonal[ cnt ] < minval ){ minval = diagonal[ cnt ]; }
 //       }
-//       cout << "FCI::CGdiagonal : Minimum value of diag[ ( alpha + beta * Ham )^2 + eta^2 ] = " << minval << endl;
-//       cout << "FCI::CGdiagonal : Maximum value of diag[ ( alpha + beta * Ham )^2 + eta^2 ] = " << maxval << endl;
+//       std::cout << "FCI::CGdiagonal : Minimum value of diag[ ( alpha + beta * Ham )^2 + eta^2 ] = " << minval << std::endl;
+//       std::cout << "FCI::CGdiagonal : Maximum value of diag[ ( alpha + beta * Ham )^2 + eta^2 ] = " << maxval << std::endl;
 //    }
 
 // }
@@ -2634,8 +2636,8 @@ void CheMPS2::CFCI::recusion( dcomplex * state, int L,
 //    ImPartGF[0] += Imagpart;
    
 //    if ( FCIverbose>0 ){
-//       cout << "FCI::RetardedGF : G( omega = " << omega << " ; eta = " << eta << " ; i = " << orb_alpha << " ; j = " << orb_beta << " ) = " << RePartGF[0] << " + I * " << ImPartGF[0] << endl;
-//       cout << "                  Local density of states (LDOS) = " << - ImPartGF[0] / M_PI << endl;
+//       std::cout << "FCI::RetardedGF : G( omega = " << omega << " ; eta = " << eta << " ; i = " << orb_alpha << " ; j = " << orb_beta << " ) = " << RePartGF[0] << " + I * " << ImPartGF[0] << std::endl;
+//       std::cout << "                  Local density of states (LDOS) = " << - ImPartGF[0] / M_PI << std::endl;
 //    }
 
 // }
@@ -2841,8 +2843,8 @@ void CheMPS2::CFCI::recusion( dcomplex * state, int L,
 //    ImPartGF[0] -= Imagpart; // Subtract !!!
 
 //    if ( FCIverbose>0 ){
-//       cout << "FCI::DensityResponseGF : X( omega = " << omega << " ; eta = " << eta << " ; i = " << orb_alpha << " ; j = " << orb_beta << " ) = " << RePartGF[0] << " + I * " << ImPartGF[0] << endl;
-//       cout << "                         Local density-density response (LDDR) = " << - ImPartGF[0] / M_PI << endl;
+//       std::cout << "FCI::DensityResponseGF : X( omega = " << omega << " ; eta = " << eta << " ; i = " << orb_alpha << " ; j = " << orb_beta << " ) = " << RePartGF[0] << " + I * " << ImPartGF[0] << std::endl;
+//       std::cout << "                         Local density-density response (LDDR) = " << - ImPartGF[0] / M_PI << std::endl;
 //    }
 
 // }

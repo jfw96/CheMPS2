@@ -29,8 +29,8 @@ CheMPS2::COneDM::COneDM( CTensorT ** mpsIn, const SyBookkeeper * denBKIn, const 
 
    for ( int i = 0; i < L; i++ ) {
       for ( int j = 0; j <= i; j++ ) {
-         matrix[ i + j * L ] = sqrt( 2 ) * F0tensors[ L - 1 ][ i - j ][ L - i - 1 ]->trace();
-         matrix[ j + i * L ] = std::conj(matrix[ i + j * L ]);
+         matrix[ j + i * L ] = sqrt( 2 ) * F0tensors[ L - 1 ][ i - j ][ L - i - 1 ]->trace();
+         matrix[ i + j * L ] = std::conj(matrix[ j + i * L ]);
       }
    }
 }

@@ -1026,9 +1026,14 @@ int main( int argc, char ** argv ){
          #endif
          prob->setup_reorder_custom( dmrg2ham );
          delete [] dmrg2ham;
-      }
-      if ( molcas_order.length() > 0 ){
+      } else if ( molcas_order.length() > 0 ){
          assert( fcidump_norb == ham->getL() );
+         prob->setup_reorder_custom( dmrg2ham );
+         delete [] dmrg2ham;
+      } else {
+         dmrg2ham = new int[ ham->getL() ];
+         assert( fcidump_norb == ham->getL() );
+         for( int i = 0; i < ham->getL(); i++ ){ dmrg2ham[ i ] = i; }
          prob->setup_reorder_custom( dmrg2ham );
          delete [] dmrg2ham;
       }
