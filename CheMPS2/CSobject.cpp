@@ -675,143 +675,82 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
    int updateSectors      = 0;
    int * NewDims          = NULL;
 
-//    // If change: determine new virtual dimensions.
-//    if ( change ) {
-//       NewDims = new int[ nCenterSectors ];
-//       // First determine the total number of singular values
-//       int totalDimSVD = 0;
-//       for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
-//          NewDims[ iCenter ] = CenterDims[ iCenter ];
-//          totalDimSVD += NewDims[ iCenter ];
-//       }
-
-//       // Copy them all in 1 array
-//       double * values = new double[ totalDimSVD ];
-//       totalDimSVD     = 0;
-//       int inc         = 1;
-//       for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
-//          if ( NewDims[ iCenter ] > 0 ) {
-//             dcopy_( NewDims + iCenter, Lambdas[ iCenter ], &inc, values + totalDimSVD, &inc );
-//             totalDimSVD += NewDims[ iCenter ];
-//          }
-//       }
-
-//       // Sort them in decreasing order
-//       char ID = 'D';
-//       int info;
-//       dlasrt_( &ID, &totalDimSVD, values, &info ); // Quicksort
-
-//       int maxD = 1;
-//       while ( maxD < totalDimSVD && maxD < virtualdimensionD && cut_off <= values[ maxD ] ) {
-//          maxD++;
-//       }
-
-//       // int maxD = virtualdimensionD;
-//       // If larger then the required virtualdimensionD, new virtual dimensions
-//       // will be set in NewDims.
-//       if ( totalDimSVD > maxD ) {
-
-//          // The D+1'th value becomes the lower bound Schmidt value. Every value
-//          // smaller than or equal to the D+1'th value is thrown out (hence Dactual // <= Ddesired).
-//          const double lowerBound = values[ maxD ];
-//          for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
-//             for ( int cnt = 0; cnt < NewDims[ iCenter ]; cnt++ ) {
-//                if ( Lambdas[ iCenter ][ cnt ] <= lowerBound ) {
-//                   NewDims[ iCenter ] = cnt;
-//                }
-//             }
-//          }
-
-//          // Discarded weight
-//          double totalSum     = 0.0;
-//          double discardedSum = 0.0;
-//          for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
-//             for ( int iLocal = 0; iLocal < CenterDims[ iCenter ]; iLocal++ ) {
-//                double temp = ( SplitSectTwoJM[ iCenter ] + 1 ) *
-//                              Lambdas[ iCenter ][ iLocal ] * Lambdas[ iCenter ][ iLocal ];
-//                totalSum += temp;
-//                if ( Lambdas[ iCenter ][ iLocal ] <= lowerBound ) {
-//                   discardedSum += temp;
-//                }
-//             }
-//          }
-//          discardedWeight = discardedSum / totalSum;
-
-//       }
-//       // Clean-up
-//       delete[] values;
-
-//       // Check if there is a sector which differs
-//       updateSectors = 0;
-//       for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
-//          const int MPSdim =
-//              denBK->gCurrentDim( index + 1, SplitSectNM[ iCenter ],
-//                                  SplitSectTwoJM[ iCenter ], SplitSectIM[ iCenter ] );
-//          if ( NewDims[ iCenter ] != MPSdim ) {
-//             updateSectors = 1;
-//          }
-//       }
-//    }
-
-   if ( change ){
-
+   // If change: determine new virtual dimensions.
+   if ( change ) {
       NewDims = new int[ nCenterSectors ];
       // First determine the total number of singular values
       int totalDimSVD = 0;
-      for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ){
+      for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
          NewDims[ iCenter ] = CenterDims[ iCenter ];
          totalDimSVD += NewDims[ iCenter ];
       }
 
-      // If larger then the required virtualdimensionD, new virtual dimensions will be set in NewDims.
-      if ( totalDimSVD > virtualdimensionD ){
-         // Copy them all in 1 array
-         double * values = new double[ totalDimSVD ];
-         totalDimSVD = 0;
-         int inc = 1;
-         for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ){
-            if ( NewDims[ iCenter ] > 0 ){
-               dcopy_( NewDims + iCenter, Lambdas[ iCenter ], &inc, values + totalDimSVD, &inc );
-               totalDimSVD += NewDims[ iCenter ];
-            }
+      // Copy them all in 1 array
+      double * values = new double[ totalDimSVD ];
+      totalDimSVD     = 0;
+      int inc         = 1;
+      for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
+         if ( NewDims[ iCenter ] > 0 ) {
+            dcopy_( NewDims + iCenter, Lambdas[ iCenter ], &inc, values + totalDimSVD, &inc );
+            totalDimSVD += NewDims[ iCenter ];
          }
+      }
 
-         // Sort them in decreasing order
-         char ID = 'D';
-         int info;
-         dlasrt_( &ID, &totalDimSVD, values, &info ); // Quicksort
+      // Sort them in decreasing order
+      char ID = 'D';
+      int info;
+      dlasrt_( &ID, &totalDimSVD, values, &info ); // Quicksort
 
-         // The D+1'th value becomes the lower bound Schmidt value. Every value smaller than the D+1'th value is thrown out (hence Dactual <= Ddesired).
-         const double lowerBound = values[ virtualdimensionD ];
-         for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ){
-            for ( int cnt = 0; cnt < NewDims[ iCenter ]; cnt++ ){
-               if ( Lambdas[ iCenter ][ cnt ] < lowerBound ){ NewDims[ iCenter ] = cnt; }
+      int maxD = 1;
+      while ( maxD < totalDimSVD && maxD < virtualdimensionD && cut_off <= values[ maxD ] ) {
+         maxD++;
+      }
+
+      // int maxD = virtualdimensionD;
+      // If larger then the required virtualdimensionD, new virtual dimensions
+      // will be set in NewDims.
+      if ( totalDimSVD > maxD ) {
+
+         // The D+1'th value becomes the lower bound Schmidt value. Every value
+         // smaller than or equal to the D+1'th value is thrown out (hence Dactual // <= Ddesired).
+         const double lowerBound = values[ maxD ];
+         for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
+            for ( int cnt = 0; cnt < NewDims[ iCenter ]; cnt++ ) {
+               if ( Lambdas[ iCenter ][ cnt ] <= lowerBound ) {
+                  NewDims[ iCenter ] = cnt;
+               }
             }
          }
 
          // Discarded weight
-         double totalSum = 0.0;
+         double totalSum     = 0.0;
          double discardedSum = 0.0;
-         for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ){
-            for ( int iLocal = 0; iLocal < CenterDims[ iCenter ]; iLocal++ ){
-               double temp = ( SplitSectTwoJM[ iCenter ] + 1 ) * Lambdas[ iCenter ][ iLocal ] * Lambdas[ iCenter ][ iLocal ];
+         for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
+            for ( int iLocal = 0; iLocal < CenterDims[ iCenter ]; iLocal++ ) {
+               double temp = ( SplitSectTwoJM[ iCenter ] + 1 ) *
+                             Lambdas[ iCenter ][ iLocal ] * Lambdas[ iCenter ][ iLocal ];
                totalSum += temp;
-               if ( Lambdas[ iCenter ][ iLocal ] <= lowerBound ){ discardedSum += temp; }
+               if ( Lambdas[ iCenter ][ iLocal ] <= lowerBound ) {
+                  discardedSum += temp;
+               }
             }
          }
          discardedWeight = discardedSum / totalSum;
 
-         // Clean-up
-         delete [] values;
       }
+      // Clean-up
+      delete[] values;
 
       // Check if there is a sector which differs
       updateSectors = 0;
-      for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ){
-         const int MPSdim = denBK->gCurrentDim( index + 1, SplitSectNM[ iCenter ], SplitSectTwoJM[ iCenter ], SplitSectIM[ iCenter ] );
-         if ( NewDims[ iCenter ] != MPSdim ){ updateSectors = 1; }
+      for ( int iCenter = 0; iCenter < nCenterSectors; iCenter++ ) {
+         const int MPSdim =
+             denBK->gCurrentDim( index + 1, SplitSectNM[ iCenter ],
+                                 SplitSectTwoJM[ iCenter ], SplitSectIM[ iCenter ] );
+         if ( NewDims[ iCenter ] != MPSdim ) {
+            updateSectors = 1;
+         }
       }
-
    }
 
    if ( updateSectors == 1 ) {
