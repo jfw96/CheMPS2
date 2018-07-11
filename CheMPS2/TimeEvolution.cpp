@@ -311,8 +311,12 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
       COneDM * theodm        = new COneDM( MPS, MPSBK, prob );
       double * oedmre        = new double[ L * L ];
       double * oedmim        = new double[ L * L ];
+      double * oedmdmrgre    = new double[ L * L ];
+      double * oedmdmrgim    = new double[ L * L ];
       theodm->gOEDMReHamil( oedmre );
       theodm->gOEDMImHamil( oedmim );
+      theodm->gOEDMReDMRG( oedmdmrgre );
+      theodm->gOEDMImDMRG( oedmdmrgim );
 
       struct timeval end;
       gettimeofday( &end, NULL );
@@ -360,19 +364,21 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
       const hid_t dataPointID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
       const hsize_t Lposize = L + 1;
       hsize_t Lsq[ 2 ]; Lsq[ 0 ] = L; Lsq[ 1 ] = L;
-      HDF5_MAKE_DATASET( dataPointID, "chrono",    1, &dimarray1, H5T_NATIVE_DOUBLE,  &elapsed    );
-      HDF5_MAKE_DATASET( dataPointID, "t",         1, &dimarray1, H5T_NATIVE_DOUBLE,  &t          );
-      HDF5_MAKE_DATASET( dataPointID, "Tmax",      1, &dimarray1, H5T_NATIVE_DOUBLE,  &time_final );
-      HDF5_MAKE_DATASET( dataPointID, "dt",        1, &dimarray1, H5T_NATIVE_DOUBLE,  &time_step  );
-      HDF5_MAKE_DATASET( dataPointID, "KryS",      1, &dimarray1, H5T_STD_I32LE,      &kry_size   );
-      HDF5_MAKE_DATASET( dataPointID, "MPSDims",   1, &Lposize,   H5T_STD_I32LE,      actdims     );
-      HDF5_MAKE_DATASET( dataPointID, "MaxMs",     1, &numInst,   H5T_STD_I32LE,      MaxMs       );
-      HDF5_MAKE_DATASET( dataPointID, "CutOs",     1, &numInst,   H5T_STD_I32LE,      CutOs       );
-      HDF5_MAKE_DATASET( dataPointID, "NSwes",     1, &numInst,   H5T_STD_I32LE,      NSwes       );
-      HDF5_MAKE_DATASET( dataPointID, "Norm",      1, &dimarray1, H5T_NATIVE_DOUBLE,  &normOfMPS  );
-      HDF5_MAKE_DATASET( dataPointID, "Energy",    1, &dimarray1, H5T_NATIVE_DOUBLE,  &energy     );
-      HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmre      );
-      HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmim      );
+      HDF5_MAKE_DATASET( dataPointID, "chrono",         1, &dimarray1, H5T_NATIVE_DOUBLE,  &elapsed    );
+      HDF5_MAKE_DATASET( dataPointID, "t",              1, &dimarray1, H5T_NATIVE_DOUBLE,  &t          );
+      HDF5_MAKE_DATASET( dataPointID, "Tmax",           1, &dimarray1, H5T_NATIVE_DOUBLE,  &time_final );
+      HDF5_MAKE_DATASET( dataPointID, "dt",             1, &dimarray1, H5T_NATIVE_DOUBLE,  &time_step  );
+      HDF5_MAKE_DATASET( dataPointID, "KryS",           1, &dimarray1, H5T_STD_I32LE,      &kry_size   );
+      HDF5_MAKE_DATASET( dataPointID, "MPSDims",        1, &Lposize,   H5T_STD_I32LE,      actdims     );
+      HDF5_MAKE_DATASET( dataPointID, "MaxMs",          1, &numInst,   H5T_STD_I32LE,      MaxMs       );
+      HDF5_MAKE_DATASET( dataPointID, "CutOs",          1, &numInst,   H5T_STD_I32LE,      CutOs       );
+      HDF5_MAKE_DATASET( dataPointID, "NSwes",          1, &numInst,   H5T_STD_I32LE,      NSwes       );
+      HDF5_MAKE_DATASET( dataPointID, "Norm",           1, &dimarray1, H5T_NATIVE_DOUBLE,  &normOfMPS  );
+      HDF5_MAKE_DATASET( dataPointID, "Energy",         1, &dimarray1, H5T_NATIVE_DOUBLE,  &energy     );
+      HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL",      2, Lsq,        H5T_NATIVE_DOUBLE,  oedmre      );
+      HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG",      2, Lsq,        H5T_NATIVE_DOUBLE,  oedmim      );
+      HDF5_MAKE_DATASET( dataPointID, "OEDM_DMRG_REAL", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmdmrgre  );
+      HDF5_MAKE_DATASET( dataPointID, "OEDM_DMRG_IMAG", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmdmrgim  );
 
       delete[] actdims;
       delete[] MaxMs;
@@ -380,6 +386,9 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
       delete[] NSwes;
       delete[] oedmre;
       delete[] oedmim;
+      delete[] oedmdmrgre;
+      delete[] oedmdmrgim;
+
       delete theodm;
       
       if ( doDumpFCI ) {
