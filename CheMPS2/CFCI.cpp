@@ -2260,33 +2260,66 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
       }
    }
 
-   if ( std::abs( overlaps[ krylovSpaceDimension ] ) > 1e-6 ) {
-      std::cout << "CHEMPS2::TIME WARNING: Krylov vectors not completely orthonormal. |< kry_0 | kry_last>| is " << overlaps[ krylovSpaceDimension ] << std::endl;
+   if ( std::abs( overlaps[ krylovSpaceDimension - 1 ] ) > 1e-6 ) {
+      std::cout << "CHEMPS2::TIME WARNING: Krylov vectors not completely orthonormal. |< kry_0 | kry_last>| is " << overlaps[ krylovSpaceDimension - 1 ] << std::endl;
    }
+
+//    int one                 = 1;
+//    int sqr                 = krylovSpaceDimension * krylovSpaceDimension;
+//    dcomplex * overlaps_inv = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+//    zcopy_( &sqr, overlaps, &one, overlaps_inv, &one );
+
+//    int info_lu;
+//    int * piv = new int[ krylovSpaceDimension ];
+//    zgetrf_( &krylovSpaceDimension, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, &info_lu );
+
+//    dcomplex * work = new dcomplex[ krylovSpaceDimension ];
+//    int info_inve;
+
+//    zgetri_( &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, work, &krylovSpaceDimension, &info_inve );
+
+//    for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+//       for ( int j = i + 1; j < krylovSpaceDimension; j++ ) {
+//          overlaps_inv[ i + krylovSpaceDimension * j ] = overlaps_inv[ j + krylovSpaceDimension * i ];
+//       }
+//    }
+
+   int info_eig = 0;
+   char jobz = 'V';
+   char uplo = 'U';
+   double* w = new double[ krylovSpaceDimension ];
+   int lwork = 2 * krylovSpaceDimension - 1;
+   dcomplex* work_eig = new dcomplex[ lwork ];
+   double* rwork = new double[ 3 * krylovSpaceDimension - 2 ];
+
+   zheev_( &jobz, &uplo, &krylovSpaceDimension, overlaps, &krylovSpaceDimension, w, work_eig, &lwork, rwork, &info_eig);
+   assert( info_eig == 0 );
+
+   delete[] rwork;
+   delete[] work_eig;
 
    int one                 = 1;
    int sqr                 = krylovSpaceDimension * krylovSpaceDimension;
+   dcomplex * temp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
    dcomplex * overlaps_inv = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
-   zcopy_( &sqr, overlaps, &one, overlaps_inv, &one );
 
-   int info_lu;
-   int * piv = new int[ krylovSpaceDimension ];
-   zgetrf_( &krylovSpaceDimension, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, &info_lu );
+   zcopy_( &sqr, overlaps, &one, temp, &one );
 
-   dcomplex * work = new dcomplex[ krylovSpaceDimension ];
-   int info_inve;
-
-   zgetri_( &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, work, &krylovSpaceDimension, &info_inve );
-
-   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-      for ( int j = i + 1; j < krylovSpaceDimension; j++ ) {
-         overlaps_inv[ i + krylovSpaceDimension * j ] = overlaps_inv[ j + krylovSpaceDimension * i ];
+   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ) {
+      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ) {
+         temp[ irow + krylovSpaceDimension * icol ] *= std::pow( w[ icol ], -1.0 );
       }
    }
 
-   dcomplex * toExp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
    char notrans     = 'N';
+   char trans     = 'C';
    dcomplex zeroC   = 0.0;
+   dcomplex oneC   = 1.0;
+
+   zgemm_( &notrans, &trans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
+           &oneC, overlaps, &krylovSpaceDimension, temp, &krylovSpaceDimension, &zeroC, overlaps_inv, &krylovSpaceDimension );
+
+   dcomplex * toExp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
    zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
            &step, overlaps_inv, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zeroC, toExp, &krylovSpaceDimension );
 
@@ -2310,16 +2343,16 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
 
    delete[] wsp;
    delete[] ipiv;
+   delete[] w;
+   delete[] overlaps;
+   delete[] temp;
    delete[] overlaps_inv;
+   delete[] krylovHamiltonian;
    delete[] toExp;
-   delete[] piv;
-   delete[] work;
 
    for ( int cnt = 1; cnt < krylovSpaceDimension; cnt++ ) {
       delete[] krylovBasisVectors[ cnt ];
    }
-   delete[] overlaps;
-   delete[] krylovHamiltonian;
    delete[] krylovBasisVectors;
 
 }
