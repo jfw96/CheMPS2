@@ -205,8 +205,6 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
                 << " Krylov vectors not completely orthonormal. |< kry_0 | kry_last>| is " << overlaps[ krylovSpaceDimension - 1 ] << std::endl;
    }
 
-   int sqr                 = krylovSpaceDimension * krylovSpaceDimension;
-   int one                 = 1;
    int info_eig = 0;
    char jobz = 'V';
    char uplo = 'U';
@@ -215,24 +213,22 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
    dcomplex* work_eig = new dcomplex[ lwork ];
    double* rwork = new double[ 3 * krylovSpaceDimension - 2 ];
 
-   dcomplex* temp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
-
-   zcopy_( &sqr, overlaps, &one, temp, &one );
-
-   zheev_( &jobz, &uplo, &krylovSpaceDimension, temp, &krylovSpaceDimension, w, work_eig, &lwork, rwork, &info_eig);
+   zheev_( &jobz, &uplo, &krylovSpaceDimension, overlaps, &krylovSpaceDimension, w, work_eig, &lwork, rwork, &info_eig);
    assert( info_eig == 0 );
 
    delete[] rwork;
    delete[] work_eig;
 
-   dcomplex * temp2 = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   int one                 = 1;
+   int sqr                 = krylovSpaceDimension * krylovSpaceDimension;
+   dcomplex * temp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
    dcomplex * overlaps_inv = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
 
-   zcopy_( &sqr, temp, &one, temp2, &one );
+   zcopy_( &sqr, overlaps, &one, temp, &one );
 
    for ( int irow = 0; irow < krylovSpaceDimension; irow++ ) {
       for ( int icol = 0; icol < krylovSpaceDimension; icol++ ) {
-         temp2[ irow + krylovSpaceDimension * icol ] *= std::pow( w[ icol ], -1.0 );
+         temp[ irow + krylovSpaceDimension * icol ] *= std::pow( w[ icol ], -1.0 );
       }
    }
 
@@ -242,7 +238,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
    dcomplex oneC   = 1.0;
 
    zgemm_( &notrans, &trans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
-           &oneC, temp, &krylovSpaceDimension, temp2, &krylovSpaceDimension, &zeroC, overlaps_inv, &krylovSpaceDimension );
+           &oneC, overlaps, &krylovSpaceDimension, temp, &krylovSpaceDimension, &zeroC, overlaps_inv, &krylovSpaceDimension );
 
    dcomplex * toExp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
 
@@ -274,15 +270,6 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
    for( int beta = 0; beta < krylovSpaceDimension; beta++ ){
       result[ beta ] = exph[ beta + krylovSpaceDimension * 0 ];
    }
-
-   dcomplex tobeone = 0.0;
-   for( int i = 0; i < krylovSpaceDimension; i++ ){
-      for( int j = 0; j < krylovSpaceDimension; j++ ){
-         tobeone += result[i] * std::conj( result[ j ] ) * overlaps[ i + krylovSpaceDimension * j ];
-      }   
-   }
-   assert( 1.0 - std::abs( std::real( tobeone ) ) < 1e-10 );
-   assert( std::abs( std::imag( tobeone ) ) < 1e-10 );
 
    op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisSyBookkeepers[ 0 ], mpsOut, bkOut, scheme );
 
