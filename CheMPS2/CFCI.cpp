@@ -2260,9 +2260,11 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
       }
    }
 
-   if ( std::abs( overlaps[ krylovSpaceDimension ] ) > 1e-6 ) {
-      std::cout << "CHEMPS2::TIME WARNING: Krylov vectors not completely orthonormal. |< kry_0 | kry_last>| is " << overlaps[ krylovSpaceDimension ] << std::endl;
-   }
+  ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Calculating the inverse
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
 
    int one                 = 1;
    int sqr                 = krylovSpaceDimension * krylovSpaceDimension;
@@ -2274,23 +2276,29 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
    zgetrf_( &krylovSpaceDimension, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, &info_lu );
 
    dcomplex * work = new dcomplex[ krylovSpaceDimension ];
-   int info_inve;
 
+   int info_inve;
    zgetri_( &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, work, &krylovSpaceDimension, &info_inve );
 
-   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-      for ( int j = i + 1; j < krylovSpaceDimension; j++ ) {
-         overlaps_inv[ i + krylovSpaceDimension * j ] = overlaps_inv[ j + krylovSpaceDimension * i ];
-      }
-   }
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Multiplying N^-1 and H
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
 
    dcomplex * toExp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
    char notrans     = 'N';
    dcomplex zeroC   = 0.0;
+   dcomplex oneC    = 1.0;
    zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
            &step, overlaps_inv, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zeroC, toExp, &krylovSpaceDimension );
 
-   int deg        = 6;
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Calculate the matrix exponential
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
+   int deg        = 20;
    double bla     = 1.0;
    int lwsp       = 4 * krylovSpaceDimension * krylovSpaceDimension + deg + 1;
    dcomplex * wsp = new dcomplex[ lwsp ];
@@ -2301,12 +2309,44 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
 
    zgpadm_( &deg, &krylovSpaceDimension, &bla, toExp, &krylovSpaceDimension,
             wsp, &lwsp, ipiv, &iexph, &ns, &info );
+   assert( info == 0 );
 
-   dcomplex * exph = &wsp[ iexph - 1 ];
+   dcomplex * theExp = &wsp[ iexph - 1 ];
+
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Test new coefficients and sum states
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
+
+   dcomplex * result = new dcomplex[ krylovSpaceDimension ];
+   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+      result[ i ] = theExp[ i + krylovSpaceDimension * 0 ];
+   }
+
+   dcomplex tobeone = 0.0;
+   for( int i = 0; i < krylovSpaceDimension; i++ ){
+      for( int j = 0; j < krylovSpaceDimension; j++ ){
+         tobeone += std::conj( result[ i ] ) * result[ j ] * overlaps[ i + krylovSpaceDimension * j ];
+      }   
+   }
+
+   if ( ( std::abs( tobeone - overlaps[ 0 ] ) > 1e-9 ) ) {
+      std::cout << "CHEMPS2::TIME WARNING: "
+                << " Numerical Problem with non-orthonormal Krylov basis. Is your state close to an energy eigenstate?\n";
+      std::cout << "CHEMPS2::TIME WARNING: "
+                << " Norm will be off by " << std::abs( tobeone - overlaps[ 0 ] ) << " due to Krylov evolution. Should be 0.0\n";
+   }
 
    for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-      FCIdaxpy( veclength, exph[ i + krylovSpaceDimension * 0 ], krylovBasisVectors[ i ], output );
+      FCIdaxpy( veclength, theExp[ i + krylovSpaceDimension * 0 ], krylovBasisVectors[ i ], output );
    }
+
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Delete all the allocated stuff
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
 
    delete[] wsp;
    delete[] ipiv;
@@ -2321,6 +2361,68 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
    delete[] overlaps;
    delete[] krylovHamiltonian;
    delete[] krylovBasisVectors;
+
+//    if ( std::abs( overlaps[ krylovSpaceDimension ] ) > 1e-6 ) {
+//       std::cout << "CHEMPS2::TIME WARNING: Krylov vectors not completely orthonormal. |< kry_0 | kry_last>| is " << overlaps[ krylovSpaceDimension ] << std::endl;
+//    }
+
+//    int one                 = 1;
+//    int sqr                 = krylovSpaceDimension * krylovSpaceDimension;
+//    dcomplex * overlaps_inv = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+//    zcopy_( &sqr, overlaps, &one, overlaps_inv, &one );
+
+//    int info_lu;
+//    int * piv = new int[ krylovSpaceDimension ];
+//    zgetrf_( &krylovSpaceDimension, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, &info_lu );
+
+//    dcomplex * work = new dcomplex[ krylovSpaceDimension ];
+//    int info_inve;
+
+//    zgetri_( &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, work, &krylovSpaceDimension, &info_inve );
+
+//    for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+//       for ( int j = i + 1; j < krylovSpaceDimension; j++ ) {
+//          overlaps_inv[ i + krylovSpaceDimension * j ] = overlaps_inv[ j + krylovSpaceDimension * i ];
+//       }
+//    }
+
+//    dcomplex * toExp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+//    char notrans     = 'N';
+//    dcomplex zeroC   = 0.0;
+//    zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
+//            &step, overlaps_inv, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zeroC, toExp, &krylovSpaceDimension );
+
+//    int deg        = 6;
+//    double bla     = 1.0;
+//    int lwsp       = 4 * krylovSpaceDimension * krylovSpaceDimension + deg + 1;
+//    dcomplex * wsp = new dcomplex[ lwsp ];
+//    int * ipiv     = new int[ krylovSpaceDimension ];
+//    int iexph      = 0;
+//    int ns         = 0;
+//    int info;
+
+//    zgpadm_( &deg, &krylovSpaceDimension, &bla, toExp, &krylovSpaceDimension,
+//             wsp, &lwsp, ipiv, &iexph, &ns, &info );
+
+//    dcomplex * exph = &wsp[ iexph - 1 ];
+
+//    for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+//       FCIdaxpy( veclength, exph[ i + krylovSpaceDimension * 0 ], krylovBasisVectors[ i ], output );
+//    }
+
+//    delete[] wsp;
+//    delete[] ipiv;
+//    delete[] overlaps_inv;
+//    delete[] toExp;
+//    delete[] piv;
+//    delete[] work;
+
+//    for ( int cnt = 1; cnt < krylovSpaceDimension; cnt++ ) {
+//       delete[] krylovBasisVectors[ cnt ];
+//    }
+//    delete[] overlaps;
+//    delete[] krylovHamiltonian;
+//    delete[] krylovBasisVectors;
 
 }
 

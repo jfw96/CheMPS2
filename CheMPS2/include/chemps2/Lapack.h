@@ -62,6 +62,9 @@ void zgetri_( int * n, dcomplex * a, int * lda, int * ipiv, dcomplex * work, int
 void zgetrf_( int * m, int * n, dcomplex * a, int * lda, int * ipiv, int * info );
 double zlansy_( char * norm, char * uplo, int * dimR, dcomplex * mx, int * lda, dcomplex * work );
 
+void zhetri_( char * UPLO, int * N, dcomplex * A, int * LDA, int * IPIV, dcomplex * WORK, int * INFO );
+void zhetrf_( char * UPLO, int * N, dcomplex * A, int * LDA, int * IPIV, dcomplex * WORK, int * LWORK, int * INFO );
+
 #ifdef CHEMPS2_MKL
 void zdotc_( dcomplex * r, int * n, dcomplex * x, int * incx, dcomplex * y, int * incy );
 #else
