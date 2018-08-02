@@ -169,7 +169,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
       }
 
       op->DSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
-                         kry, coefs, states, bookkeepers,
+                         0, coefs, states, bookkeepers,
                          mpsTemp, bkTemp,
                          scheme );
 
@@ -200,10 +200,11 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
    }
    std::cout << "\n";
 
-   if ( std::abs( overlaps[ krylovSpaceDimension ] ) > 1e-6 ) {
-      std::cout << "CHEMPS2::TIME WARNING: "
-                << " Krylov vectors not completely orthonormal. |< kry_0 | kry_last>| is " << overlaps[ krylovSpaceDimension ] << std::endl;
-   }
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Calculating the inverse
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
 
    int one                 = 1;
    int sqr                 = krylovSpaceDimension * krylovSpaceDimension;
@@ -215,23 +216,29 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
    zgetrf_( &krylovSpaceDimension, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, &info_lu );
 
    dcomplex * work = new dcomplex[ krylovSpaceDimension ];
-   int info_inve;
 
+   int info_inve;
    zgetri_( &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, work, &krylovSpaceDimension, &info_inve );
 
-   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-      for ( int j = i + 1; j < krylovSpaceDimension; j++ ) {
-         overlaps_inv[ i + krylovSpaceDimension * j ] = overlaps_inv[ j + krylovSpaceDimension * i ];
-      }
-   }
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Multiplying N^-1 and H
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
 
    dcomplex * toExp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
    char notrans     = 'N';
    dcomplex zeroC   = 0.0;
+   dcomplex oneC    = 1.0;
    zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
            &step, overlaps_inv, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zeroC, toExp, &krylovSpaceDimension );
 
-   int deg        = 6;
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Calculate the matrix exponential
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
+   int deg        = 20;
    double bla     = 1.0;
    int lwsp       = 4 * krylovSpaceDimension * krylovSpaceDimension + deg + 1;
    dcomplex * wsp = new dcomplex[ lwsp ];
@@ -242,17 +249,42 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
 
    zgpadm_( &deg, &krylovSpaceDimension, &bla, toExp, &krylovSpaceDimension,
             wsp, &lwsp, ipiv, &iexph, &ns, &info );
+   assert( info == 0 );
 
-   dcomplex * exph = &wsp[ iexph - 1 ];
+   dcomplex * theExp = &wsp[ iexph - 1 ];
+
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Test new coefficients and sum MPS
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
 
    dcomplex * result = new dcomplex[ krylovSpaceDimension ];
    for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-      result[ i ] = exph[ i + krylovSpaceDimension * 0 ];
+      result[ i ] = theExp[ i + krylovSpaceDimension * 0 ];
    }
 
-   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisSyBookkeepers[ 0 ],
-              mpsOut, bkOut,
-              scheme );
+   dcomplex tobeone = 0.0;
+   for( int i = 0; i < krylovSpaceDimension; i++ ){
+      for( int j = 0; j < krylovSpaceDimension; j++ ){
+         tobeone += std::conj( result[ i ] ) * result[ j ] * overlaps[ i + krylovSpaceDimension * j ];
+      }   
+   }
+
+   if ( ( std::abs( tobeone - overlaps[ 0 ] ) > 1e-9 ) ) {
+      std::cout << "CHEMPS2::TIME WARNING: "
+                << " Numerical Problem with non-orthonormal Krylov basis. Is your state close to an energy eigenstate?\n";
+      std::cout << "CHEMPS2::TIME WARNING: "
+                << " Norm will be off by " << std::abs( tobeone - overlaps[ 0 ] ) << " due to Krylov evolution. Should be 0.0\n";
+   }
+
+   op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisSyBookkeepers[ 0 ], mpsOut, bkOut, scheme );
+
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Delete all the allocated stuff
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
 
    delete[] result;
    delete[] wsp;
