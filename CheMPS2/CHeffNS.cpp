@@ -74,7 +74,7 @@ void CheMPS2::CHeffNS::makeHeff( CSobject * denS, CSobject * denP,
          for ( int cnt = 0; cnt < dimLD * dimRD; cnt++ ) {
             memLDxRD[ cnt ] = 0.0;
          }
-         addDiagram0A( ikappa, memLDxRD, denS, denP, Prob->gEconst() );
+         addDiagram0A( ikappa, memLDxRD, denS, denP, Prob->gEconst() + offsetEnergy );
          addDiagram1C( ikappa, memLDxRD, denS, denP, Prob->gMxElement( indexS, indexS, indexS, indexS ) );
          addDiagram1D( ikappa, memLDxRD, denS, denP, Prob->gMxElement( indexS + 1, indexS + 1, indexS + 1, indexS + 1 ) );
 

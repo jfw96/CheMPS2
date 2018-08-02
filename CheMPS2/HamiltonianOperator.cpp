@@ -27,7 +27,7 @@
 #include "HamiltonianOperator.h"
 #include "Special.h"
 
-CheMPS2::HamiltonianOperator::HamiltonianOperator( Problem * probIn ) : prob( probIn ), L( probIn->gL() ) {
+CheMPS2::HamiltonianOperator::HamiltonianOperator( Problem * probIn, dcomplex offsetIn ) : prob( probIn ), offset( offsetIn ), L( probIn->gL() ) {
 
    Ltensors    = new CTensorL **[ L - 1 ];
    LtensorsT   = new CTensorLT **[ L - 1 ];
@@ -109,7 +109,7 @@ dcomplex CheMPS2::HamiltonianOperator::Overlap( CTensorT ** mpsLeft, SyBookkeepe
                  Qtensors[ L - 1 - 1 ][ 0 ], QtensorsT[ L - 1 - 1 ][ 0 ],
                  Atensors[ L - 1 - 1 ][ 0 ][ 0 ], AtensorsT[ L - 1 - 1 ][ 0 ][ 0 ],
                  CtensorsT[ L - 1 - 1 ][ 0 ][ 0 ], DtensorsT[ L - 1 - 1 ][ 0 ][ 0 ] );
-   dcomplex result = last->trace() + lastOverlap->trace() * prob->gEconst();
+   dcomplex result = last->trace() + lastOverlap->trace() * ( prob->gEconst() + offset );
 
    delete lastOverlap;
    delete last;
@@ -500,7 +500,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 
             CSobject * applied = new CSobject( site, bkOut );
 
-            CHeffNS * heff = new CHeffNS( bkOut, bkA, prob, 0.0 );
+            CHeffNS * heff = new CHeffNS( bkOut, bkA, prob, offset );
             heff->Apply( in, applied, Ltensors, LtensorsT, Atensors, AtensorsT,
                         Btensors, BtensorsT, Ctensors, CtensorsT, Dtensors, DtensorsT,
                         S0tensors, S0tensorsT, S1tensors, S1tensorsT, F0tensors,
@@ -511,7 +511,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
             delete fromAdded;
 
             if ( scheme->get_noise_prefactor( inst ) > 0 ) { applied->addNoise( scheme->get_noise_prefactor( inst ) ); }
-            double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( inst ), 100*scheme->get_cut_off( inst ), false, true );
+            double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( inst ), scheme->get_cut_off( inst ), false, true );
 
             delete heff;
             delete applied;
@@ -553,7 +553,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
             CSobject * applied = new CSobject( site, bkOut );
             applied->Clear();
 
-            CHeffNS * heff = new CHeffNS( bkOut, bkA, prob, 0.0 );
+            CHeffNS * heff = new CHeffNS( bkOut, bkA, prob, offset );
             heff->Apply( in, applied, Ltensors, LtensorsT, Atensors, AtensorsT,
                         Btensors, BtensorsT, Ctensors, CtensorsT, Dtensors, DtensorsT,
                         S0tensors, S0tensorsT, S1tensors, S1tensorsT, F0tensors,
@@ -565,7 +565,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
             applied->Add( 1.0, fromAdded );
 
             if ( scheme->get_noise_prefactor( inst ) > 0 ) { applied->addNoise( scheme->get_noise_prefactor( inst ) ); }
-            double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( inst ), 100*scheme->get_cut_off( inst ), true, true );
+            double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( inst ), scheme->get_cut_off( inst ), true, true );
 
             delete applied;
             delete in;

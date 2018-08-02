@@ -50,7 +50,7 @@ namespace CheMPS2 {
       /** \param Norbitals The number of orbitals (L)
              \param nGroup The group number
              \param OrbIrreps Pointer to array containing the orbital irreps */
-      HamiltonianOperator( Problem * probIn );
+      HamiltonianOperator( Problem * probIn, dcomplex offsetIn = 0.0 );
 
       ~HamiltonianOperator();
 
@@ -106,6 +106,8 @@ namespace CheMPS2 {
       Problem * prob;
 
       int L;
+
+      dcomplex offset;
 
       // Whether or not allocated
       int * isAllocated;

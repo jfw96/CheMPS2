@@ -31,7 +31,7 @@ namespace CheMPS2 {
       // void doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
 
       void doStep_arnoldi( const double time_step, const double time_final, const int kry_size,
-                           const bool doImaginary, CTensorT ** mpsIn, SyBookkeeper * bkIn,
+                           dcomplex offset, const bool doImaginary, CTensorT ** mpsIn, SyBookkeeper * bkIn,
                            CTensorT ** mpsOut, SyBookkeeper * bkOut );
 
       const int L;
