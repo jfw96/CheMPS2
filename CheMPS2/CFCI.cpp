@@ -125,7 +125,7 @@ CheMPS2::CFCI::CFCI(Hamiltonian * Ham, const unsigned int theNel_up, const unsig
    std::cout << hashline;
 
    const hsize_t Lsize = L;
-   const double Econst = Ham->getEconst();
+   const double Econst = getEconst();
    const int N = theNel_up + theNel_down;
 
    HDF5_MAKE_DATASET( systemPropertiesID, "L", 1, &dimScalar, H5T_STD_I32LE, &L );
@@ -2105,6 +2105,10 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
       const double energy      = std::real( Fill2RDM( act, terdm ) );
       const double normOfState = std::real( FCIddot( veclength, act, act ) );
 
+      if( t == 0.0 ){
+         Econstant += -1.0 *  energy;
+      }
+
       struct timeval end;
       gettimeofday( &end, NULL );
       const double elapsed = ( end.tv_sec - start.tv_sec ) + 1e-6 * ( end.tv_usec - start.tv_usec );
@@ -2207,7 +2211,7 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
       std::cout << "\n";
 
       if ( t + timeStep < finalTime ) {
-         ArnoldiTimeStep( timeStep, krylovSize, act, next );
+         ArnoldiTimeStep( timeStep, krylovSize,  act, next );
          FCIdcopy( veclength, next, act );
       }
 
@@ -2229,13 +2233,9 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
    int krylovSpaceDimension = krylovSize;
 
    dcomplex ** krylovBasisVectors = new dcomplex * [ krylovSpaceDimension ];
-   dcomplex *  krylovHamiltonian  = new dcomplex   [ krylovSpaceDimension * krylovSpaceDimension ];
-   dcomplex *  overlaps           = new dcomplex   [ krylovSpaceDimension * krylovSpaceDimension ];
 
    // Step 1
    krylovBasisVectors[ 0 ]                           = input;
-   krylovHamiltonian[ 0 + 0 * krylovSpaceDimension ] = FCIaHb( veclength, krylovBasisVectors[ 0 ], krylovBasisVectors[ 0 ] );
-   overlaps[ 0 + 0 * krylovSpaceDimension ]          = FCIddot( veclength, krylovBasisVectors[ 0 ], krylovBasisVectors[ 0 ] );
    
    for ( int kry = 1; kry < krylovSpaceDimension; kry++ ) {
 
@@ -2243,20 +2243,26 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
       matvec( krylovBasisVectors[ kry - 1 ], newKrylov );
       FCIdaxpy( veclength, getEconst(), krylovBasisVectors[ kry - 1 ], newKrylov );
 
-      for ( int i = 0; i < kry; i++ ) {
-
-         dcomplex coef = -krylovHamiltonian[ i + ( kry - 1 ) * krylovSpaceDimension ] / overlaps[ i + i * krylovSpaceDimension ];
-         FCIdaxpy( veclength, coef, krylovBasisVectors[ i ], newKrylov );
-
-      }
-
       krylovBasisVectors[ kry ] = newKrylov;
+   }
 
-      for ( int i = 0; i <= kry; i++ ) {
-         overlaps[ i + kry * krylovSpaceDimension ]          = FCIddot( veclength, krylovBasisVectors[ i ], krylovBasisVectors[ kry ] );
-         overlaps[ kry + i * krylovSpaceDimension ]          = std::conj( overlaps[ i + kry * krylovSpaceDimension ] );
-         krylovHamiltonian[ i + kry * krylovSpaceDimension ] = FCIaHb( veclength, krylovBasisVectors[ i ], krylovBasisVectors[ kry ] );
-         krylovHamiltonian[ kry + i * krylovSpaceDimension ] = std::conj( krylovHamiltonian[ i + kry * krylovSpaceDimension ] );
+
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Building S and H
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
+
+   dcomplex *  krylovHamiltonian  = new dcomplex   [ krylovSpaceDimension * krylovSpaceDimension ];
+   dcomplex *  overlaps           = new dcomplex   [ krylovSpaceDimension * krylovSpaceDimension ];
+
+   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+      for ( int icol = irow; icol < krylovSpaceDimension; icol++ ){
+         overlaps[ irow + krylovSpaceDimension * icol ] = FCIddot( veclength, krylovBasisVectors[ irow ], krylovBasisVectors[ icol ] );
+         overlaps[ icol + krylovSpaceDimension * irow ] = std::conj( overlaps[ irow + krylovSpaceDimension * icol ] );
+
+         krylovHamiltonian[ irow + krylovSpaceDimension * icol ] = FCIaHb( veclength, krylovBasisVectors[ irow ], krylovBasisVectors[ icol ] );
+         krylovHamiltonian[ icol + krylovSpaceDimension * irow ] = std::conj( krylovHamiltonian[ irow + krylovSpaceDimension * icol ] );
       }
    }
 
