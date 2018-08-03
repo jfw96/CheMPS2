@@ -321,6 +321,8 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
       MPS[ index ] = new CTensorT( initMPS[ index ] );
    }
 
+   double first_energy;
+
    for ( double t = 0.0; t < time_final; t += time_step ) {
 
       int * actdims          = new int[ L + 1 ];
@@ -339,6 +341,10 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
       theodm->gOEDMImHamil( oedmim );
       theodm->gOEDMReDMRG( oedmdmrgre );
       theodm->gOEDMImDMRG( oedmdmrgim );
+
+      if ( t == 0.0 ){
+         first_energy = energy;
+      }
 
       struct timeval end;
       gettimeofday( &end, NULL );
@@ -476,7 +482,7 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
          double normDT = norm( MPSDT );
          MPSDT[ 0 ]->number_operator( 0.0, 1.0 / normDT );
 
-         doStep_arnoldi( time_step, time_final, kry_size, energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
+         doStep_arnoldi( time_step, time_final, kry_size, first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
 
          for ( int site = 0; site < L; site++ ) {
             delete MPS[ site ];
