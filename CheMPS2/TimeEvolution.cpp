@@ -121,7 +121,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
 
    dcomplex step = doImaginary ? -time_step : dcomplex( 0.0, -1.0 * time_step );
 
-   HamiltonianOperator * op = new HamiltonianOperator( prob, offset );
+   HamiltonianOperator * op = new HamiltonianOperator( prob );
 
    CTensorT *** krylovBasisVectors          = new CTensorT **[ krylovSpaceDimension ];
    SyBookkeeper ** krylovBasisSyBookkeepers = new SyBookkeeper *[ krylovSpaceDimension ];
@@ -156,7 +156,9 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
       }
       
       double normTemp = norm( mpsTemp );
-      mpsTemp[ 0 ]->number_operator( 0.0, 1.0 / normTemp );
+      for( int idx = 0; idx < prob->gL(); idx++ ){
+         mpsTemp[ idx ]->number_operator( 0.0,  std::pow( normTemp, - 1.0 / prob->gL() ) );
+      }
 
       dcomplex * coefs            = new dcomplex[ kry ];
       CTensorT *** states         = new CTensorT **[ kry ];
@@ -169,9 +171,14 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
       }
 
       op->DSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
-                         kry, coefs, states, bookkeepers,
+                         0, coefs, states, bookkeepers,
                          mpsTemp, bkTemp,
                          scheme );
+
+      normTemp = norm( mpsTemp );
+      for( int idx = 0; idx < prob->gL(); idx++ ){
+         mpsTemp[ idx ]->number_operator( 0.0,  std::pow( normTemp, - 1.0 / prob->gL() ) );
+      }
 
       delete[] coefs;
       delete[] states;
@@ -199,6 +206,11 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
       
    }
    std::cout << "\n";
+
+   // int inc = 1;
+   // int sze = krylovSpaceDimension * krylovSpaceDimension;
+
+   // zaxpy_( &sze, &offset, overlaps, &inc, krylovHamiltonian, &inc  );
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
@@ -512,7 +524,7 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
          double normDT = norm( MPSDT );
          MPSDT[ 0 ]->number_operator( 0.0, 1.0 / normDT );
 
-         doStep_arnoldi( time_step, time_final, kry_size, -0.0*first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
+         doStep_arnoldi( time_step, time_final, kry_size, -1.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
 
          for ( int site = 0; site < L; site++ ) {
             delete MPS[ site ];
