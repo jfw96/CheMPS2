@@ -148,7 +148,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
       struct timeval start, end;
       gettimeofday( &start, NULL );
 
-      SyBookkeeper * bkTemp = new SyBookkeeper( prob, scheme->get_D ( 0 ) );
+      SyBookkeeper * bkTemp = new SyBookkeeper( prob, scheme->get_D( 0 ) );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
       for ( int index = 0; index < L; index++ ) {
          mpsTemp[ index ] = new CTensorT( index, bkTemp );
@@ -156,8 +156,8 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
       }
       
       double normTemp = norm( mpsTemp );
-      for( int idx = 0; idx < prob->gL(); idx++ ){
-         mpsTemp[ idx ]->number_operator( 0.0,  std::pow( normTemp, - 1.0 / prob->gL() ) );
+      for( int idx = 0; idx < L; idx++ ){
+         mpsTemp[ idx ]->number_operator( 0.0,  std::pow( normTemp, - 1.0 / L ) );
       }
 
       dcomplex * coefs            = new dcomplex[ kry ];
@@ -176,8 +176,8 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
                          scheme );
 
       normTemp = norm( mpsTemp );
-      for( int idx = 0; idx < prob->gL(); idx++ ){
-         mpsTemp[ idx ]->number_operator( 0.0,  std::pow( normTemp, - 1.0 / prob->gL() ) );
+      for( int idx = 0; idx < L; idx++ ){
+         mpsTemp[ idx ]->number_operator( 0.0,  std::pow( normTemp, - 1.0 / L ) );
       }
 
       delete[] coefs;
@@ -246,11 +246,35 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
    int info_lu;
    int * piv = new int[ krylovSpaceDimension ];
    zgetrf_( &krylovSpaceDimension, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, &info_lu );
+   assert( info_lu == 0);
 
    dcomplex * work = new dcomplex[ krylovSpaceDimension ];
-
    int info_inve;
    zgetri_( &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, work, &krylovSpaceDimension, &info_inve );
+   assert( info_inve == 0);
+
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Test the inverse
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
+
+   dcomplex * tobeiden = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   char notrans2     = 'N';
+   dcomplex zeroC2   = 0.0;
+   dcomplex oneC2    = 1.0;
+   zgemm_( &notrans2, &notrans2, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
+           &oneC2, overlaps, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, &zeroC2, tobeiden, &krylovSpaceDimension );
+
+
+
+   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+         std::cout << std::real( tobeiden[ irow +  icol * krylovSpaceDimension ] ) << " ";
+      }
+      std::cout << std::endl;
+   }
+
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
@@ -270,7 +294,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
    //// Calculate the matrix exponential
    ////
    ////////////////////////////////////////////////////////////////////////////////////////
-   int deg        = 20;
+   int deg        = 10;
    double bla     = 1.0;
    int lwsp       = 4 * krylovSpaceDimension * krylovSpaceDimension + deg + 1;
    dcomplex * wsp = new dcomplex[ lwsp ];
