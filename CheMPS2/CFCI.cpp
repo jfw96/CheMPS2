@@ -2227,25 +2227,31 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
 
    dcomplex step = dcomplex( 0.0, -1.0 * timeStep );
 
-   const int veclength = getVecLength( 0 ); // Checked "assert( max_integer >= maxVecLength );" at FCI::StartupIrrepCenter()
+   int veclength = getVecLength( 0 ); // Checked "assert( max_integer >= maxVecLength );" at FCI::StartupIrrepCenter()
    ClearVector( veclength, output );
 
    int krylovSpaceDimension = krylovSize;
 
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Generating Krylov Space vectors
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
    dcomplex ** krylovBasisVectors = new dcomplex * [ krylovSpaceDimension ];
 
    // Step 1
-   krylovBasisVectors[ 0 ]                           = input;
+   krylovBasisVectors[ 0 ] = input;
    
    for ( int kry = 1; kry < krylovSpaceDimension; kry++ ) {
-
       dcomplex * newKrylov = new dcomplex [ veclength ];
       matvec( krylovBasisVectors[ kry - 1 ], newKrylov );
-      FCIdaxpy( veclength, getEconst(), krylovBasisVectors[ kry - 1 ], newKrylov );
+      double normOfState = std::real( FCIddot( veclength, newKrylov, newKrylov ) );
+      dcomplex normalifactor = dcomplex( std::pow( normOfState, -1.0 ), 0.0 );
+      int theone = 1;
+      zscal_( &veclength, &normalifactor, newKrylov, &theone );
 
       krylovBasisVectors[ kry ] = newKrylov;
    }
-
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
@@ -2264,6 +2270,20 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
          krylovHamiltonian[ irow + krylovSpaceDimension * icol ] = FCIaHb( veclength, krylovBasisVectors[ irow ], krylovBasisVectors[ icol ] );
          krylovHamiltonian[ icol + krylovSpaceDimension * irow ] = std::conj( krylovHamiltonian[ irow + krylovSpaceDimension * icol ] );
       }
+   }
+
+   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+         std::cout << std::real( krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] ) << " ";
+      }
+      std::cout << std::endl;
+   }
+
+   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+         std::cout << std::real( overlaps[ irow +  icol * krylovSpaceDimension ] ) << " ";
+      }
+      std::cout << std::endl;
    }
 
    ////////////////////////////////////////////////////////////////////////////////////////
@@ -2681,7 +2701,8 @@ void CheMPS2::CFCI::recusion( dcomplex * state, int L,
 
 //    matvec( in , out );
 //    const unsigned int vecLength = getVecLength( 0 );
-//    const double prefactor = alpha + beta * getEconst(); // matvec does only the parts with second quantized operators
+int inc = 1;
+//    const double prenormalifactor, newKrylo, &incv = alpha + beta * getEconst(); // matvec does only the parts with second quantized operators;
 //    for (unsigned int cnt = 0; cnt < vecLength; cnt++){
 //       out[ cnt ] = prefactor * in[ cnt ] + beta * out[ cnt ]; // out = ( alpha + beta * H ) * in
 //    }
