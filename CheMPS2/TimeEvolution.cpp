@@ -121,32 +121,33 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
 
    dcomplex step = doImaginary ? -time_step : dcomplex( 0.0, -1.0 * time_step );
 
-   HamiltonianOperator * op = new HamiltonianOperator( prob );
+   HamiltonianOperator * op = new HamiltonianOperator( prob, offset );
+
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Generating Krylov Space vectors
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
+   std::cout << "   Krylov space vectors:\n";
 
    CTensorT *** krylovBasisVectors          = new CTensorT **[ krylovSpaceDimension ];
    SyBookkeeper ** krylovBasisSyBookkeepers = new SyBookkeeper *[ krylovSpaceDimension ];
 
-   dcomplex * krylovHamiltonian = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
-   dcomplex * overlaps          = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
-
-   // Step 1
-   krylovBasisVectors[ 0 ]                           = mpsIn;
-   krylovBasisSyBookkeepers[ 0 ]                     = bkIn;
-   krylovHamiltonian[ 0 + 0 * krylovSpaceDimension ] = op->Overlap( krylovBasisVectors[ 0 ], krylovBasisSyBookkeepers[ 0 ], krylovBasisVectors[ 0 ], krylovBasisSyBookkeepers[ 0 ] );
-   overlaps[ 0 + 0 * krylovSpaceDimension ]          = overlap( krylovBasisVectors[ 0 ], krylovBasisVectors[ 0 ] );
-   
-   std::cout << "   Krylov space vectors:\n";
+   // First vector is starting state
+   krylovBasisVectors[ 0 ]       = mpsIn;
+   krylovBasisSyBookkeepers[ 0 ] = bkIn;
    std::cout << "      i = " << 0 << " ";
    std::cout << "MPS dimensions:";
-   for (int i = 0; i < prob->gL(); i++){
+   for (int i = 0; i <= L; i++){
       std::cout << " " << krylovBasisSyBookkeepers[ 0 ]->gTotDimAtBound( i );
    }
    std::cout << std::endl;
 
+   // Genereate remaining
    for ( int kry = 1; kry < krylovSpaceDimension; kry++ ) {
 
-      struct timeval start, end;
-      gettimeofday( &start, NULL );
+      struct timeval startVec, endVec;
+      gettimeofday( &startVec, NULL );
 
       SyBookkeeper * bkTemp = new SyBookkeeper( prob, scheme->get_D( 0 ) );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
@@ -156,43 +157,20 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
       }
       normalize( L, mpsTemp );
 
-      dcomplex * coefs            = new dcomplex[ kry ];
-      CTensorT *** states         = new CTensorT **[ kry ];
-      SyBookkeeper ** bookkeepers = new SyBookkeeper *[ kry ];
-
-      for ( int i = 0; i < kry; i++ ) {
-         coefs[ i ]       = -krylovHamiltonian[ i + ( kry - 1 ) * krylovSpaceDimension ] / overlaps[ i + i * krylovSpaceDimension ];
-         states[ i ]      = krylovBasisVectors[ i ];
-         bookkeepers[ i ] = krylovBasisSyBookkeepers[ i ];
-      }
-
-      op->DSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
-                         0, coefs, states, bookkeepers,
-                         mpsTemp, bkTemp,
-                         scheme );
+      op->DSApply( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
+                   mpsTemp, bkTemp, scheme );
 
       normalize( L, mpsTemp );
-
-      delete[] coefs;
-      delete[] states;
-      delete[] bookkeepers;
 
       krylovBasisVectors[ kry ]       = mpsTemp;
       krylovBasisSyBookkeepers[ kry ] = bkTemp;
 
-      for ( int i = 0; i <= kry; i++ ) {
-         overlaps[ i + kry * krylovSpaceDimension ]          = overlap( krylovBasisVectors[ i ], krylovBasisVectors[ kry ] );
-         overlaps[ kry + i * krylovSpaceDimension ]          = std::conj( overlaps[ i + kry * krylovSpaceDimension ] );
-         krylovHamiltonian[ i + kry * krylovSpaceDimension ] = op->Overlap( krylovBasisVectors[ i ], krylovBasisSyBookkeepers[ i ], krylovBasisVectors[ kry ], krylovBasisSyBookkeepers[ kry ] );
-         krylovHamiltonian[ kry + i * krylovSpaceDimension ] = std::conj( krylovHamiltonian[ i + kry * krylovSpaceDimension ] );
-      }
-
-      gettimeofday( &end, NULL );
-      const double elapsed = ( end.tv_sec - start.tv_sec ) + 1e-6 * ( end.tv_usec - start.tv_usec );
+      gettimeofday( &endVec, NULL );
+      const double elapsed = ( endVec.tv_sec - startVec.tv_sec ) + 1e-6 * ( endVec.tv_usec - startVec.tv_usec );
 
       std::cout << "      i = " << kry << " ";
       std::cout << "MPS dimensions:";
-      for (int i = 0; i <= prob->gL(); i++){
+      for (int i = 0; i <= L; i++){
          std::cout << " " << krylovBasisSyBookkeepers[ kry ]->gTotDimAtBound( i );
       }
       std::cout << " time elapsed: " << elapsed << " seconds\n";
@@ -205,7 +183,19 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
    //// Building S and H
    ////
    ////////////////////////////////////////////////////////////////////////////////////////
-   
+
+   dcomplex * krylovHamiltonian = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   dcomplex * overlaps          = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+
+   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ) {
+      for( int icol = irow; icol < krylovSpaceDimension; icol++ ) {
+         overlaps[ irow + icol * krylovSpaceDimension ]          = overlap( krylovBasisVectors[ irow ], krylovBasisVectors[ icol ] );
+         overlaps[ icol + irow * krylovSpaceDimension ]          = std::conj( overlaps[ irow + icol * krylovSpaceDimension ] );
+         krylovHamiltonian[ irow + icol * krylovSpaceDimension ] = op->Overlap( krylovBasisVectors[ irow ], krylovBasisSyBookkeepers[ irow ], krylovBasisVectors[ icol ], krylovBasisSyBookkeepers[ icol ] );
+         krylovHamiltonian[ icol + irow * krylovSpaceDimension ] = std::conj( krylovHamiltonian[ irow + icol * krylovSpaceDimension ] );
+      }
+   }
+
    for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
       for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
          std::cout << std::real( krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] ) << " ";
@@ -254,15 +244,12 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
    zgemm_( &notrans2, &notrans2, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
            &oneC2, overlaps, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, &zeroC2, tobeiden, &krylovSpaceDimension );
 
-
-
    for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
       for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
          std::cout << std::real( tobeiden[ irow +  icol * krylovSpaceDimension ] ) << " ";
       }
       std::cout << std::endl;
    }
-
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
@@ -535,7 +522,7 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
          }
          normalize( L, MPSDT );
 
-         doStep_arnoldi( time_step, time_final, kry_size, -1.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
+         doStep_arnoldi( time_step, time_final, kry_size, -0.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
 
          for ( int site = 0; site < L; site++ ) {
             delete MPS[ site ];
