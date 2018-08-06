@@ -21,8 +21,10 @@ namespace CheMPS2 {
       ~TimeEvolution();
 
       void Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
-                      const double time_step, const double time_final,
-                      const int kry_size, const bool doImaginary, const bool doDumpFCI, const bool doDump2RDM );
+                      const double time_step_major, const double time_step_minor, 
+                      const double time_final, const int kry_size, 
+                      const bool doImaginary, const bool doDumpFCI, 
+                      const bool doDump2RDM );
 
       private:
       void HDF5_MAKE_DATASET( hid_t setID, const char * name, int rank,
@@ -30,8 +32,9 @@ namespace CheMPS2 {
 
       // void doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
 
-      void doStep_arnoldi( const double time_step, const double time_final, const int kry_size,
-                           dcomplex offset, const bool doImaginary, CTensorT ** mpsIn, SyBookkeeper * bkIn,
+      void doStep_arnoldi( const double time_step, const int kry_size,
+                           dcomplex offset, const bool doImaginary, 
+                           CTensorT ** mpsIn, SyBookkeeper * bkIn,
                            CTensorT ** mpsOut, SyBookkeeper * bkOut );
 
       const int L;

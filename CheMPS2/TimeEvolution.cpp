@@ -115,7 +115,7 @@ void CheMPS2::TimeEvolution::HDF5_MAKE_DATASET( hid_t setID, const char * name, 
    }
 }
 
-void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const double time_final, const int kry_size, dcomplex offset, const bool doImaginary, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int kry_size, dcomplex offset, const bool doImaginary, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
    int krylovSpaceDimension = kry_size;
 
@@ -250,6 +250,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
       }
       std::cout << std::endl;
    }
+   delete[] tobeiden;
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
@@ -341,9 +342,10 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
 }
 
 void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
-                                        const double time_step, const double time_final,
-                                        const int kry_size, const bool doImaginary, 
-                                        const bool doDumpFCI, const bool doDump2RDM ) {
+                                        const double time_step_major, const double time_step_minor,
+                                        const double time_final, const int kry_size, 
+                                        const bool doImaginary, const bool doDumpFCI, 
+                                        const bool doDump2RDM ) {
    std::cout << "\n";
    std::cout << "   Starting to propagate MPS\n";
    std::cout << "\n";
@@ -364,7 +366,7 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
 
    double first_energy;
 
-   for ( double t = 0.0; t < time_final; t += time_step ) {
+   for ( double t = 0.0; t < time_final; t += time_step_major ) {
 
       int * actdims          = new int[ L + 1 ];
       const hsize_t numInst  = scheme->get_number();
@@ -397,10 +399,11 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
       std::cout                                                 << "\n";
       std::cout << "   Duration since start " << elapsed << " seconds\n";
       std::cout                                                 << "\n";
-      std::cout << "   t    = " << t                            << "\n";
-      std::cout << "   Tmax = " << time_final                   << "\n";
-      std::cout << "   dt   = " << time_step                    << "\n";
-      std::cout << "   KryS = " << kry_size                     << "\n";
+      std::cout << "   t        = " << t                            << "\n";
+      std::cout << "   Tmax     = " << time_final                   << "\n";
+      std::cout << "   dt major = " << time_step_major              << "\n";
+      std::cout << "   dt minor = " << time_step_minor              << "\n";
+      std::cout << "   KryS     = " << kry_size                     << "\n";
       std::cout                                                 << "\n";
       std::cout << "   matrix product state dimensions:             \n";
       std::cout << "   ";
@@ -433,21 +436,22 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
       const hid_t dataPointID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
       const hsize_t Lposize = L + 1;
       hsize_t Lsq[ 2 ]; Lsq[ 0 ] = L; Lsq[ 1 ] = L;
-      HDF5_MAKE_DATASET( dataPointID, "chrono",         1, &dimarray1, H5T_NATIVE_DOUBLE,  &elapsed    );
-      HDF5_MAKE_DATASET( dataPointID, "t",              1, &dimarray1, H5T_NATIVE_DOUBLE,  &t          );
-      HDF5_MAKE_DATASET( dataPointID, "Tmax",           1, &dimarray1, H5T_NATIVE_DOUBLE,  &time_final );
-      HDF5_MAKE_DATASET( dataPointID, "dt",             1, &dimarray1, H5T_NATIVE_DOUBLE,  &time_step  );
-      HDF5_MAKE_DATASET( dataPointID, "KryS",           1, &dimarray1, H5T_STD_I32LE,      &kry_size   );
-      HDF5_MAKE_DATASET( dataPointID, "MPSDims",        1, &Lposize,   H5T_STD_I32LE,      actdims     );
-      HDF5_MAKE_DATASET( dataPointID, "MaxMs",          1, &numInst,   H5T_STD_I32LE,      MaxMs       );
-      HDF5_MAKE_DATASET( dataPointID, "CutOs",          1, &numInst,   H5T_STD_I32LE,      CutOs       );
-      HDF5_MAKE_DATASET( dataPointID, "NSwes",          1, &numInst,   H5T_STD_I32LE,      NSwes       );
-      HDF5_MAKE_DATASET( dataPointID, "Norm",           1, &dimarray1, H5T_NATIVE_DOUBLE,  &normOfMPS  );
-      HDF5_MAKE_DATASET( dataPointID, "Energy",         1, &dimarray1, H5T_NATIVE_DOUBLE,  &energy     );
-      HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL",      2, Lsq,        H5T_NATIVE_DOUBLE,  oedmre      );
-      HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG",      2, Lsq,        H5T_NATIVE_DOUBLE,  oedmim      );
-      HDF5_MAKE_DATASET( dataPointID, "OEDM_DMRG_REAL", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmdmrgre  );
-      HDF5_MAKE_DATASET( dataPointID, "OEDM_DMRG_IMAG", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmdmrgim  );
+      HDF5_MAKE_DATASET( dataPointID, "chrono",         1, &dimarray1, H5T_NATIVE_DOUBLE,  &elapsed         );
+      HDF5_MAKE_DATASET( dataPointID, "t",              1, &dimarray1, H5T_NATIVE_DOUBLE,  &t               );
+      HDF5_MAKE_DATASET( dataPointID, "Tmax",           1, &dimarray1, H5T_NATIVE_DOUBLE,  &time_final      );
+      HDF5_MAKE_DATASET( dataPointID, "dtmajor",        1, &dimarray1, H5T_NATIVE_DOUBLE,  &time_step_major );
+      HDF5_MAKE_DATASET( dataPointID, "dtminor",        1, &dimarray1, H5T_NATIVE_DOUBLE,  &time_step_minor );
+      HDF5_MAKE_DATASET( dataPointID, "KryS",           1, &dimarray1, H5T_STD_I32LE,      &kry_size        );
+      HDF5_MAKE_DATASET( dataPointID, "MPSDims",        1, &Lposize,   H5T_STD_I32LE,      actdims          );
+      HDF5_MAKE_DATASET( dataPointID, "MaxMs",          1, &numInst,   H5T_STD_I32LE,      MaxMs            );
+      HDF5_MAKE_DATASET( dataPointID, "CutOs",          1, &numInst,   H5T_STD_I32LE,      CutOs            );
+      HDF5_MAKE_DATASET( dataPointID, "NSwes",          1, &numInst,   H5T_STD_I32LE,      NSwes            );
+      HDF5_MAKE_DATASET( dataPointID, "Norm",           1, &dimarray1, H5T_NATIVE_DOUBLE,  &normOfMPS       );
+      HDF5_MAKE_DATASET( dataPointID, "Energy",         1, &dimarray1, H5T_NATIVE_DOUBLE,  &energy          );
+      HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL",      2, Lsq,        H5T_NATIVE_DOUBLE,  oedmre           );
+      HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG",      2, Lsq,        H5T_NATIVE_DOUBLE,  oedmim           );
+      HDF5_MAKE_DATASET( dataPointID, "OEDM_DMRG_REAL", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmdmrgre       );
+      HDF5_MAKE_DATASET( dataPointID, "OEDM_DMRG_IMAG", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmdmrgim       );
 
       delete[] actdims;
       delete[] MaxMs;
@@ -513,28 +517,31 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
       }      
       std::cout << "\n";
 
-      if ( t + time_step < time_final ) {
-         SyBookkeeper * MPSBKDT = new SyBookkeeper( prob, scheme->get_D( 0 ) );
-         CTensorT ** MPSDT      = new CTensorT *[ L ];
-         for ( int index = 0; index < L; index++ ) {
-            MPSDT[ index ] = new CTensorT( index, MPSBKDT );
-            MPSDT[ index ]->random();
-         }
-         normalize( L, MPSDT );
+      if ( t + time_step_major < time_final ) {
+         for( double t_minor = 0.0; (time_step_major - t_minor) > 1e-6; t_minor+=time_step_minor ) {
 
-         doStep_arnoldi( time_step, time_final, kry_size, -0.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
+            SyBookkeeper * MPSBKDT = new SyBookkeeper( prob, scheme->get_D( 0 ) );
+            CTensorT ** MPSDT      = new CTensorT *[ L ];
+            for ( int index = 0; index < L; index++ ) {
+               MPSDT[ index ] = new CTensorT( index, MPSBKDT );
+               MPSDT[ index ]->random();
+            }
+            normalize( L, MPSDT );
 
-         for ( int site = 0; site < L; site++ ) {
-            delete MPS[ site ];
-         }
-         delete[] MPS;
-         delete MPSBK;
+            doStep_arnoldi( time_step_minor, kry_size, -0.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
 
-         MPS   = MPSDT;
-         MPSBK = MPSBKDT;
+            for ( int site = 0; site < L; site++ ) {
+               delete MPS[ site ];
+            }
+            delete[] MPS;
+            delete MPSBK;
 
-         if ( doImaginary ) {
-            normalize( L, MPS );
+            MPS   = MPSDT;
+            MPSBK = MPSBKDT;
+
+            if ( doImaginary ) {
+               normalize( L, MPS );
+            }
          }
       }
 

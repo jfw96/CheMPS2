@@ -394,17 +394,20 @@ cout << "\n"
 "       TIME_TYPE = char\n"
 "              Set the type of time evolution calculation to be performed. Options are (K) for Krylov (default), (R) for Runge-Kutta, (E) for Euler, and (F) for FCI.\n"
 "\n"
-"       TIME_STEP = flt\n"
-"              Set the time step (DT) for the time evolution calculation. Neccessary when TIME_EVOLU = TRUE (positive float).\n"
+"       TIME_STEP_MAJOR = flt\n"
+"              Set the time step (DT) for wave function anlysis. Required when TIME_EVOLU = TRUE (positive float).\n"
+"\n"
+"       TIME_STEP_MINOR = flt\n"
+"              Set the time step (DT) for the time evolution calculation. Required when TIME_EVOLU = TRUE (positive float).\n"
 "\n"
 "       TIME_FINAL = flt\n"
-"              Set the final time for the time evolution calculation. Neccessary when TIME_EVOLU = TRUE (positive float). \n"
+"              Set the final time for the time evolution calculation. Required when TIME_EVOLU = TRUE (positive float). \n"
 "\n"
 "       TIME_NINIT = int, int, int\n"
-"              Set the occupation numbers for the inital state. Neccessary when TIME_EVOLU = TRUE. Ordered as in the FCIDUMP file. (positive integers).\n"
+"              Set the occupation numbers for the inital state. Required when TIME_EVOLU = TRUE. Ordered as in the FCIDUMP file. (positive integers).\n"
 "\n"
 "       TIME_KRYSIZE = int\n"
-"              Set the maximum Krylov space dimension of a time propagation step. Neccessary when TIME_EVOLU = TRUE (positive integer).\n"
+"              Set the maximum Krylov space dimension of a time propagation step. Required when TIME_EVOLU = TRUE (positive integer).\n"
 "\n"
 "       TIME_HDF5OUTPUT = /path/to/hdf5/destination\n"
 "              Set the file path for the HDF5 output when specified (default unspecified).\n"
@@ -491,7 +494,8 @@ int main( int argc, char ** argv ){
 
    bool   time_evolu      = false;
    char   time_type       = 'K';
-   double time_step       = 0.0;
+   double time_step_major = 0.0;
+   double time_step_minor = 0.0;
    double time_final      = 0.0;
    string time_ninit      = "";
    string time_hdf5output = "";
@@ -680,8 +684,12 @@ int main( int argc, char ** argv ){
          return clean_exit( -1 );
       }
 
-      if ( line.find( "TIME_STEP" ) != string::npos ){
-         find_double( &time_step, line, "TIME_STEP", true, 0.0 );
+      if ( line.find( "TIME_STEP_MAJOR" ) != string::npos ){
+         find_double( &time_step_major, line, "TIME_STEP_MAJOR", true, 0.0 );
+      }
+
+      if ( line.find( "TIME_STEP_MINOR" ) != string::npos ){
+         find_double( &time_step_minor, line, "TIME_STEP_MINOR", true, 0.0 );
       }
 
       if ( line.find( "TIME_FINAL" ) != string::npos ){
@@ -859,8 +867,18 @@ int main( int argc, char ** argv ){
 
    if ( time_evolu ){
       
-      if ( time_step <= 0 ){
-         if ( am_i_master ){ cerr << "TIME_STEP should be greater than zero !" << endl; }
+      if ( time_step_major <= 0.0 ){
+         if ( am_i_master ){ cerr << "TIME_STEP_MAJOR should be greater than zero !" << endl; }
+         return clean_exit( -1 );
+      }
+
+      if ( time_step_minor <= 0.0 ){
+         if ( am_i_master ){ cerr << "TIME_STEP_MINOR should be greater than zero !" << endl; }
+         return clean_exit( -1 );
+      }
+
+      if( time_step_major / time_step_minor != floor( time_step_major / time_step_minor ) ){
+         if ( am_i_master ){ cerr << "TIME_STEP_MAJOR must be N*TIME_STEP_MAJOR !" << endl; }
          return clean_exit( -1 );
       }
 
@@ -960,7 +978,8 @@ int main( int argc, char ** argv ){
       cout << "   TIME_EVOLU         = " << (( time_evolu        ) ? "TRUE" : "FALSE" ) << endl;
       if ( time_evolu ){
          cout << "   TIME_TYPE          = " << time_type     << endl;
-         cout << "   TIME_STEP          = " << time_step     << endl;
+         cout << "   TIME_STEP_MAJOR    = " << time_step_major << endl;
+         cout << "   TIME_STEP_MINOR    = " << time_step_minor << endl;
          cout << "   TIME_FINAL         = " << time_final    << endl;
          cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < n_orbs; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
          cout << "   TIME_KRYSIZE       = " << time_krysize    << endl;
@@ -1135,7 +1154,7 @@ int main( int argc, char ** argv ){
 
             dcomplex * end = new dcomplex [ length ];
 
-            fcisolver->TimeEvolution( time_step, time_final, time_krysize, start, time_dumpfci, time_dump2rdm );
+            fcisolver->TimeEvolution( time_step_major, time_final, time_krysize, start, time_dumpfci, time_dump2rdm );
 
             delete[] end;
             delete[] start;
@@ -1160,7 +1179,7 @@ int main( int argc, char ** argv ){
                if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
 
                CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
-               taylor->Propagate( initBK, initMPS, time_step, time_final, time_krysize, false, time_dumpfci, time_dump2rdm );
+               taylor->Propagate( initBK, initMPS, time_step_major, time_step_minor, time_final, time_krysize, false, time_dumpfci, time_dump2rdm );
 
                if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
 
