@@ -975,6 +975,13 @@ double CheMPS2::norm( CTensorT ** mps ) {
    return std::real( sqrt( overlap( mps, mps ) ) );
 }
 
+void CheMPS2::normalize( const int L, CTensorT ** mps ) {
+   const double normMPS = norm( mps );
+   for( int idx = 0; idx < L; idx++ ){
+      mps[ idx ]->number_operator( 0.0,  std::pow( normMPS, - 1.0 / L ) );
+   }
+}
+
 void CheMPS2::left_normalize( CTensorT * left_mps, CTensorT * right_mps ) {
 
 #ifdef CHEPsi2_MPI_COMPILATION

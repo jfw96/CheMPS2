@@ -154,11 +154,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
          mpsTemp[ index ] = new CTensorT( index, bkTemp );
          mpsTemp[ index ]->random();
       }
-      
-      double normTemp = norm( mpsTemp );
-      for( int idx = 0; idx < L; idx++ ){
-         mpsTemp[ idx ]->number_operator( 0.0,  std::pow( normTemp, - 1.0 / L ) );
-      }
+      normalize( L, mpsTemp );
 
       dcomplex * coefs            = new dcomplex[ kry ];
       CTensorT *** states         = new CTensorT **[ kry ];
@@ -175,10 +171,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
                          mpsTemp, bkTemp,
                          scheme );
 
-      normTemp = norm( mpsTemp );
-      for( int idx = 0; idx < L; idx++ ){
-         mpsTemp[ idx ]->number_operator( 0.0,  std::pow( normTemp, - 1.0 / L ) );
-      }
+      normalize( L, mpsTemp );
 
       delete[] coefs;
       delete[] states;
@@ -206,11 +199,6 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const doubl
       
    }
    std::cout << "\n";
-
-   // int inc = 1;
-   // int sze = krylovSpaceDimension * krylovSpaceDimension;
-
-   // zaxpy_( &sze, &offset, overlaps, &inc, krylovHamiltonian, &inc  );
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
@@ -545,8 +533,7 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
             MPSDT[ index ] = new CTensorT( index, MPSBKDT );
             MPSDT[ index ]->random();
          }
-         double normDT = norm( MPSDT );
-         MPSDT[ 0 ]->number_operator( 0.0, 1.0 / normDT );
+         normalize( L, MPSDT );
 
          doStep_arnoldi( time_step, time_final, kry_size, -1.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
 
@@ -560,8 +547,7 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
          MPSBK = MPSBKDT;
 
          if ( doImaginary ) {
-            double normDT = norm( MPS );
-            MPS[ 0 ]->number_operator( 0.0, 1.0 / normDT );
+            normalize( L, MPS );
          }
       }
 

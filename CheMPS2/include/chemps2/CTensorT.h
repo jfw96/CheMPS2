@@ -189,6 +189,8 @@ namespace CheMPS2 {
 
    double norm( CTensorT ** mps );
 
+   void normalize( const int L, CTensorT ** mps );
+
    std::ostream & operator<<( std::ostream & os, const CheMPS2::CTensorT & tns );
 
    void printFCITensor( Problem * prob, CTensorT ** mps );
