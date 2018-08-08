@@ -20,7 +20,7 @@ namespace CheMPS2 {
 
       ~TimeEvolution();
 
-      void Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
+      void Propagate( const char time_type, SyBookkeeper * initBK, CTensorT ** initMPS,
                       const double time_step_major, const double time_step_minor, 
                       const double time_final, const int kry_size, 
                       const bool doImaginary, const bool doDumpFCI, 
@@ -36,6 +36,11 @@ namespace CheMPS2 {
                            dcomplex offset, const bool doImaginary, 
                            CTensorT ** mpsIn, SyBookkeeper * bkIn,
                            CTensorT ** mpsOut, SyBookkeeper * bkOut );
+
+      void doStep_runge_kutta( const double time_step, const int kry_size, 
+                               dcomplex offset, const bool doImaginary, 
+                               CTensorT ** mpsIn, SyBookkeeper * bkIn, 
+                               CTensorT ** mpsOut, SyBookkeeper * bkOut );
 
       const int L;
 

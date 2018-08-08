@@ -982,6 +982,12 @@ void CheMPS2::normalize( const int L, CTensorT ** mps ) {
    }
 }
 
+void CheMPS2::scale( const dcomplex factor, const int L, CTensorT ** mps ) {
+   for( int idx = 0; idx < L; idx++ ){
+      mps[ idx ]->number_operator( 0.0,  std::pow( factor, 1.0 / L ) );
+   }
+}
+
 void CheMPS2::left_normalize( CTensorT * left_mps, CTensorT * right_mps ) {
 
 #ifdef CHEPsi2_MPI_COMPILATION

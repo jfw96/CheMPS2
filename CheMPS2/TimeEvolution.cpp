@@ -115,6 +115,283 @@ void CheMPS2::TimeEvolution::HDF5_MAKE_DATASET( hid_t setID, const char * name, 
    }
 }
 
+void CheMPS2::TimeEvolution::doStep_runge_kutta( const double time_step, const int kry_size, dcomplex offset, const bool doImaginary, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+
+   dcomplex step = doImaginary ? -time_step : dcomplex( 0.0, -1.0 * time_step );
+
+   HamiltonianOperator * op = new HamiltonianOperator( prob, -1.0 * offset );
+
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Generating Runge-Kutta vectors
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
+
+   CTensorT *** rungeKuttaVectors          = new CTensorT **[ 4 ];
+   SyBookkeeper ** rungeKuttaSyBookkeepers = new SyBookkeeper *[ 4 ];
+
+   // First vector
+   rungeKuttaSyBookkeepers[ 0 ] = new SyBookkeeper( prob, scheme->get_D( 0 ) );
+   rungeKuttaVectors[ 0 ]   = new CTensorT * [ L ];
+   for ( int index = 0; index < L; index++ ) {
+      rungeKuttaVectors[ 0 ][ index ] = new CTensorT( index, rungeKuttaSyBookkeepers[ 0 ] );
+      rungeKuttaVectors[ 0 ][ index ]->random();
+   }
+   normalize( L, rungeKuttaVectors[ 0 ] );
+
+   op->DSApply( mpsIn, bkIn, rungeKuttaVectors[ 0 ], rungeKuttaSyBookkeepers[ 0 ], scheme );
+   scale( step, L, rungeKuttaVectors[ 0 ] );
+
+   // Second vector
+   rungeKuttaSyBookkeepers[ 1 ] = new SyBookkeeper( prob, scheme->get_D( 0 ) );
+   rungeKuttaVectors[ 1 ]   = new CTensorT * [ L ];
+   for ( int index = 1; index < L; index++ ) {
+      rungeKuttaVectors[ 1 ][ index ] = new CTensorT( index, rungeKuttaSyBookkeepers[ 1 ] );
+      rungeKuttaVectors[ 1 ][ index ]->random();
+   }
+   normalize( L, rungeKuttaVectors[ 1 ] );
+
+   SyBookkeeper * bkTemp = new SyBookkeeper( prob, scheme->get_D( 0 ) );
+   CTensorT ** mpsTemp   = new CTensorT *[ L ];
+   for ( int index = 0; index < L; index++ ) {
+      mpsTemp[ index ] = new CTensorT( index, bkTemp );
+      mpsTemp[ index ]->random();
+   }
+   normalize( L, mpsTemp );
+
+   dcomplex coefs[] = { 1.0, 0.5 };
+   CTensorT*** states = new CTensorT**[ 2 ];
+   states[ 0 ] = mpsIn;
+   states[ 1 ] = rungeKuttaVectors[ 0 ];
+   SyBookkeeper ** bkers = new SyBookkeeper * [ 2 ];
+   bkers[ 0 ] = bkIn; 
+   bkers[ 1 ] = rungeKuttaSyBookkeepers[ 0 ];
+   op->DSSum( 2, &coefs[0], states, bkers, mpsTemp, bkTemp, scheme );
+
+   op->DSApply( mpsTemp, bkTemp, rungeKuttaVectors[ 1 ], rungeKuttaSyBookkeepers[ 1 ], scheme );
+
+   // op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisSyBookkeepers[ 0 ], mpsOut, bkOut, scheme );
+   // op->DSApply( mpsTemp, bkTemp, &krylovBasisVectors[ 1 ], &krylovBasisSyBookkeepers[ 1 ], scheme );
+
+
+   // dcomplex factor = 0.5;
+   // op->DSApplyAndAdd( mpsIn, bkIn, 
+   //                    1, &factor, &rungeKuttaVectors[ 0 ],
+   //                    rungeKuttaVectors[ 1 ], rungeKuttaSyBookkeepers[ 1 ], scheme );
+   // scale( step, L, rungeKuttaVectors[ 1 ] );
+
+
+
+
+   abort();
+   // // First vector is starting state
+   // krylovBasisVectors[ 0 ]       = mpsIn;
+   // krylovBasisSyBookkeepers[ 0 ] = bkIn;
+   // std::cout << "      i = " << 0 << " ";
+   // std::cout << "MPS dimensions:";
+   // for (int i = 0; i <= L; i++){
+   //    std::cout << " " << krylovBasisSyBookkeepers[ 0 ]->gTotDimAtBound( i );
+   // }
+   // std::cout << std::endl;
+
+   // // Genereate remaining
+   // for ( int kry = 1; kry < krylovSpaceDimension; kry++ ) {
+
+   //    struct timeval startVec, endVec;
+   //    gettimeofday( &startVec, NULL );
+
+   //    SyBookkeeper * bkTemp = new SyBookkeeper( prob, scheme->get_D( 0 ) );
+   //    CTensorT ** mpsTemp   = new CTensorT *[ L ];
+   //    for ( int index = 0; index < L; index++ ) {
+   //       mpsTemp[ index ] = new CTensorT( index, bkTemp );
+   //       mpsTemp[ index ]->random();
+   //    }
+   //    normalize( L, mpsTemp );
+
+   //    op->DSApply( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
+   //                 mpsTemp, bkTemp, scheme );
+
+   //    normalize( L, mpsTemp );
+
+   //    krylovBasisVectors[ kry ]       = mpsTemp;
+   //    krylovBasisSyBookkeepers[ kry ] = bkTemp;
+
+   //    gettimeofday( &endVec, NULL );
+   //    const double elapsed = ( endVec.tv_sec - startVec.tv_sec ) + 1e-6 * ( endVec.tv_usec - startVec.tv_usec );
+
+   //    std::cout << "      i = " << kry << " ";
+   //    std::cout << "MPS dimensions:";
+   //    for (int i = 0; i <= L; i++){
+   //       std::cout << " " << krylovBasisSyBookkeepers[ kry ]->gTotDimAtBound( i );
+   //    }
+   //    std::cout << " time elapsed: " << elapsed << " seconds\n";
+      
+   // }
+   // std::cout << "\n";
+
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // ////
+   // //// Building S and H
+   // ////
+   // ////////////////////////////////////////////////////////////////////////////////////////
+
+   // dcomplex * krylovHamiltonian = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   // dcomplex * overlaps          = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ) {
+   //    for( int icol = irow; icol < krylovSpaceDimension; icol++ ) {
+   //       overlaps[ irow + icol * krylovSpaceDimension ]          = overlap( krylovBasisVectors[ irow ], krylovBasisVectors[ icol ] );
+   //       overlaps[ icol + irow * krylovSpaceDimension ]          = std::conj( overlaps[ irow + icol * krylovSpaceDimension ] );
+   //       krylovHamiltonian[ irow + icol * krylovSpaceDimension ] = op->Overlap( krylovBasisVectors[ irow ], krylovBasisSyBookkeepers[ irow ], krylovBasisVectors[ icol ], krylovBasisSyBookkeepers[ icol ] );
+   //       krylovHamiltonian[ icol + irow * krylovSpaceDimension ] = std::conj( krylovHamiltonian[ irow + icol * krylovSpaceDimension ] );
+   //    }
+   // }
+
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << std::real( krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] ) << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
+
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << std::real( overlaps[ irow +  icol * krylovSpaceDimension ] ) << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
+
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // ////
+   // //// Calculating the inverse
+   // ////
+   // ////////////////////////////////////////////////////////////////////////////////////////
+
+   // int one                 = 1;
+   // int sqr                 = krylovSpaceDimension * krylovSpaceDimension;
+   // dcomplex * overlaps_inv = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   // zcopy_( &sqr, overlaps, &one, overlaps_inv, &one );
+
+   // int info_lu;
+   // int * piv = new int[ krylovSpaceDimension ];
+   // zgetrf_( &krylovSpaceDimension, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, &info_lu );
+   // assert( info_lu == 0);
+
+   // dcomplex * work = new dcomplex[ krylovSpaceDimension ];
+   // int info_inve;
+   // zgetri_( &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, work, &krylovSpaceDimension, &info_inve );
+   // assert( info_inve == 0);
+
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // ////
+   // //// Test the inverse
+   // ////
+   // ////////////////////////////////////////////////////////////////////////////////////////
+
+   // dcomplex * tobeiden = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   // char notrans2     = 'N';
+   // dcomplex zeroC2   = 0.0;
+   // dcomplex oneC2    = 1.0;
+   // zgemm_( &notrans2, &notrans2, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
+   //         &oneC2, overlaps, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, &zeroC2, tobeiden, &krylovSpaceDimension );
+
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << std::real( tobeiden[ irow +  icol * krylovSpaceDimension ] ) << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
+   // delete[] tobeiden;
+
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // ////
+   // //// Multiplying N^-1 and H
+   // ////
+   // ////////////////////////////////////////////////////////////////////////////////////////
+
+   // dcomplex * toExp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   // char notrans     = 'N';
+   // dcomplex zeroC   = 0.0;
+   // dcomplex oneC    = 1.0;
+   // zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
+   //         &step, overlaps_inv, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zeroC, toExp, &krylovSpaceDimension );
+
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // ////
+   // //// Calculate the matrix exponential
+   // ////
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // int deg        = 10;
+   // double bla     = 1.0;
+   // int lwsp       = 4 * krylovSpaceDimension * krylovSpaceDimension + deg + 1;
+   // dcomplex * wsp = new dcomplex[ lwsp ];
+   // int * ipiv     = new int[ krylovSpaceDimension ];
+   // int iexph      = 0;
+   // int ns         = 0;
+   // int info;
+
+   // zgpadm_( &deg, &krylovSpaceDimension, &bla, toExp, &krylovSpaceDimension,
+   //          wsp, &lwsp, ipiv, &iexph, &ns, &info );
+   // assert( info == 0 );
+
+   // dcomplex * theExp = &wsp[ iexph - 1 ];
+
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // ////
+   // //// Test new coefficients and sum MPS
+   // ////
+   // ////////////////////////////////////////////////////////////////////////////////////////
+
+   // dcomplex * result = new dcomplex[ krylovSpaceDimension ];
+   // for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+   //    result[ i ] = theExp[ i + krylovSpaceDimension * 0 ];
+   // }
+
+   // dcomplex tobeone = 0.0;
+   // for( int i = 0; i < krylovSpaceDimension; i++ ){
+   //    for( int j = 0; j < krylovSpaceDimension; j++ ){
+   //       tobeone += std::conj( result[ i ] ) * result[ j ] * overlaps[ i + krylovSpaceDimension * j ];
+   //    }   
+   // }
+
+   // if ( ( std::abs( tobeone - overlaps[ 0 ] ) > 1e-9 ) ) {
+   //    std::cout << "CHEMPS2::TIME WARNING: "
+   //              << " Numerical Problem with non-orthonormal Krylov basis. Is your state close to an energy eigenstate?\n";
+   //    std::cout << "CHEMPS2::TIME WARNING: "
+   //              << " Norm will be off by " << std::abs( tobeone - overlaps[ 0 ] ) << " due to Krylov evolution. Should be 0.0\n";
+   // }
+
+   // op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisSyBookkeepers[ 0 ], mpsOut, bkOut, scheme );
+
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // ////
+   // //// Delete all the allocated stuff
+   // ////
+   // ////////////////////////////////////////////////////////////////////////////////////////
+
+   // delete[] result;
+   // delete[] wsp;
+   // delete[] ipiv;
+   // delete[] overlaps;
+   // delete[] overlaps_inv;
+   // delete[] krylovHamiltonian;
+   // delete[] toExp;
+   // delete[] piv;
+   // delete[] work;
+
+   // for ( int cnt = 1; cnt < krylovSpaceDimension; cnt++ ) {
+   //    for ( int site = 0; site < L; site++ ) {
+   //       delete krylovBasisVectors[ cnt ][ site ];
+   //    }
+   //    delete[] krylovBasisVectors[ cnt ];
+   //    delete krylovBasisSyBookkeepers[ cnt ];
+   // }
+   // delete[] krylovBasisVectors;
+   // delete[] krylovBasisSyBookkeepers;
+
+   // delete op;
+}
+
 void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int kry_size, dcomplex offset, const bool doImaginary, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
    int krylovSpaceDimension = kry_size;
@@ -341,7 +618,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
    delete op;
 }
 
-void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initMPS,
+void CheMPS2::TimeEvolution::Propagate( const char time_type, SyBookkeeper * initBK, CTensorT ** initMPS,
                                         const double time_step_major, const double time_step_minor,
                                         const double time_final, const int kry_size, 
                                         const bool doImaginary, const bool doDumpFCI, 
@@ -528,7 +805,11 @@ void CheMPS2::TimeEvolution::Propagate( SyBookkeeper * initBK, CTensorT ** initM
             }
             normalize( L, MPSDT );
 
-            doStep_arnoldi( time_step_minor, kry_size, -0.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
+            if( time_type == 'K' ){
+               doStep_arnoldi( time_step_minor, kry_size, -0.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
+            } else if ( time_type == 'R' ){
+               doStep_runge_kutta( time_step_minor, kry_size, -0.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
+            }
 
             for ( int site = 0; site < L; site++ ) {
                delete MPS[ site ];
