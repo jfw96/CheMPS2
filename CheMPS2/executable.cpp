@@ -877,8 +877,8 @@ int main( int argc, char ** argv ){
          return clean_exit( -1 );
       }
 
-      if( time_step_major / time_step_minor != floor( time_step_major / time_step_minor ) ){
-         if ( am_i_master ){ cerr << "TIME_STEP_MAJOR must be N*TIME_STEP_MAJOR !" << endl; }
+      if( std::abs( ( time_step_major / time_step_minor ) - round( time_step_major / time_step_minor ) ) > 1e-6 ){
+         if ( am_i_master ){ cerr << "TIME_STEP_MAJOR must be N*TIME_STEP_MINOR !" << endl; }
          return clean_exit( -1 );
       }
 
