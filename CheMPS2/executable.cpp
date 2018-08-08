@@ -878,7 +878,7 @@ int main( int argc, char ** argv ){
       }
 
       if( time_step_major / time_step_minor != floor( time_step_major / time_step_minor ) ){
-         if ( am_i_master ){ cerr << "TIME_STEP_MAJOR must be N*TIME_STEP_MAJOR !" << endl; }
+         if ( am_i_master ){ cerr << "TIME_STEP_MAJOR must be N*TIME_STEP_MINOR !" << endl; }
          return clean_exit( -1 );
       }
 
@@ -1164,7 +1164,7 @@ int main( int argc, char ** argv ){
             delete fcisolver;
 
          } else {
-            if ( time_type == 'K' ){
+            if ( time_type == 'K' || time_type == 'R' ){
                CheMPS2::SyBookkeeper * initBK  = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
                CheMPS2::CTensorT    ** initMPS = new CheMPS2::CTensorT *[ prob->gL() ];
 
@@ -1179,7 +1179,7 @@ int main( int argc, char ** argv ){
                if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
 
                CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
-               taylor->Propagate( initBK, initMPS, time_step_major, time_step_minor, time_final, time_krysize, false, time_dumpfci, time_dump2rdm );
+               taylor->Propagate( time_type, initBK, initMPS, time_step_major, time_step_minor, time_final, time_krysize, false, time_dumpfci, time_dump2rdm );
 
                if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
 
@@ -1190,7 +1190,7 @@ int main( int argc, char ** argv ){
                delete [] initMPS;
                delete initBK;
             } else {
-               cerr << "TIME_TYPE different from K is not implemented yet" << std::endl;
+               cerr << " Your TIME_TYPE not implemented yet" << std::endl;
                clean_exit( 1 );
             }
          }
