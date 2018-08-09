@@ -2225,6 +2225,8 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
 
 void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, dcomplex * input, dcomplex * output){
 
+   std::cout << "Hallo Zsuzsa" << std::endl;
+
    dcomplex step = dcomplex( 0.0, -1.0 * timeStep );
 
    int veclength = getVecLength( 0 ); // Checked "assert( max_integer >= maxVecLength );" at FCI::StartupIrrepCenter()
@@ -2246,10 +2248,13 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
       dcomplex * newKrylov = new dcomplex [ veclength ];
       matvec( krylovBasisVectors[ kry - 1 ], newKrylov );
       double normOfState = std::real( FCIddot( veclength, newKrylov, newKrylov ) );
-      dcomplex normalifactor = dcomplex( std::pow( normOfState, -1.0 ), 0.0 );
+      dcomplex normalifactor = 1.0 / std::sqrt( normOfState );
+      std::cout << normOfState << " " << normalifactor << std::endl;
       int theone = 1;
       zscal_( &veclength, &normalifactor, newKrylov, &theone );
 
+      double normOfState2 = std::real( FCIddot( veclength, newKrylov, newKrylov ) );
+      std::cout << normOfState2 << std::endl;
       krylovBasisVectors[ kry ] = newKrylov;
    }
 
