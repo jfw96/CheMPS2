@@ -1154,7 +1154,7 @@ int main( int argc, char ** argv ){
 
             dcomplex * end = new dcomplex [ length ];
 
-            fcisolver->TimeEvolution( time_step_major, time_final, time_krysize, start, time_dumpfci, time_dump2rdm );
+            fcisolver->TimeEvolution( time_step_minor, time_final, time_krysize, start, time_dumpfci, time_dump2rdm );
 
             delete[] end;
             delete[] start;
