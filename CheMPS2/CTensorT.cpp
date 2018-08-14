@@ -785,186 +785,382 @@ void CheMPS2::printFCITensor( Problem * prob, CTensorT ** mps ) {
 }
 
 dcomplex CheMPS2::getFCICoefficient( Problem * prob, CTensorT ** mps, int * alpha, int * beta ) {
+
    const SyBookkeeper * denBK = mps[ 0 ]->gBK();
-   int L                      = mps[ 0 ]->gBK()->gL();
+
+   const int L = prob->gL();
+
    //DMRGcoeff = alpha/beta[Hamindex = Prob->gf2(DMRGindex)]
 
    //Check if it's possible
    {
-      int nTot  = 0;
+      int nTot = 0;
       int twoSz = 0;
-      int iTot  = 0;
-      for ( int DMRGindex = 0; DMRGindex < L; DMRGindex++ ) {
-         const int HamIndex = DMRGindex;
-         assert( ( alpha[ HamIndex ] == 0 ) || ( alpha[ HamIndex ] == 1 ) );
-         assert( ( beta[ HamIndex ] == 0 ) || ( beta[ HamIndex ] == 1 ) );
-         nTot += alpha[ HamIndex ] + beta[ HamIndex ];
-         twoSz += alpha[ HamIndex ] - beta[ HamIndex ];
-         if ( ( alpha[ HamIndex ] + beta[ HamIndex ] ) == 1 ) { iTot = Irreps::directProd( iTot, denBK->gIrrep( DMRGindex ) ); }
+      int iTot = 0;
+      for (int DMRGindex=0; DMRGindex<L; DMRGindex++){
+         const int HamIndex = (prob->gReorder()) ? prob->gf2(DMRGindex) : DMRGindex;
+         assert( ( alpha[HamIndex] == 0 ) || ( alpha[HamIndex] == 1 ) );
+         assert( (  beta[HamIndex] == 0 ) || (  beta[HamIndex] == 1 ) );
+         nTot  += alpha[HamIndex] + beta[HamIndex];
+         twoSz += alpha[HamIndex] - beta[HamIndex];
+         if ((alpha[HamIndex]+beta[HamIndex])==1){ iTot = Irreps::directProd(iTot,denBK->gIrrep(DMRGindex)); }
       }
-      if ( prob->gN() != nTot ) {
+      if ( prob->gN() != nTot ){
          // std::cout << "DMRG::getFCIcoefficient : Ndesired = " << prob->gN() << " and Ntotal in alpha and beta strings = " << nTot << std::endl;
          return 0.0;
       }
-      // 2Sz can be -Prob->2S() ; -Prob->2S()+2 ; -Prob->2S()+4 ; ... ; Prob->2S()
-      if ( ( prob->gTwoS() < twoSz ) || ( twoSz < -prob->gTwoS() ) || ( ( prob->gTwoS() - twoSz ) % 2 != 0 ) ) {
+      // 2Sz can be -prob->2S() ; -prob->2S()+2 ; -prob->2S()+4 ; ... ; prob->2S()
+      if ( ( prob->gTwoS() < twoSz ) || ( twoSz < -prob->gTwoS() ) || ( ( prob->gTwoS() - twoSz ) % 2 != 0 ) ){
          // std::cout << "DMRG::getFCIcoefficient : 2Sdesired = " << prob->gTwoS() << " and 2Sz in alpha and beta strings = " << twoSz << std::endl;
          return 0.0;
       }
-      if ( prob->gIrrep() != iTot ) {
+      if ( prob->gIrrep() != iTot ){
          // std::cout << "DMRG::getFCIcoefficient : Idesired = " << prob->gIrrep() << " and Irrep of alpha and beta strings = " << iTot << std::endl;
          return 0.0;
       }
    }
-
+   
    dcomplex theCoeff = 2.0; // A FCI coefficient always lies in between -1.0 and 1.0
-#ifdef CHEMPS2_MPI_COMPILATION
-   if ( ( MPIchemps2::mpi_rank() == MPI_CHEMPS2_MASTER ) || ( mpi_chemps2_master_only == false ) )
-#endif
+   #ifdef CHEMPS2_MPI_COMPILATION
+   if (( MPIchemps2::mpi_rank() == MPI_CHEMPS2_MASTER ) || ( mpi_chemps2_master_only == false ))
+   #endif
    {
-
+   
       //Construct necessary arrays
       int Dmax = 1;
-      for ( int DMRGindex = 1; DMRGindex < L; DMRGindex++ ) {
-         const int DtotBound = denBK->gTotDimAtBound( DMRGindex );
-         if ( DtotBound > Dmax ) { Dmax = DtotBound; }
+      for (int DMRGindex=1; DMRGindex<L; DMRGindex++){
+         const int DtotBound = denBK->gTotDimAtBound(DMRGindex);
+         if (DtotBound>Dmax){ Dmax = DtotBound; }
       }
-      dcomplex * arrayL = new dcomplex[ Dmax ];
-      dcomplex * arrayR = new dcomplex[ Dmax ];
-      int * twoSL       = new int[ L ];
-      int * twoSR       = new int[ L ];
-      int * jumpL       = new int[ L + 1 ];
-      int * jumpR       = new int[ L + 1 ];
-
+      dcomplex * arrayL = new dcomplex[Dmax];
+      dcomplex * arrayR = new dcomplex[Dmax];
+      int * twoSL = new int[L];
+      int * twoSR = new int[L];
+      int * jumpL = new int[L+1];
+      int * jumpR = new int[L+1];
+      
       //Start the iterator
-      int num_SL          = 0;
-      jumpL[ num_SL ]     = 0;
-      int dimFirst        = 1;
-      jumpL[ num_SL + 1 ] = jumpL[ num_SL ] + dimFirst;
-      twoSL[ num_SL ]     = 0;
+      int num_SL = 0;
+      jumpL[num_SL] = 0;
+      int dimFirst = 1;
+      jumpL[num_SL+1] = jumpL[num_SL] + dimFirst;
+      twoSL[num_SL] = 0;
       num_SL++;
-      arrayL[ 0 ] = 1.0;
-      int NL      = 0;
-      int IL      = 0;
-      int twoSLz  = 0;
-
-      for ( int DMRGindex = 0; DMRGindex < L; DMRGindex++ ) {
-
+      arrayL[0] = 1.0;
+      int NL = 0;
+      int IL = 0;
+      int twoSLz = 0;
+      
+      for (int DMRGindex=0; DMRGindex<L; DMRGindex++){
+      
          //Clear the right array
-         for ( int count = 0; count < Dmax; count++ ) {
-            arrayR[ count ] = 0.0;
-         }
-
+         for (int count = 0; count < Dmax; count++){ arrayR[count] = 0.0; }
+         
          //The local occupation
-         const int HamIndex = ( prob->gReorder() ) ? prob->gf2( DMRGindex ) : DMRGindex;
-         const int Nlocal   = alpha[ HamIndex ] + beta[ HamIndex ];
-         const int twoSzloc = alpha[ HamIndex ] - beta[ HamIndex ];
-
+         const int HamIndex = (prob->gReorder()) ? prob->gf2(DMRGindex) : DMRGindex;
+         const int Nlocal   = alpha[HamIndex] + beta[HamIndex];
+         const int twoSzloc = alpha[HamIndex] - beta[HamIndex];
+         
          //The right symmetry sectors
          const int NR     = NL + Nlocal;
          const int twoSRz = twoSLz + twoSzloc;
-         const int IR     = ( ( Nlocal == 1 ) ? ( Irreps::directProd( IL, denBK->gIrrep( DMRGindex ) ) ) : IL );
-
-         int num_SR       = 0;
-         jumpR[ num_SR ]  = 0;
+         const int IR     = (( Nlocal == 1 ) ? (Irreps::directProd(IL,denBK->gIrrep(DMRGindex))) : IL);
+         
+         int num_SR = 0;
+         jumpR[num_SR] = 0;
          const int spread = ( ( Nlocal == 1 ) ? 1 : 0 );
-         for ( int cntSL = 0; cntSL < num_SL; cntSL++ ) {
-            for ( int TwoSRattempt = twoSL[ cntSL ] - spread; TwoSRattempt <= twoSL[ cntSL ] + spread; TwoSRattempt += 2 ) {
+         for ( int cntSL = 0; cntSL < num_SL; cntSL++ ){
+            for ( int TwoSRattempt = twoSL[cntSL] - spread; TwoSRattempt <= twoSL[cntSL] + spread; TwoSRattempt+=2 ){
                bool encountered = false;
-               for ( int cntSR = 0; cntSR < num_SR; cntSR++ ) {
-                  if ( twoSR[ cntSR ] == TwoSRattempt ) {
+               for ( int cntSR = 0; cntSR < num_SR; cntSR++ ){
+                  if ( twoSR[cntSR] == TwoSRattempt ){
                      encountered = true;
                   }
                }
-               if ( encountered == false ) {
-                  const int dimR = denBK->gCurrentDim( DMRGindex + 1, NR, TwoSRattempt, IR );
-                  if ( dimR > 0 ) {
-                     jumpR[ num_SR + 1 ] = jumpR[ num_SR ] + dimR;
-                     twoSR[ num_SR ]     = TwoSRattempt;
+               if ( encountered == false ){
+                  const int dimR = denBK->gCurrentDim(DMRGindex+1,NR,TwoSRattempt,IR);
+                  if ( dimR > 0 ){
+                     jumpR[num_SR+1] = jumpR[num_SR] + dimR;
+                     twoSR[num_SR] = TwoSRattempt;
                      num_SR++;
                   }
                }
             }
          }
-         assert( jumpR[ num_SR ] <= Dmax );
+         assert( jumpR[num_SR] <= Dmax );
+         
+         if( num_SR == 0 ) {
+            delete[] arrayL;
+            delete[] arrayR;
+            delete[] twoSL;
 
-         for ( int cntSR = 0; cntSR < num_SR; cntSR++ ) {
+            delete[] twoSR;
+            delete[] jumpL;
+            delete[] jumpR;
+
+            return 0.0;         
+         }
+
+         for ( int cntSR = 0; cntSR < num_SR; cntSR++ ){
             int TwoSRvalue = twoSR[ cntSR ];
-            int dimR       = jumpR[ cntSR + 1 ] - jumpR[ cntSR ];
-            for ( int TwoSLvalue = TwoSRvalue - spread; TwoSLvalue <= TwoSRvalue + spread; TwoSLvalue += 2 ) {
-
+            int dimR = jumpR[ cntSR+1 ] - jumpR[ cntSR ];
+            for ( int TwoSLvalue = TwoSRvalue - spread; TwoSLvalue <= TwoSRvalue + spread; TwoSLvalue += 2 ){
+            
                int indexSL = -1;
-               for ( int cntSL = 0; cntSL < num_SL; cntSL++ ) {
-                  if ( twoSL[ cntSL ] == TwoSLvalue ) {
+               for ( int cntSL = 0; cntSL < num_SL; cntSL++ ){
+                  if ( twoSL[cntSL] == TwoSLvalue ){
                      indexSL = cntSL;
-                     cntSL   = num_SL; //exit loop
+                     cntSL = num_SL; //exit loop
                   }
                }
-               if ( indexSL != -1 ) {
-                  int dimL           = jumpL[ indexSL + 1 ] - jumpL[ indexSL ];
-                  dcomplex * Tblock  = mps[ DMRGindex ]->gStorage( NL, TwoSLvalue, IL, NR, TwoSRvalue, IR );
-                  dcomplex prefactor = sqrt( TwoSRvalue + 1 ) * Wigner::wigner3j( TwoSLvalue, spread, TwoSRvalue, twoSLz, twoSzloc, -twoSRz ) * Special::phase( -TwoSLvalue + spread - twoSRz );
+               if ( indexSL != -1 ){
+                  int dimL = jumpL[ indexSL+1 ] - jumpL[ indexSL ];
+                  dcomplex * Tblock = mps[ DMRGindex ]->gStorage(NL,TwoSLvalue,IL,NR,TwoSRvalue,IR);
+                  dcomplex prefactor = sqrt( TwoSRvalue + 1 )
+                                   * Wigner::wigner3j(TwoSLvalue, spread, TwoSRvalue, twoSLz, twoSzloc, -twoSRz)
+                                   * Special::phase( -TwoSLvalue + spread - twoSRz );
                   dcomplex add2array = 1.0;
-                  char notrans       = 'N';
-                  zgemm_( &notrans, &notrans, &dimFirst, &dimR, &dimL, &prefactor, arrayL + jumpL[ indexSL ], &dimFirst, Tblock, &dimL, &add2array, arrayR + jumpR[ cntSR ], &dimFirst );
+                  char notrans = 'N';
+                  zgemm_( &notrans, &notrans, &dimFirst, &dimR, &dimL, &prefactor, arrayL + jumpL[indexSL], &dimFirst, Tblock, &dimL, &add2array, arrayR + jumpR[cntSR], &dimFirst);
                }
             }
          }
-
+         
          //Swap L <--> R
          {
             dcomplex * temp = arrayR;
-            arrayR          = arrayL;
-            arrayL          = temp;
-            int * temp2     = twoSR;
-            twoSR           = twoSL;
-            twoSL           = temp2;
-            temp2           = jumpR;
-            jumpR           = jumpL;
-            jumpL           = temp2;
-            num_SL          = num_SR;
-            NL              = NR;
-            IL              = IR;
-            twoSLz          = twoSRz;
+            arrayR = arrayL;
+            arrayL = temp;
+            int * temp2 = twoSR;
+            twoSR = twoSL;
+            twoSL = temp2;
+            temp2 = jumpR;
+            jumpR = jumpL;
+            jumpL = temp2;
+            num_SL = num_SR;
+            NL = NR;
+            IL = IR;
+            twoSLz = twoSRz;
          }
       }
+      
+      theCoeff = arrayL[0];
 
-      theCoeff = arrayL[ 0 ];
-
-      // assert( num_SL == 1 );
-      assert( jumpL[ 1 ] == 1 );
-      assert( twoSL[ 0 ] == prob->gTwoS() );
-      assert( NL == prob->gN() );
-      // assert( IL == prob->gIrrep() );
-
-      delete[] arrayL;
-      delete[] arrayR;
-      delete[] twoSL;
-      delete[] twoSR;
-      delete[] jumpL;
-      delete[] jumpR;
+      assert(   num_SL == 1              );
+      assert( jumpL[1] == 1              );
+      assert( twoSL[0] == prob->gTwoS()  );
+      assert(       NL == prob->gN()     );
+      assert(       IL == prob->gIrrep() );
+      
+      delete [] arrayL;
+      delete [] arrayR;
+      delete [] twoSL;
+      delete [] twoSR;
+      delete [] jumpL;
+      delete [] jumpR;
+   
    }
-
-#ifdef CHEMPS2_MPI_COMPILATION
-   if ( mpi_chemps2_master_only ) { MPIchemps2::broadcast_array_double( &theCoeff, 1, MPI_CHEMPS2_MASTER ); }
-#endif
+   
+   #ifdef CHEMPS2_MPI_COMPILATION
+   if ( mpi_chemps2_master_only ){ MPIchemps2::broadcast_array_double( &theCoeff, 1, MPI_CHEMPS2_MASTER ); }
+   #endif
    return theCoeff;
+
+
+//    const SyBookkeeper * denBK = mps[ 0 ]->gBK();
+//    int L                      = mps[ 0 ]->gBK()->gL();
+//    //DMRGcoeff = alpha/beta[Hamindex = Prob->gf2(DMRGindex)]
+
+//    //Check if it's possible
+//    int nTot  = 0;
+//    int twoSz = 0;
+//    int iTot  = 0;
+
+//    for ( int DMRGindex = 0; DMRGindex < L; DMRGindex++ ) {
+//       const int HamIndex = DMRGindex;
+//       assert( ( alpha[ HamIndex ] == 0 ) || ( alpha[ HamIndex ] == 1 ) );
+//       assert( ( beta[ HamIndex ] == 0 ) || ( beta[ HamIndex ] == 1 ) );
+//       nTot += alpha[ HamIndex ] + beta[ HamIndex ];
+//       twoSz += alpha[ HamIndex ] - beta[ HamIndex ];
+//       if ( ( alpha[ HamIndex ] + beta[ HamIndex ] ) == 1 ) { iTot = Irreps::directProd( iTot, denBK->gIrrep( DMRGindex ) ); }
+//    }
+
+//    if ( prob->gN() != nTot ) {
+//       // std::cout << "DMRG::getFCIcoefficient : Ndesired = " << prob->gN() << " and Ntotal in alpha and beta strings = " << nTot << std::endl;
+//       return 0.0;
+//    }
+
+//    // 2Sz can be -Prob->2S() ; -Prob->2S()+2 ; -Prob->2S()+4 ; ... ; Prob->2S()
+//    if ( ( prob->gTwoS() < twoSz ) || ( twoSz < -prob->gTwoS() ) || ( ( prob->gTwoS() - twoSz ) % 2 != 0 ) ) {
+//       // std::cout << "DMRG::getFCIcoefficient : 2Sdesired = " << prob->gTwoS() << " and 2Sz in alpha and beta strings = " << twoSz << std::endl;
+//       return 0.0;
+//    }
+
+//    if ( prob->gIrrep() != iTot ) {
+//       // std::cout << "DMRG::getFCIcoefficient : Idesired = " << prob->gIrrep() << " and Irrep of alpha and beta strings = " << iTot << std::endl;
+//       return 0.0;
+//    }
+
+//    dcomplex theCoeff = 2.0; // A FCI coefficient always lies in between -1.0 and 1.0
+
+//    //Construct necessary arrays
+//    int Dmax = 1;
+//    for ( int DMRGindex = 1; DMRGindex < L; DMRGindex++ ) {
+//       const int DtotBound = denBK->gTotDimAtBound( DMRGindex );
+//       if ( DtotBound > Dmax ) { Dmax = DtotBound; }
+//    }
+
+//    dcomplex * arrayL = new dcomplex[ Dmax ];
+//    dcomplex * arrayR = new dcomplex[ Dmax ];
+//    int * twoSL       = new int[ L ];
+//    int * twoSR       = new int[ L ];
+//    int * jumpL       = new int[ L + 1 ];
+//    int * jumpR       = new int[ L + 1 ];
+
+//    //Start the iterator
+//    int num_SL          = 0;
+//    jumpL[ num_SL ]     = 0;
+//    int dimFirst        = 1;
+//    jumpL[ num_SL + 1 ] = jumpL[ num_SL ] + dimFirst;
+//    twoSL[ num_SL ]     = 0;
+//    num_SL++;
+//    arrayL[ 0 ] = 1.0;
+//    int NL      = 0;
+//    int IL      = 0;
+//    int twoSLz  = 0;
+
+//    for ( int DMRGindex = 0; DMRGindex < L; DMRGindex++ ) {
+//       //Clear the right array
+//       for ( int count = 0; count < Dmax; count++ ) { arrayR[ count ] = 0.0; }
+
+//       //The local occupation
+//       const int HamIndex = ( prob->gReorder() ) ? prob->gf2( DMRGindex ) : DMRGindex;
+//       const int Nlocal   = alpha[ HamIndex ] + beta[ HamIndex ];
+//       const int twoSzloc = alpha[ HamIndex ] - beta[ HamIndex ];
+
+//       //The right symmetry sectors
+//       const int NR     = NL + Nlocal;
+//       const int twoSRz = twoSLz + twoSzloc;
+//       const int IR     = ( ( Nlocal == 1 ) ? ( Irreps::directProd( IL, denBK->gIrrep( DMRGindex ) ) ) : IL );
+
+//       // std::cout << "NL " << NL << " twoSLz " << twoSLz << " IL " << IL << " NR " << NR << " twoSRz " << twoSRz << " IR " << IR << std::endl;
+//       // std::cout << *mps[ DMRGindex ] << std::endl;
+
+//       // abort();
+
+//       int num_SR       = 0;
+//       jumpR[ num_SR ]  = 0;
+//       const int spread = ( ( Nlocal == 1 ) ? 1 : 0 );
+//       for ( int cntSL = 0; cntSL < num_SL; cntSL++ ) {
+//          for ( int TwoSRattempt = twoSL[ cntSL ] - spread; TwoSRattempt <= twoSL[ cntSL ] + spread; TwoSRattempt += 2 ) {
+//             bool encountered = false;
+//             for ( int cntSR = 0; cntSR < num_SR; cntSR++ ) {
+//                if ( twoSR[ cntSR ] == TwoSRattempt ) {
+//                   encountered = true;
+//                }
+//             }
+//             if ( encountered == false ) {
+//                const int dimR = denBK->gCurrentDim( DMRGindex + 1, NR, TwoSRattempt, IR );
+//                if ( dimR > 0 ) {
+//                   jumpR[ num_SR + 1 ] = jumpR[ num_SR ] + dimR;
+//                   twoSR[ num_SR ]     = TwoSRattempt;
+//                   num_SR++;
+//                }
+//             }
+//          }
+//       }
+//       // std::cout << num_SR << std::endl;
+      
+//       assert( jumpR[ num_SR ] <= Dmax );
+
+//       if( num_SR == 0 ) {
+//          delete[] arrayL;
+//          delete[] arrayR;
+//          delete[] twoSL;
+//          delete[] twoSR;
+//          delete[] jumpL;
+//          delete[] jumpR;
+
+//          return 0.0;         
+//       }
+
+//       for ( int cntSR = 0; cntSR < num_SR; cntSR++ ) {
+//          int TwoSRvalue = twoSR[ cntSR ];
+//          int dimR       = jumpR[ cntSR + 1 ] - jumpR[ cntSR ];
+//          for ( int TwoSLvalue = TwoSRvalue - spread; TwoSLvalue <= TwoSRvalue + spread; TwoSLvalue += 2 ) {
+
+//             int indexSL = -1;
+//             for ( int cntSL = 0; cntSL < num_SL; cntSL++ ) {
+//                if ( twoSL[ cntSL ] == TwoSLvalue ) {
+//                   indexSL = cntSL;
+//                   cntSL   = num_SL; //exit loop
+//                }
+//             }
+//             if ( indexSL != -1 ) {
+//                int dimL           = jumpL[ indexSL + 1 ] - jumpL[ indexSL ];
+//                dcomplex * Tblock  = mps[ DMRGindex ]->gStorage( NL, TwoSLvalue, IL, NR, TwoSRvalue, IR );
+//                dcomplex prefactor = sqrt( TwoSRvalue + 1 ) * Wigner::wigner3j( TwoSLvalue, spread, TwoSRvalue, twoSLz, twoSzloc, -twoSRz ) * Special::phase( -TwoSLvalue + spread - twoSRz );
+//                dcomplex add2array = 1.0;
+//                char notrans       = 'N';
+//                zgemm_( &notrans, &notrans, &dimFirst, &dimR, &dimL, &prefactor, arrayL + jumpL[ indexSL ], &dimFirst, Tblock, &dimL, &add2array, arrayR + jumpR[ cntSR ], &dimFirst );
+//             }
+//          }
+//       }
+//       // abort();
+
+//       //Swap L <--> R
+//       {
+//          dcomplex * temp = arrayR;
+//          arrayR          = arrayL;
+//          arrayL          = temp;
+//          int * temp2     = twoSR;
+//          twoSR           = twoSL;
+//          twoSL           = temp2;
+//          temp2           = jumpR;
+//          jumpR           = jumpL;
+//          jumpL           = temp2;
+//          num_SL          = num_SR;
+//          NL              = NR;
+//          IL              = IR;
+//          twoSLz          = twoSRz;
+//       }
+//    }
+
+//    theCoeff = arrayL[ 0 ];
+
+//    assert( num_SL == 1 );
+//    assert( jumpL[ 1 ] == 1 );
+//    assert( twoSL[ 0 ] == prob->gTwoS() );
+//    assert( NL == prob->gN() );
+//    assert( IL == prob->gIrrep() );
+
+//    delete[] arrayL;
+//    delete[] arrayR;
+//    delete[] twoSL;
+//    delete[] twoSR;
+//    delete[] jumpL;
+//    delete[] jumpR;
+
+//    return theCoeff;
 }
 
 dcomplex CheMPS2::overlap( CTensorT ** mpsA, CTensorT ** mpsB ) {
    const int L = mpsA[ 0 ]->gBK()->gL();
 
    CTensorO * overlapOld;
-   overlapOld = new CTensorO( L - 1, false, mpsA[ L - 1 ]->gBK(), mpsB[ L - 1 ]->gBK() );
-   overlapOld->create( mpsA[ L - 1 ], mpsB[ L - 1 ] );
+   overlapOld = new CTensorO( 1, true, mpsA[ 0 ]->gBK(), mpsB[ 0 ]->gBK() );
+   overlapOld->create( mpsA[ 0 ], mpsB[ 0 ] );
 
    CTensorO * overlapNext;
-   for ( int i = L - 2; i >= 0; i-- ) {
-      overlapNext = new CTensorO( i, false, mpsA[ i ]->gBK(), mpsB[ i ]->gBK() );
+
+   for ( int i = 1; i < L; i++ ) {
+      overlapNext = new CTensorO( i + 1, true, mpsA[ i ]->gBK(), mpsB[ i ]->gBK() );
       overlapNext->update_ownmem( mpsA[ i ], mpsB[ i ], overlapOld );
       delete overlapOld;
       overlapOld = overlapNext;
+
    }
+
    assert( overlapOld->gNKappa() == 1 );
    dcomplex result = overlapOld->trace();
    delete overlapOld;
@@ -972,7 +1168,7 @@ dcomplex CheMPS2::overlap( CTensorT ** mpsA, CTensorT ** mpsB ) {
 }
 
 double CheMPS2::norm( CTensorT ** mps ) {
-   return std::real( sqrt( overlap( mps, mps ) ) );
+   return std::real( std::sqrt( overlap( mps, mps ) ) );
 }
 
 void CheMPS2::normalize( const int L, CTensorT ** mps ) {

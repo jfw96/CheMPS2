@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <iomanip>
 #include <iostream>
+#include <algorithm>
 #include <sys/time.h>
 
 #include "COneDM.h"
@@ -114,6 +115,56 @@ void CheMPS2::TimeEvolution::HDF5_MAKE_DATASET( hid_t setID, const char * name, 
       H5LTmake_dataset( setID, name, rank, dims, typeID, data );
    }
 }
+
+double CheMPS2::TimeEvolution::calcWieght( int nHoles, int nParticles, Problem * probState, CTensorT ** mpsState, SyBookkeeper * bkState, const int * hf_state ){
+
+   const int L = prob->gL();
+   double result = 0;
+
+   int* myoccus = new int[ 2 * L ];
+   for( int idx = 0; idx < 2 * L; idx++ ){
+      if( idx < prob->gN() ){
+         myoccus[ idx ] = 1;
+      } else {
+         myoccus[ idx ] = 0;
+      }
+   }
+
+   std::sort( myoccus, myoccus + 2 * L );
+   do {
+
+      bool alphaEqualsBeta = true;
+
+      int* alphas = &myoccus[ 0 ];
+      int* betas = &myoccus[ L ];
+
+      int iHoles = 0;
+      int iParticles = 0;
+
+      for( int idx = 0; idx < L; idx++ ) { 
+         if ( alphas[ idx ] + betas[ idx ] < hf_state[ idx ] ){
+            iHoles += hf_state[ idx ] - ( alphas[ idx ] + betas[ idx ] );
+         }
+         alphaEqualsBeta = alphaEqualsBeta && ( alphas[ idx ] == betas[ idx ] );
+      }
+
+      for( int idx = 0; idx < L; idx++ ) { 
+         if ( alphas[ idx ] + betas[ idx ] > hf_state[ idx ] ){
+            iParticles += ( alphas[ idx ] + betas[ idx ] ) - hf_state[ idx ];
+         }
+      }
+
+      if( ( iHoles == nHoles ) && ( iParticles == nParticles ) ){
+         result += std::pow( std::abs( getFCICoefficient( probState, mpsState, alphas, betas ) ), 2.0 );
+      }
+
+   } while ( std::next_permutation( myoccus, myoccus + 2 * L ) );
+
+   delete[] myoccus;
+
+   return result;
+}
+
 
 void CheMPS2::TimeEvolution::doStep_euler( const double time_step, const int kry_size, dcomplex offset, const bool doImaginary, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
@@ -549,11 +600,12 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
    delete op;
 }
 
-void CheMPS2::TimeEvolution::Propagate( const char time_type, SyBookkeeper * initBK, CTensorT ** initMPS,
-                                        const double time_step_major, const double time_step_minor,
-                                        const double time_final, const int kry_size, 
+void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_step_major, 
+                                        const double time_step_minor, const double time_final, 
+                                        const int* ninit, const int kry_size,
                                         const bool doImaginary, const bool doDumpFCI, 
-                                        const bool doDump2RDM ) {
+                                        const bool doDump2RDM, const int nWeights,
+                                        const int * hfState ) {
    std::cout << "\n";
    std::cout << "   Starting to propagate MPS\n";
    std::cout << "\n";
@@ -566,13 +618,18 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, SyBookkeeper * ini
 
    HamiltonianOperator * hamOp = new HamiltonianOperator( prob );
 
-   SyBookkeeper * MPSBK = new SyBookkeeper( *initBK );
-   CTensorT ** MPS      = new CTensorT *[ L ];
-   for ( int index = 0; index < L; index++ ) {
-      MPS[ index ] = new CTensorT( initMPS[ index ] );
+   CheMPS2::SyBookkeeper * MPSBK  = new CheMPS2::SyBookkeeper( prob, ninit );
+   CheMPS2::CTensorT    ** MPS    = new CheMPS2::CTensorT *[ prob->gL() ];
+
+   for ( int index = 0; index < prob->gL(); index++ ) {
+      MPS[ index ] = new CheMPS2::CTensorT( index, MPSBK );
+      MPS[ index ]->gStorage()[ 0 ] = 1.0;
    }
+   normalize( prob->gL(),  MPS );
 
    double first_energy;
+   int nElecHF = 0; for ( int index = 0; index < prob->gL(); index++ ) { nElecHF += hfState[ index ]; }
+   const int deltaN = nElecHF - prob->gN();
 
    for ( double t = 0.0; t < time_final; t += time_step_major ) {
 
@@ -592,6 +649,16 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, SyBookkeeper * ini
       theodm->gOEDMImHamil( oedmim );
       theodm->gOEDMReDMRG( oedmdmrgre );
       theodm->gOEDMImDMRG( oedmdmrgim );
+
+      int*     nHoles = new int[ nWeights ];
+      int* nParticles = new int[ nWeights ];
+      double* weights = new double[ nWeights ];
+
+      for( int iWeight = 0; iWeight < nWeights; iWeight++ ){
+         nHoles[ iWeight ] = iWeight + deltaN;
+         nParticles[ iWeight ] = iWeight;
+         weights[ iWeight ] =  calcWieght( iWeight + deltaN, iWeight, prob, MPS, MPSBK, hfState );
+      }
 
       if ( t == 0.0 ){
          first_energy = energy;
@@ -638,12 +705,19 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, SyBookkeeper * ini
       std::cout << "   ";
       for ( int i = 0; i < L; i++ ) { std::cout << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << oedmre[ i + L * i ]; }
       std::cout                                                 << "\n";
+      std::cout                                                 << "\n";
+
+      for( int iWeight = 0; iWeight < nWeights; iWeight++ ){
+         std::cout << "  " << nHoles[ iWeight ] <<  "h" << nParticles[ iWeight] << "p-weight  = " << weights[ iWeight ] << "\n";
+      }
+      std::cout                                                 << "\n";
 
       char dataPointname[ 1024 ];
       sprintf( dataPointname, "/Output/DataPoint%.5f", t );
       const hid_t dataPointID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
       const hsize_t Lposize = L + 1;
       hsize_t Lsq[ 2 ]; Lsq[ 0 ] = L; Lsq[ 1 ] = L;
+      hsize_t weightSze = nWeights;
       HDF5_MAKE_DATASET( dataPointID, "chrono",         1, &dimarray1, H5T_NATIVE_DOUBLE,  &elapsed         );
       HDF5_MAKE_DATASET( dataPointID, "t",              1, &dimarray1, H5T_NATIVE_DOUBLE,  &t               );
       HDF5_MAKE_DATASET( dataPointID, "Tmax",           1, &dimarray1, H5T_NATIVE_DOUBLE,  &time_final      );
@@ -660,6 +734,9 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, SyBookkeeper * ini
       HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG",      2, Lsq,        H5T_NATIVE_DOUBLE,  oedmim           );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_DMRG_REAL", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmdmrgre       );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_DMRG_IMAG", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmdmrgim       );
+      HDF5_MAKE_DATASET( dataPointID, "nHoles"        , 1, &weightSze, H5T_STD_I32LE,      nHoles           );
+      HDF5_MAKE_DATASET( dataPointID, "nParticles"    , 1, &weightSze, H5T_STD_I32LE,      nParticles       );
+      HDF5_MAKE_DATASET( dataPointID, "weights"       , 1, &weightSze, H5T_NATIVE_DOUBLE,  weights          );
 
       delete[] actdims;
       delete[] MaxMs;
@@ -669,6 +746,9 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, SyBookkeeper * ini
       delete[] oedmim;
       delete[] oedmdmrgre;
       delete[] oedmdmrgim;
+      delete[] nHoles;
+      delete[] nParticles;
+      delete[] weights;
 
       delete theodm;
       
@@ -701,7 +781,6 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, SyBookkeeper * ini
          CTwoDM * thetdm = new CTwoDM( MPSBK, prob );
          CTwoDMBuilder * thetdmbuilder = new CTwoDMBuilder( prob, MPS, MPSBK );
          thetdmbuilder->Build2RDM( thetdm );
-
          double * tedm_real  = new double[ L * L * L * L ];
          double * tedm_imag  = new double[ L * L * L * L ];
          for( int idxA = 0; idxA < L; idxA++ ){

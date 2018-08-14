@@ -79,6 +79,8 @@ CheMPS2::SyBookkeeper::SyBookkeeper( const Problem * Prob, const int * occupatio
    Irreps temp( Prob->gSy() );
    this->num_irreps = temp.getNumberOfIrreps();
 
+   assert(Prob->gTwoS() <= 1);
+
    // Allocate the arrays
    allocate_arrays();
 
@@ -103,41 +105,7 @@ CheMPS2::SyBookkeeper::SyBookkeeper( const Problem * Prob, const int * occupatio
                         if ( TwoSR >= 0 ) {
                            int IR         = ( ( NR == NL + 1 ) ? Irreps::directProd( IL, gIrrep( index ) ) : IL );
                            const int dimR = gFCIdim( index + 1, NR, TwoSR, IR );
-                           if ( dimR > 0 && NL == Nelec && NR == Nelec + ni ) {
-                              needBlock = true;
-                           }
-                        }
-                     }
-                  }
-               }
-               if ( needBlock ) {
-                  SetDim( index, NL, TwoSL, IL, 1 );
-               } else {
-                  SetDim( index, NL, TwoSL, IL, 0 );
-               }
-            }
-         }
-      }
-      Nelec += ni;
-   }
-
-   // Clean the indexes that turn out to be unncessary
-   Nelec = 0;
-   for ( int index = 0; index < gL(); index++ ) {
-      int ni = occupation[ Prob->gReorder() ? Prob->gf2( index ) : index ];
-      for ( int NL = gNmin( index ); NL <= gNmax( index ); NL++ ) {
-         for ( int TwoSL = gTwoSmin( index, NL ); TwoSL <= gTwoSmax( index, NL ); TwoSL += 2 ) {
-            for ( int IL = 0; IL < getNumberOfIrreps(); IL++ ) {
-               const int dimL = gCurrentDim( index, NL, TwoSL, IL );
-               bool needBlock = false;
-               if ( dimL > 0 ) {
-                  for ( int NR = NL; NR <= NL + 2; NR++ ) {
-                     const int TwoJ = ( ( NR == NL + 1 ) ? 1 : 0 );
-                     for ( int TwoSR = TwoSL - TwoJ; TwoSR <= TwoSL + TwoJ; TwoSR += 2 ) {
-                        if ( TwoSR >= 0 ) {
-                           int IR         = ( ( NR == NL + 1 ) ? Irreps::directProd( IL, gIrrep( index ) ) : IL );
-                           const int dimR = gCurrentDim( index + 1, NR, TwoSR, IR );
-                           if ( dimR > 0 && NL == Nelec && NR == Nelec + ni ) {
+                           if ( ( dimR > 0 ) && ( NL == Nelec ) && ( NR == Nelec + ni ) && ( TwoSL == ( NL % 2 ) ) && ( TwoSR == ( NR % 2 ) ) ) {
                               needBlock = true;
                            }
                         }
