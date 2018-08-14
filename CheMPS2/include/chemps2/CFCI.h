@@ -102,7 +102,7 @@ namespace CheMPS2{
          
 //==========> The core routines for users
          
-         void TimeEvolution( double timeStep, double finalTime, unsigned int krylovSize, dcomplex * input, const bool doDumpFCI, const bool doDump2RDM );
+         void TimeEvolution( const double time_step_major, const double time_step_minor, double finalTime, dcomplex * input, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM, const int nWeights, const int * hfState );
 
 
 //          //! Calculates the FCI ground state with Davidson's algorithm
@@ -308,7 +308,8 @@ namespace CheMPS2{
              \param vector The FCI vector with getVecLength(0) variables from which a coefficient is desired */
          void setFCIcoeff(int * bits_up, int * bits_down, dcomplex value, dcomplex * vector) const;
 
-
+         double calcWieght( int nHoles, int nParticles, dcomplex * state, const int * hf_state );
+         
       protected:
       
          void HDF5_MAKE_DATASET( hid_t setID, const char * name, int rank, const hsize_t * dims, hid_t typeID, const void * data );

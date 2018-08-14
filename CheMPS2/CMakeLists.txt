@@ -151,21 +151,26 @@ endif()
 add_executable             (chemps2-bin executable.cpp)
 target_link_libraries      (chemps2-bin tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} )
 set_target_properties      (chemps2-bin PROPERTIES OUTPUT_NAME "chemps2")
+
 add_executable             (chemps2-dyn dynamics.cpp)
 target_link_libraries      (chemps2-dyn tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} )
 set_target_properties      (chemps2-dyn PROPERTIES OUTPUT_NAME "chemps2dyn")
 
+add_executable             (chemps2-fci fcidynamics.cpp)
+target_link_libraries      (chemps2-fci tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} )
+set_target_properties      (chemps2-fci PROPERTIES OUTPUT_NAME "chemps2fci")
+
 # <<<  Install  >>>
 
 if (NOT STATIC_ONLY)
-    install (TARGETS chemps2-shared chemps2-bin chemps2-dyn
+    install (TARGETS chemps2-shared chemps2-bin chemps2-dyn chemps2-fci
                      EXPORT "${PROJECT_NAME}Targets-shared"
                      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
                      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
 if (NOT SHARED_ONLY)
-    install (TARGETS chemps2-static chemps2-bin chemps2-dyn
+    install (TARGETS chemps2-static chemps2-bin chemps2-dyn chemps2-fci
                      EXPORT "${PROJECT_NAME}Targets-static"
                      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
                      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

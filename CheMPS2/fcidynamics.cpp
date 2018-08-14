@@ -298,27 +298,6 @@ cout << "\n"
 "       IRREP = int\n"
 "              Overwrite the target wavefunction irrep [0-7] of the FCIDUMP file (psi4 convention).\n"
 "\n"
-"       SWEEP_STATES = int, int, int\n"
-"              Set the number of reduced renormalized basis states for the successive sweep instructions (positive integers).\n"
-"\n"
-"       SWEEP_MAX_SWEEPS = int, int, int\n"
-"              Set the maximum number of sweeps for the successive sweep instructions (positive integers).\n"
-"\n"
-"       SWEEP_NOISE_PREFAC = flt, flt, flt\n"
-"              Set the noise prefactors for the successive sweep instructions (floats).\n"
-"\n"
-"       SWEEP_CUTOFF = flt, flt, flt\n"
-"              Set the cut off parameter for the Krylov space generation. Neccessary when TIME_EVOLU = TRUE (positive integers).\n"
-"\n"
-"       REORDER_FIEDLER = bool\n"
-"              When all orbitals are active orbitals, switch on orbital reordering based on the Fiedler vector of the exchange matrix (TRUE or FALSE; default FALSE).\n"
-"\n"
-"       REORDER_ORDER = int, int, int, int\n"
-"              When all orbitals are active orbitals, provide a custom orbital reordering (default unspecified). When specified, this option takes precedence over REORDER_ORDER.\n"
-"\n"
-"       TIME_TYPE = char\n"
-"              Set the type of time evolution calculation to be performed. Options are (K) for Krylov (default), (R) for Runge-Kutta, (E) for Euler, and (F) for FCI.\n"
-"\n"
 "       TIME_STEP_MAJOR = flt\n"
 "              Set the time step (DT) for wave function anlysis. Required when TIME_EVOLU = TRUE (positive float).\n"
 "\n"
@@ -366,14 +345,6 @@ int main( int argc, char ** argv ){
    int multiplicity = -1;
    int nelectrons   = -1;
    int irrep        = -1;
-
-   string sweep_states  = "";
-   string sweep_maxit   = "";
-   string sweep_noise   = "";
-   string sweep_cutoff = "";
-
-   bool   reorder_fiedler   = false;
-   string reorder_order     = "";
 
    char   time_type       = 'K';
    double time_step_major = 0.0;
@@ -447,34 +418,8 @@ int main( int argc, char ** argv ){
       char options1[] = { 'K', 'R', 'E', 'F' };
       if ( find_character( &time_type,        line, "TIME_TYPE",        options1, 4 ) == false ){ return -1; }
 
-      if ( find_boolean( &reorder_fiedler,  line, "REORDER_FIEDLER"   ) == false ){ return -1; }
       if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"     ) == false ){ return -1; }
       if ( find_boolean( &time_dump2rdm,    line, "TIME_DUMP2RDM"    ) == false ){ return -1; }
-
-      if ( line.find( "SWEEP_STATES" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         sweep_states = line.substr( pos, line.length() - pos );
-      }
-
-      if ( line.find( "SWEEP_MAX_SWEEPS" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         sweep_maxit = line.substr( pos, line.length() - pos );
-      }
-
-      if ( line.find( "SWEEP_NOISE_PREFAC" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         sweep_noise = line.substr( pos, line.length() - pos );
-      }
-
-      if ( line.find( "SWEEP_CUTOFF" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         sweep_cutoff = line.substr( pos, line.length() - pos );
-      }
-
-      if ( line.find( "REORDER_ORDER" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         reorder_order = line.substr( pos, line.length() - pos );
-      }
 
       if ( line.find( "TIME_STEP_MAJOR" ) != string::npos ){
          find_double( &time_step_major, line, "TIME_STEP_MAJOR", true, 0.0 );
@@ -558,48 +503,6 @@ int main( int argc, char ** argv ){
    if ( multiplicity == -1 ){ multiplicity = fcidump_two_s + 1; }
    if ( nelectrons   == -1 ){   nelectrons = fcidump_nelec;     }
    if ( irrep        == -1 ){        irrep = fcidump_irrep;     }
-
-   /*********************************
-   *  Check the sweep instructions  *
-   **********************************/
-
-   if ( ( sweep_states.length() == 0 ) || ( sweep_maxit.length() == 0 ) || ( sweep_noise.length() == 0 ) || ( sweep_cutoff.length() == 0 )){
-      cerr << "SWEEP_* are mandatory options!" << endl;
-      return -1;
-   }
-
-   const int ni_d      = count( sweep_states.begin(), sweep_states.end(), ',' ) + 1;
-   const int ni_maxit  = count( sweep_maxit.begin(),  sweep_maxit.end(),  ',' ) + 1;
-   const int ni_noise  = count( sweep_noise.begin(),  sweep_noise.end(),  ',' ) + 1;
-   const int ni_cutoff = count( sweep_cutoff.begin(), sweep_cutoff.end(), ',' ) + 1;
-
-   bool num_eq  = (( ni_d == ni_maxit ) && ( ni_d == ni_noise ) && ( ni_d == ni_cutoff ));
-
-   if ( num_eq == false ){
-      cerr << "The number of instructions in SWEEP_* should be equal!" << endl;
-      return -1;
-   }
-
-   int    * value_states     = new int   [ ni_d ];    fetch_ints( sweep_states, value_states, ni_d );
-   int    * value_maxit      = new int   [ ni_d ];    fetch_ints( sweep_maxit,  value_maxit,  ni_d );
-   double * value_noise      = new double[ ni_d ]; fetch_doubles( sweep_noise,  value_noise,  ni_d );
-   double * value_cutoff     = new double[ ni_d ]; fetch_doubles( sweep_cutoff, value_cutoff, ni_d );
-
-
-   /*********************************
-   *  Parse reordering if required  *
-   *********************************/
-
-   int * dmrg2ham = NULL;
-   if ( reorder_order.length() > 0 ){
-      const int list_length = count( reorder_order.begin(), reorder_order.end(), ',' ) + 1;
-      if ( list_length != fcidump_norb ){
-         cerr << "The number of integers specified in REORDER_ORDER should equal the number of orbitals in the FCIDUMP file!" << endl;
-         return -1;
-      }
-      dmrg2ham = new int[ fcidump_norb ];
-      fetch_ints( reorder_order, dmrg2ham, fcidump_norb );
-   }
 
    /************************
    *  Parse time evolution *
@@ -692,15 +595,6 @@ int main( int argc, char ** argv ){
    cout << "   MULTIPLICITY       = " << multiplicity << endl;
    cout << "   NELECTRONS         = " << nelectrons << endl;
    cout << "   IRREP              = " << Symmhelper.getIrrepName( irrep ) << endl;
-   cout << "   SWEEP_STATES       = [ " << value_states[ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_states[ cnt ]; } cout << " ]" << endl;
-   cout << "   SWEEP_MAX_SWEEPS   = [ " << value_maxit [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_maxit [ cnt ]; } cout << " ]" << endl;
-   cout << "   SWEEP_NOISE_PREFAC = [ " << value_noise [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_noise [ cnt ]; } cout << " ]" << endl;
-   cout << "   SWEEP_CUTOFF       = [ " << value_cutoff[ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_cutoff[ cnt ]; } cout << " ]" << endl;
-   if ( reorder_order.length() > 0 ){
-      cout << "   REORDER_ORDER      = [ " << dmrg2ham[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << dmrg2ham[ cnt ]; } cout << " ]" << endl;
-   } else {
-      cout << "   REORDER_FIEDLER    = " << (( reorder_fiedler ) ? "TRUE" : "FALSE" ) << endl;
-   }   
    cout << "   TIME_TYPE          = " << time_type << endl;
    cout << "   TIME_STEP_MAJOR    = " << time_step_major << endl;
    cout << "   TIME_STEP_MINOR    = " << time_step_minor << endl;
@@ -722,66 +616,49 @@ int main( int argc, char ** argv ){
 
    CheMPS2::Initialize::Init();
    CheMPS2::Hamiltonian * ham = new CheMPS2::Hamiltonian( fcidump, group );
-   CheMPS2::ConvergenceScheme * opt_scheme = new CheMPS2::ConvergenceScheme( ni_d );
-   for ( int count = 0; count < ni_d; count++ ){
-      opt_scheme->set_instruction( count, value_states[ count ],
-                                          value_cutoff[ count ],
-                                          value_maxit [ count ],
-                                          value_noise [ count ]);
-   }
-   delete [] value_states;
-   delete [] value_cutoff;
-   delete [] value_maxit;
-   delete [] value_noise;
-
    CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
 
-   /***********************************
-   *  Reorder the orbitals if desired *
-   ***********************************/
+   int sum_up      = 0;
+   int sum_down    = 0;
+   int * bits_up   = new int[ prob->gL() ];
+   int * bits_down = new int[ prob->gL() ];
 
-   if (( group == 7 ) && ( reorder_fiedler == false ) && ( reorder_order.length() == 0 )){ prob->SetupReorderD2h(); }
-   if (( reorder_fiedler ) && ( reorder_order.length() == 0 )){
-      dmrg2ham = new int[ ham->getL() ];
-      const bool read_success = print_molcas_reorder( dmrg2ham, ham->getL(), "reorder_fiedler.txt", true );
-      if ( read_success == false ){
-         CheMPS2::EdmistonRuedenberg * fiedler = new CheMPS2::EdmistonRuedenberg( ham->getVmat(), group );
-         fiedler->FiedlerGlobal( dmrg2ham );
-         delete fiedler;
+   for( int orb = 0; orb < prob->gL(); orb++ ){
+      if( time_ninit_parsed[ orb ] == 2 ){
+         bits_up[ orb ] = 1;
+         bits_down[ orb ] = 1;
+         sum_up++;
+         sum_down++;
+      } else if ( time_ninit_parsed[ orb ] == 1 ) {
+         bits_up[ orb ] = 1;
+         bits_down[ orb ] = 0;
+         sum_up++;
+      } else {
+         bits_up[ orb ] = 0;
+         bits_down[ orb ] = 0;
       }
-      prob->setup_reorder_custom( dmrg2ham );
-      delete [] dmrg2ham;
-   } else if ( reorder_order.length() > 0 ){
-      assert( fcidump_norb == ham->getL() );
-      prob->setup_reorder_custom( dmrg2ham );
-      delete [] dmrg2ham;
-   } else {
-      dmrg2ham = new int[ ham->getL() ];
-      assert( fcidump_norb == ham->getL() );
-      for( int i = 0; i < ham->getL(); i++ ){ dmrg2ham[ i ] = i; }
-      prob->setup_reorder_custom( dmrg2ham );
-      delete [] dmrg2ham;
    }
 
-   if ( time_type == 'K' || time_type == 'R' || time_type == 'E' ){
-      hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
-      if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
+   hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
+   if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
 
-      CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
-      taylor->Propagate( time_type, time_step_major, time_step_minor, time_final, time_ninit_parsed,
-                         time_krysize, false, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
+   CheMPS2::CFCI * fcisolver = new CheMPS2::CFCI( ham, sum_up, sum_down, irrep, 100.0, 2, fileID );
 
-      if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
+   int length = fcisolver->getVecLength( 0 );
+   dcomplex * start = new dcomplex [ length ];
+   fcisolver->ClearVector( length, start );
+   fcisolver->setFCIcoeff( bits_up, bits_down, 1.0, start );
 
-      delete taylor;
-   } else {
-      cerr << " Your TIME_TYPE is not implemented yet" << std::endl;
-      return -1;
-   }
+   fcisolver->TimeEvolution( time_step_major, time_step_minor, time_final, start, time_krysize, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
+
+   delete[] start;
+
+   delete[] bits_up;
+   delete[] bits_down;
+   delete fcisolver;
 
    delete prob;
    delete ham;
-   delete opt_scheme;
    delete [] time_ninit_parsed;
    delete[] time_hf_state_parsed;
 

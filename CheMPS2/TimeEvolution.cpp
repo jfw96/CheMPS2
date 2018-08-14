@@ -734,9 +734,9 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
       HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG",      2, Lsq,        H5T_NATIVE_DOUBLE,  oedmim           );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_DMRG_REAL", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmdmrgre       );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_DMRG_IMAG", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmdmrgim       );
-      HDF5_MAKE_DATASET( dataPointID, "nHoles"        , 1, &weightSze, H5T_STD_I32LE,      nHoles           );
-      HDF5_MAKE_DATASET( dataPointID, "nParticles"    , 1, &weightSze, H5T_STD_I32LE,      nParticles       );
-      HDF5_MAKE_DATASET( dataPointID, "weights"       , 1, &weightSze, H5T_NATIVE_DOUBLE,  weights          );
+      HDF5_MAKE_DATASET( dataPointID, "nHoles",         1, &weightSze, H5T_STD_I32LE,      nHoles           );
+      HDF5_MAKE_DATASET( dataPointID, "nParticles",     1, &weightSze, H5T_STD_I32LE,      nParticles       );
+      HDF5_MAKE_DATASET( dataPointID, "weights",        1, &weightSze, H5T_NATIVE_DOUBLE,  weights          );
 
       delete[] actdims;
       delete[] MaxMs;
