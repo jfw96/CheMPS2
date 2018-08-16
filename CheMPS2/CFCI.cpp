@@ -477,7 +477,7 @@ void CheMPS2::CFCI::str2bits(const unsigned int Lval, const unsigned int bitstri
 
 }
 
-unsigned int CheMPS2::CFCI::bits2str(const unsigned int Lval, int * bits){
+unsigned int CheMPS2::CFCI::bits2str(const unsigned int Lval, const int * bits){
 
    unsigned int factor = 1;
    unsigned int result = 0;
@@ -515,7 +515,7 @@ void CheMPS2::CFCI::getBitsOfCounter(const int irrep_center, const unsigned int 
 
 }
 
-dcomplex CheMPS2::CFCI::getFCIcoeff(int * bits_up, int * bits_down, dcomplex * vector) const{
+dcomplex CheMPS2::CFCI::getFCIcoeff( const int * bits_up, const int * bits_down, dcomplex * vector ) const{
 
    const unsigned string_up   = bits2str(L, bits_up  );
    const unsigned string_down = bits2str(L, bits_down);
@@ -536,7 +536,7 @@ dcomplex CheMPS2::CFCI::getFCIcoeff(int * bits_up, int * bits_down, dcomplex * v
 
 }
 
-void CheMPS2::CFCI::setFCIcoeff(int * bits_up, int * bits_down, dcomplex value, dcomplex * vector) const{
+void CheMPS2::CFCI::setFCIcoeff( const int * bits_up, const int * bits_down, dcomplex value, dcomplex * vector) const{
 
    const unsigned string_up   = bits2str(L, bits_up  );
    const unsigned string_down = bits2str(L, bits_down);
@@ -2114,7 +2114,19 @@ double CheMPS2::CFCI::calcWieght( int nHoles, int nParticles, dcomplex * state, 
       }
 
       if( ( iHoles == nHoles ) && ( iParticles == nParticles ) ){
-         result += std::pow( std::abs( getFCIcoeff( alphas, betas, state ) ), 2.0 );
+         double test = std::pow( std::abs( getFCIcoeff( alphas, betas, state ) ), 2.0 );
+         if( nHoles == 1 && nParticles == 1 && test > 0 ){
+            for( int idx = 0; idx < L; idx++ ) { 
+               std::cout << alphas[ idx ] << " ";
+            }
+            std::cout << std::endl;
+            for( int idx = 0; idx < L; idx++ ) { 
+               std::cout << betas[ idx ] << " ";
+            }
+            std::cout << std::endl;
+            std::cout << test << std::endl;
+         }
+         result += test;
       }
 
    } while ( std::next_permutation( myoccus, myoccus + 2 * L ) );
@@ -2125,7 +2137,7 @@ double CheMPS2::CFCI::calcWieght( int nHoles, int nParticles, dcomplex * state, 
 }
 
 
-void CheMPS2::CFCI::TimeEvolution( const double time_step_major, const double time_step_minor, double finalTime, dcomplex * input, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM, const int nWeights, const int * hfState ){
+void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_major, const double time_step_minor, double finalTime, const int * alpha, const int * beta, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM ){
 
    std::cout << "\n";
    std::cout << "   Starting to propagate FCI wave function\n";
@@ -2139,12 +2151,11 @@ void CheMPS2::CFCI::TimeEvolution( const double time_step_major, const double ti
 
    const int veclength = getVecLength( 0 );
 
-   dcomplex * act  = new dcomplex [ veclength ];
-   dcomplex * next = new dcomplex [ veclength ];
-   FCIdcopy( veclength, input, act );
+   dcomplex * act = new dcomplex [ veclength ];
+   ClearVector( veclength, act );
+   setFCIcoeff( alpha, beta, 1.0, act );
 
-   int nElecHF = 0; for ( int index = 0; index < L; index++ ) { nElecHF += hfState[ index ]; }
-   const int deltaN = nElecHF - ( Nel_up + Nel_down );
+   dcomplex * next = new dcomplex [ veclength ];
 
    for ( double t = 0.0; t < finalTime; t += time_step_major ) {
       dcomplex * terdm   = new dcomplex[ L * L * L * L];
@@ -2180,17 +2191,6 @@ void CheMPS2::CFCI::TimeEvolution( const double time_step_major, const double ti
          }
       }
 
-      int*     nHoles = new int[ nWeights ];
-      int* nParticles = new int[ nWeights ];
-      double* weights = new double[ nWeights ];
-
-      for( int iWeight = 0; iWeight < nWeights; iWeight++ ){
-         nHoles[ iWeight ] = iWeight + deltaN;
-         nParticles[ iWeight ] = iWeight;
-         weights[ iWeight ] =  calcWieght( iWeight + deltaN, iWeight, act, hfState );
-      }
-
-
       std::cout << hashline;
       std::cout                                                  << "\n";
       std::cout << "   FCI time step"                            << "\n";
@@ -2210,16 +2210,10 @@ void CheMPS2::CFCI::TimeEvolution( const double time_step_major, const double ti
       std::cout << "   "; for ( int i = 0; i < L; i++ ) { std::cout << std::setw( 20 ) << oedmre[ i + L * i ];  }
       std::cout                                                  << "\n";
 
-      for( int iWeight = 0; iWeight < nWeights; iWeight++ ){
-         std::cout << "  " << nHoles[ iWeight ] <<  "h" << nParticles[ iWeight] << "p-weight  = " << weights[ iWeight ] << "\n";
-      }
-      std::cout                                                 << "\n";
-
       char dataPointname[ 1024 ];
       sprintf( dataPointname, "/Output/DataPoint%.5f", t );
       const hid_t dataPointID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
       hsize_t Lsq[ 2 ]; Lsq[ 0 ] = L; Lsq[ 1 ] = L;
-      hsize_t weightSze = nWeights;
       HDF5_MAKE_DATASET( dataPointID, "chrono",      1, &dimScalar, H5T_NATIVE_DOUBLE, &elapsed         );
       HDF5_MAKE_DATASET( dataPointID, "t",           1, &dimScalar, H5T_NATIVE_DOUBLE, &t               );
       HDF5_MAKE_DATASET( dataPointID, "Tmax",        1, &dimScalar, H5T_NATIVE_DOUBLE, &finalTime       );
@@ -2230,13 +2224,6 @@ void CheMPS2::CFCI::TimeEvolution( const double time_step_major, const double ti
       HDF5_MAKE_DATASET( dataPointID, "Energy",      1, &dimScalar, H5T_NATIVE_DOUBLE, &energy          );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL",   2, Lsq,        H5T_NATIVE_DOUBLE, oedmre           );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG",   2, Lsq,        H5T_NATIVE_DOUBLE, oedmim           );
-      HDF5_MAKE_DATASET( dataPointID, "nHoles",      1, &weightSze, H5T_STD_I32LE,      nHoles           );
-      HDF5_MAKE_DATASET( dataPointID, "nParticles",  1, &weightSze, H5T_STD_I32LE,      nParticles       );
-      HDF5_MAKE_DATASET( dataPointID, "weights",     1, &weightSze, H5T_NATIVE_DOUBLE,  weights          );
-
-      delete[] nHoles;
-      delete[] nParticles;
-      delete[] weights;
 
       if( doDumpFCI ){
          std::vector< std::vector< int > > alphasOut;
@@ -2283,7 +2270,11 @@ void CheMPS2::CFCI::TimeEvolution( const double time_step_major, const double ti
 
       if ( t + time_step_major < finalTime ) {
          for( double t_minor = 0.0; (time_step_major - t_minor) > 1e-6; t_minor+=time_step_minor ) {
-            ArnoldiTimeStep( time_step_minor, krylovSize,  act, next );
+            if(time_type == 'K'){
+               ArnoldiTimeStep( time_step_minor, krylovSize,  act, next );
+            } else {
+               std::cerr << "Not implemented yet\n";
+            }
             FCIdcopy( veclength, next, act );
          }
       }
@@ -2346,19 +2337,19 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
       }
    }
 
-   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-         std::cout << std::real( krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] ) << " ";
-      }
-      std::cout << std::endl;
-   }
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << std::real( krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] ) << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
 
-   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-         std::cout << std::real( overlaps[ irow +  icol * krylovSpaceDimension ] ) << " ";
-      }
-      std::cout << std::endl;
-   }
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << std::real( overlaps[ irow +  icol * krylovSpaceDimension ] ) << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////

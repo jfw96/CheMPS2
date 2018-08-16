@@ -298,35 +298,35 @@ cout << "\n"
 "       IRREP = int\n"
 "              Overwrite the target wavefunction irrep [0-7] of the FCIDUMP file (psi4 convention).\n"
 "\n"
+"       TIME_TYPE = char\n"
+"              Set the type of time evolution calculation to be performed. Options are (K) for Krylov (default), (R) for Runge-Kutta, (E) for Euler, and (F) for FCI.\n"
+"\n"
 "       TIME_STEP_MAJOR = flt\n"
-"              Set the time step (DT) for wave function anlysis. Required when TIME_EVOLU = TRUE (positive float).\n"
+"              Set the time step for wave function anlysis (positive float).\n"
 "\n"
 "       TIME_STEP_MINOR = flt\n"
-"              Set the time step (DT) for the time evolution calculation. Required when TIME_EVOLU = TRUE (positive float).\n"
+"              Set the time step for the time evolution calculation (positive float).\n"
 "\n"
 "       TIME_FINAL = flt\n"
-"              Set the final time for the time evolution calculation. Required when TIME_EVOLU = TRUE (positive float). \n"
+"              Set the final time for the time evolution calculation (positive float). \n"
 "\n"
-"       TIME_NINIT = int, int, int\n"
-"              Set the occupation numbers for the inital state. Required when TIME_EVOLU = TRUE. Ordered as in the FCIDUMP file. (positive integers).\n"
+"       TIME_ALPHA = int, int, int\n"
+"              Set the alpha occupation numbers for the inital state. Ordered as in the FCIDUMP file. ( 0 or 1 ).\n"
 "\n"
-"       TIME_HF_STATE = int, int, int\n"
-"              Set the occupation numbers for the corresponding Hartree-Fock state inital state.\n"
-"\n"
-"       TIME_N_WEIGHTS = int\n"
-"              Set the numbers of CI-weights to be calculated (default 0).\n"
+"       TIME_BETA = int, int, int\n"
+"              Set the beta occupation numbers for the inital state. Ordered as in the FCIDUMP file. ( 0 or 1 ).\n"
 "\n"
 "       TIME_KRYSIZE = int\n"
-"              Set the maximum Krylov space dimension of a time propagation step. Required when TIME_EVOLU = TRUE (positive integer).\n"
+"              Set the maximum Krylov space dimension of a time propagation step.\n"
 "\n"
 "       TIME_HDF5OUTPUT = /path/to/hdf5/destination\n"
 "              Set the file path for the HDF5 output when specified (default unspecified).\n"
 "\n"
 "       TIME_DUMPFCI = bool\n"
-"              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_EVOLU = TRUE and TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
+"              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
 "\n"
 "       TIME_DUMP2RDM = bool\n"
-"              Set if the 2RDM is dumped into the HDF5 file. Only has affect if TIME_EVOLU = TRUE and TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
+"              Set if the 2RDM is dumped into the HDF5 file. Only has affect if TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
 "\n"
 " " << endl;
 
@@ -350,10 +350,9 @@ int main( int argc, char ** argv ){
    double time_step_major = 0.0;
    double time_step_minor = 0.0;
    double time_final      = 0.0;
-   string time_ninit      = "";
-   string time_hf_state   = "";
+   string time_alpha      = "";
+   string time_beta       = "";   
    string time_hdf5output = "";
-   int    time_n_weights  = 0; 
    int    time_krysize    = 0;
    bool   time_dumpfci    = false;
    bool   time_dump2rdm   = false;
@@ -433,23 +432,20 @@ int main( int argc, char ** argv ){
          find_double( &time_final, line, "TIME_FINAL", true, 0.0 );
       }
 
-      if ( line.find( "TIME_NINIT" ) != string::npos ){
+      if ( line.find( "TIME_ALPHA" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
-         time_ninit = line.substr( pos, line.length() - pos );
+         time_alpha = line.substr( pos, line.length() - pos );
       }
 
-      if ( line.find( "TIME_HF_STATE" ) != string::npos ){
+      if ( line.find( "TIME_BETA" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
-         time_hf_state = line.substr( pos, line.length() - pos );
+         time_beta = line.substr( pos, line.length() - pos );
       }
 
       if ( line.find( "TIME_KRYSIZE" ) != string::npos ){
          find_integer( &time_krysize, line, "TIME_KRYSIZE", true, 1, false, -1 );
       }
 
-      if ( line.find( "TIME_N_WEIGHTS" ) != string::npos ){
-         find_integer( &time_n_weights, line, "TIME_N_WEIGHTS", true, 1, false, -1 );
-      }
    }
    input.close();
 
@@ -508,9 +504,8 @@ int main( int argc, char ** argv ){
    *  Parse time evolution *
    ************************/
 
-   int * time_ninit_parsed    = new int[ fcidump_norb ];
-   int * time_hf_state_parsed = NULL;
-
+   int * time_alpha_parsed    = new int[ fcidump_norb ];
+   int * time_beta_parsed     = new int[ fcidump_norb ];
 
    if ( time_step_major <= 0.0 ){
       cerr << "TIME_STEP_MAJOR should be greater than zero !" << endl;
@@ -527,13 +522,18 @@ int main( int argc, char ** argv ){
       return -1;
    }
 
-   if ( time_final <= 0 ){
+   if ( time_final <= 0.0 ){
       cerr << "TIME_FINAL should be greater than zero !" << endl;
       return -1;
    }
 
-   if ( time_ninit.length() == 0 ){
-      cerr << "TIME_NINIT is mandatory options when TIME_EVOLU = TRUE !" << endl;
+   if ( time_alpha.length() == 0 ){
+      cerr << "TIME_ALPHA is mandatory !" << endl;
+      return -1;
+   }
+
+   if ( time_beta.length() == 0 ){
+      cerr << "TIME_BETA is mandatory !" << endl;
       return -1;
    }
 
@@ -542,47 +542,37 @@ int main( int argc, char ** argv ){
       return -1;
    }
 
-   const int ni_ini  = count( time_ninit.begin(), time_ninit.end(), ',' ) + 1;
-   const bool init_ok = ( fcidump_norb == ni_ini );
+   const int ni_ini_alpha  = count( time_alpha.begin(), time_alpha.end(), ',' ) + 1;
+   const int ni_ini_beta  = count( time_beta.begin(), time_beta.end(), ',' ) + 1;
+   const bool init_ok = ( fcidump_norb == ni_ini_alpha ) && ( fcidump_norb == ni_ini_beta ) ;
 
    if ( init_ok == false ){
-      cerr << "There should be " << fcidump_norb << " numbers in TIME_NINIT when TIME_EVOLU = TRUE !" << endl;
+      cerr << "There should be " << fcidump_norb << " numbers in TIME_ALPHA and TIME_BETA !" << endl;
       return -1;
    }
 
-   fetch_ints( time_ninit, time_ninit_parsed, fcidump_norb );
+   fetch_ints( time_alpha, time_alpha_parsed, fcidump_norb );
+   fetch_ints(  time_beta,  time_beta_parsed, fcidump_norb );
 
    for ( int cnt = 0; cnt < fcidump_norb; cnt ++ ){
-      if ( ( time_ninit_parsed[ cnt ] < 0 ) || ( time_ninit_parsed[ cnt ] > 2 ) ){
-         cerr << "The occupation number in TIME_NINIT has to be 0, 1 or 2 !" << endl;
+      if ( ( time_alpha_parsed[ cnt ] < 0 ) || ( time_alpha_parsed[ cnt ] > 1 ) ){
+         cerr << "The occupation number in TIME_ALPHA has to be 0 or 1 !" << endl;
          return -1;
       }
    }
 
-   int elec_sum = 0; for ( int cnt = 0; cnt < fcidump_norb; cnt++ ) { elec_sum += time_ninit_parsed[ cnt ];  }
+   for ( int cnt = 0; cnt < fcidump_norb; cnt ++ ){
+      if ( ( time_beta_parsed[ cnt ] < 0 ) || ( time_beta_parsed[ cnt ] > 1 ) ){
+         cerr << "The occupation number in TIME_BETA has to be 0 or 1 !" << endl;
+         return -1;
+      }
+   }
+
+
+   int elec_sum = 0; for ( int cnt = 0; cnt < fcidump_norb; cnt++ ) { elec_sum += time_alpha_parsed[ cnt ] + time_beta_parsed[ cnt ];  }
    if ( elec_sum != nelectrons ){
-      cerr << "There should be " << nelectrons << " distributed over the molecular orbitals in TIME_NINIT !" << endl;
+      cerr << "There should be " << nelectrons << " distributed over the molecular orbitals in TIME_ALPHA and TIME_BETA !" << endl;
       return -1;
-   }
-
-   if( time_n_weights > 0 ){
-      const int hf_ini  = count( time_hf_state.begin(), time_hf_state.end(), ',' ) + 1;
-      const bool hf_ok = ( fcidump_norb == hf_ini );
-
-      if ( hf_ok == false ){
-         cerr << "There should be " << fcidump_norb << " numbers in TIME_HF_STATE  !" << endl;
-         return -1;
-      }
-
-      time_hf_state_parsed = new int[ fcidump_norb ];
-      fetch_ints( time_hf_state, time_hf_state_parsed, fcidump_norb );
-
-      for ( int cnt = 0; cnt < fcidump_norb; cnt ++ ){
-         if ( !(time_hf_state_parsed[ cnt ] == 0 || time_hf_state_parsed[ cnt ] == 2 ) ){
-            cerr << "The occupation number in TIME_HF_STATE has to be 0 or 2 (closed shell) !" << endl;
-            return -1;
-         }
-      }
    }
 
    /**********************
@@ -599,11 +589,7 @@ int main( int argc, char ** argv ){
    cout << "   TIME_STEP_MAJOR    = " << time_step_major << endl;
    cout << "   TIME_STEP_MINOR    = " << time_step_minor << endl;
    cout << "   TIME_FINAL         = " << time_final << endl;
-   cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
-   if( time_n_weights > 0 ){
-      cout << "   TIME_HF_STATE      = [ " << time_hf_state_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << time_hf_state_parsed[ cnt ]; } cout << " ]" << endl; 
-      cout << "   TIME_N_WEIGHTS     = [ " << time_n_weights << endl; 
-   }
+   cout << "   TIME_ALPHA         = [ " << time_alpha_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << time_alpha_parsed[ cnt ]; } cout << " ]" << endl;
    cout << "   TIME_KRYSIZE       = " << time_krysize << endl;
    cout << "   TIME_HDF5OUTPUT    = " << time_hdf5output << endl;
    cout << "   TIME_DUMPFCI       = " << (( time_dumpfci    ) ? "TRUE" : "FALSE" ) << endl;
@@ -618,50 +604,22 @@ int main( int argc, char ** argv ){
    CheMPS2::Hamiltonian * ham = new CheMPS2::Hamiltonian( fcidump, group );
    CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
 
-   int sum_up      = 0;
-   int sum_down    = 0;
-   int * bits_up   = new int[ prob->gL() ];
-   int * bits_down = new int[ prob->gL() ];
-
-   for( int orb = 0; orb < prob->gL(); orb++ ){
-      if( time_ninit_parsed[ orb ] == 2 ){
-         bits_up[ orb ] = 1;
-         bits_down[ orb ] = 1;
-         sum_up++;
-         sum_down++;
-      } else if ( time_ninit_parsed[ orb ] == 1 ) {
-         bits_up[ orb ] = 1;
-         bits_down[ orb ] = 0;
-         sum_up++;
-      } else {
-         bits_up[ orb ] = 0;
-         bits_down[ orb ] = 0;
-      }
-   }
+   int sum_up      = 0; for( int idx = 0; idx < fcidump_norb; idx++ ) {   sum_up += time_alpha_parsed[ idx ]; }
+   int sum_down    = 0; for( int idx = 0; idx < fcidump_norb; idx++ ) { sum_down +=  time_beta_parsed[ idx ]; }
 
    hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
    if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
 
    CheMPS2::CFCI * fcisolver = new CheMPS2::CFCI( ham, sum_up, sum_down, irrep, 100.0, 2, fileID );
 
-   int length = fcisolver->getVecLength( 0 );
-   dcomplex * start = new dcomplex [ length ];
-   fcisolver->ClearVector( length, start );
-   fcisolver->setFCIcoeff( bits_up, bits_down, 1.0, start );
+   fcisolver->TimeEvolution( time_type, time_step_major, time_step_minor, time_final, time_alpha_parsed, time_beta_parsed, time_krysize, time_dumpfci, time_dump2rdm );
 
-   fcisolver->TimeEvolution( time_step_major, time_step_minor, time_final, start, time_krysize, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
-
-   delete[] start;
-
-   delete[] bits_up;
-   delete[] bits_down;
    delete fcisolver;
 
    delete prob;
    delete ham;
-   delete [] time_ninit_parsed;
-   delete[] time_hf_state_parsed;
+   delete [] time_alpha_parsed;
+   delete [] time_beta_parsed;
 
    return 0;
-
 }

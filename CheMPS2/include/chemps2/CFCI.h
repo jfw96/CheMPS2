@@ -102,7 +102,7 @@ namespace CheMPS2{
          
 //==========> The core routines for users
          
-         void TimeEvolution( const double time_step_major, const double time_step_minor, double finalTime, dcomplex * input, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM, const int nWeights, const int * hfState );
+         void TimeEvolution( const char time_type, const double time_step_major, const double time_step_minor, double finalTime, const int * alpha, const int * beta, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM );
 
 
 //          //! Calculates the FCI ground state with Davidson's algorithm
@@ -299,14 +299,14 @@ namespace CheMPS2{
              \param bits_down The bit string representation of the down or beta electron Slater determinant
              \param vector The FCI vector with getVecLength(0) variables from which a coefficient is desired
              \return The corresponding FCI coefficient; 0.0 if bits_up and bits_down do not form a valid FCI determinant */
-         dcomplex getFCIcoeff(int * bits_up, int * bits_down, dcomplex * vector) const;
+         dcomplex getFCIcoeff( const int * bits_up, const int * bits_down, dcomplex * vector) const;
 
          //! Function which sets a FCI coefficient
          /** \param bits_up The bit string representation of the up or alpha electron Slater determinant
              \param bits_down The bit string representation of the down or beta electron Slater determinant
              \param value The new value of the FCI coefficient
              \param vector The FCI vector with getVecLength(0) variables from which a coefficient is desired */
-         void setFCIcoeff(int * bits_up, int * bits_down, dcomplex value, dcomplex * vector) const;
+         void setFCIcoeff( const int * bits_up, const int * bits_down, dcomplex value, dcomplex * vector) const;
 
          double calcWieght( int nHoles, int nParticles, dcomplex * state, const int * hf_state );
          
@@ -369,7 +369,7 @@ namespace CheMPS2{
          /** \param Lvalue The number of orbitals
              \param bits Array with the Lvalue bits which should be combined to a single integer
              \return The single integer which represents the bits in bits */
-         static unsigned int bits2str(const unsigned int Lvalue, int * bits);
+         static unsigned int bits2str(const unsigned int Lvalue, const int * bits);
          
          //! Find the irrep of the up Slater determinant of a global counter corresponding to " E_ij | FCI vector > " ; where irrep_center = I_i x I_j
          /** \param irrep_center The single electron excitation irrep I_i x I_j
