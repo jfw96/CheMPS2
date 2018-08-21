@@ -31,6 +31,8 @@ option (ENABLE_OPENMP        "Enable OpenMP parallelization"           ON)
 option (WITH_MPI             "Build the library with MPI"              OFF)
 option (BUILD_FPIC           "Static library in STATIC_ONLY will be compiled with position independent code" OFF)
 
+set (CMAKE_CXX_STANDARD 11)
+
 set (CMAKE_VERBOSE_MAKEFILE  OFF)
 set (CMAKE_MODULE_PATH       ${CMAKE_MODULE_PATH} "${CheMPS2_SOURCE_DIR}/CMake/")
 
@@ -56,7 +58,7 @@ endif()
 message("-- The CMake build type is ${CMAKE_BUILD_TYPE}")
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+set(CMAKE_CXX_FLAGS_RELEASE "-O0")
 
 # <<<  Enable OpenMP  >>>
 
