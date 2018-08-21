@@ -50,7 +50,7 @@ namespace CheMPS2 {
       /** \param Norbitals The number of orbitals (L)
              \param nGroup The group number
              \param OrbIrreps Pointer to array containing the orbital irreps */
-      HamiltonianOperator( Problem * probIn, dcomplex offsetIn = 0.0 );
+      HamiltonianOperator( const Problem * probIn, dcomplex offsetIn = 0.0 );
 
       ~HamiltonianOperator();
 
@@ -103,7 +103,7 @@ namespace CheMPS2 {
 
       void deleteTensors( const int index, const bool movingRight );
 
-      Problem * prob;
+      const Problem * prob;
 
       int L;
 

@@ -27,7 +27,7 @@
 #include "HamiltonianOperator.h"
 #include "Special.h"
 
-CheMPS2::HamiltonianOperator::HamiltonianOperator( Problem * probIn, dcomplex offsetIn ) : prob( probIn ), offset( offsetIn ), L( probIn->gL() ) {
+CheMPS2::HamiltonianOperator::HamiltonianOperator( const Problem * probIn, dcomplex offsetIn ) : prob( probIn ), offset( offsetIn ), L( probIn->gL() ) {
 
    Ltensors    = new CTensorL **[ L - 1 ];
    LtensorsT   = new CTensorLT **[ L - 1 ];

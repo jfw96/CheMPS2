@@ -1,13 +1,13 @@
-project (CheMPS2 CXX Fortran)
-set (CheMPS2_MMP_VERSION   "1.8.4")
-set (CheMPS2_VERSION       "${CheMPS2_MMP_VERSION}-4 (2017-10-23)")
+project (CheMPS2)
+set (CheMPS2_MMP_VERSION   "1.8.7")
+set (CheMPS2_VERSION       "${CheMPS2_MMP_VERSION}-2 (2018-08-04)")
 #set (CheMPS2_VERSION       "${CheMPS2_MMP_VERSION}-15 (2017-05-22)")
 set (CheMPS2_AUTHORS       "Sebastian Wouters")
 set (CheMPS2_DESCRIPTION   "A spin-adapted implementation of DMRG for ab initio quantum chemistry")
 set (CheMPS2_EMAIL         "sebastianwouters@gmail.com")
 set (CheMPS2_URL           "https://github.com/SebWouters/CheMPS2")
 set (CheMPS2_LICENSE       "GNU General Public License, version 2")
-set (CheMPS2_LIB_SOVERSION 2)
+set (CheMPS2_LIB_SOVERSION 3)
 
 cmake_minimum_required (VERSION 3.0.2)
 

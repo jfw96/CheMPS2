@@ -1,6 +1,6 @@
 /*
    CheMPS2: a spin-adapted implementation of DMRG for ab initio quantum chemistry
-   Copyright (C) 2013-2017 Sebastian Wouters
+   Copyright (C) 2013-2018 Sebastian Wouters
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@
 using std::cout;
 using std::endl;
 
-CheMPS2::DMRG::DMRG( Problem * ProbIn, ConvergenceScheme * OptSchemeIn, const bool makechkpt, const string tmpfolder ){
+CheMPS2::DMRG::DMRG( Problem * ProbIn, ConvergenceScheme * OptSchemeIn, const bool makechkpt, const string tmpfolder, int * occupancies ){
 
    #ifdef CHEMPS2_MPI_COMPILATION
       if ( MPIchemps2::mpi_rank() == MPI_CHEMPS2_MASTER ){ PrintLicense(); }
@@ -93,12 +93,12 @@ CheMPS2::DMRG::DMRG( Problem * ProbIn, ConvergenceScheme * OptSchemeIn, const bo
    makecheckpoints = makechkpt;
    tempfolder = tmpfolder;
    
-   setupBookkeeperAndMPS();
+   setupBookkeeperAndMPS( occupancies );
    PreSolve();
 
 }
 
-void CheMPS2::DMRG::setupBookkeeperAndMPS(){
+void CheMPS2::DMRG::setupBookkeeperAndMPS( int * occupancies ){
 
    denBK = new SyBookkeeper( Prob, OptScheme->get_D( 0 ) );
    assert( denBK->IsPossible() );
@@ -114,6 +114,37 @@ void CheMPS2::DMRG::setupBookkeeperAndMPS(){
    #endif
 
    if ( loadedMPS ){ loadDIM( MPSstoragename, denBK ); }
+
+   // Convert occupancies from HAM to DMRG orbitals
+   if (( occupancies != NULL ) && ( Prob->gReorder() )){
+      int * tmp_cpy_occ = new int[ L ];
+      for ( int cnt = 0; cnt < L; cnt++ ){ tmp_cpy_occ[ cnt ] = occupancies[ cnt ]; }
+      for ( int cnt = 0; cnt < L; cnt++ ){ occupancies[ cnt ] = tmp_cpy_occ[ Prob->gf2( cnt ) ]; }
+      delete [] tmp_cpy_occ;
+   }
+
+   // Set to ROHF dimensions
+   /*if (( !loadedMPS ) && ( occupancies != NULL )){
+      int left_n  = 0;
+      int left_i  = 0;
+      int left_2s = 0;
+      for ( int site = 0; site < denBK->gL(); site++ ){
+         for ( int N = denBK->gNmin( site ); N <= denBK->gNmax( site ); N++ ){
+            for ( int TwoS = denBK->gTwoSmin( site, N ); TwoS <= denBK->gTwoSmax( site, N ); TwoS+=2 ){
+               for ( int Irrep = 0; Irrep < denBK->getNumberOfIrreps(); Irrep++ ){
+                  denBK->SetDim( site, N, TwoS, Irrep, 0 );
+               }
+            }
+         }
+         denBK->SetDim( site, left_n, left_2s, left_i, 1 );
+         left_n  = left_n + occupancies[ site ];
+         left_i  = (( occupancies[ site ] == 1 ) ? Irreps::directProd( left_i, Prob->gIrrep( site ) ) : left_i );
+         left_2s = (( occupancies[ site ] == 1 ) ? ( left_2s + 1 ) : left_2s );
+      }
+      assert( left_n  == Prob->gN() );
+      assert( left_i  == Prob->gIrrep() );
+      assert( left_2s == Prob->gTwoS() );
+   }*/
 
    MPS = new TensorT * [ L ];
    for ( int cnt = 0; cnt < L; cnt++ ){ MPS[ cnt ] = new TensorT( cnt, denBK ); }
@@ -131,9 +162,47 @@ void CheMPS2::DMRG::setupBookkeeperAndMPS(){
       #else
          const bool am_i_master = true;
       #endif
-      for ( int site = 0; site < L; site++ ){
-         if ( am_i_master ){ MPS[ site ]->random(); }
-         left_normalize( MPS[ site ], NULL );
+      if ( occupancies == NULL ){
+         for ( int site = 0; site < L; site++ ){
+            if ( am_i_master ){ MPS[ site ]->random(); }
+            left_normalize( MPS[ site ], NULL );
+         }
+      } else {
+         assert( Prob->check_rohf_occ( occupancies ) ); // Check compatibility
+         int left_n  = 0;
+         int left_i  = 0;
+         int left_2s = 0;
+         for ( int site = 0; site < L; site++ ){
+            const int right_n  = left_n + occupancies[ site ];
+            const int right_i  = (( occupancies[ site ] == 1 ) ? Irreps::directProd( left_i, Prob->gIrrep( site ) ) : left_i );
+            const int right_2s = (( occupancies[ site ] == 1 ) ? ( left_2s + 1 ) : left_2s );
+            const int dimL = denBK->gCurrentDim( site,      left_n,  left_2s,  left_i );
+            const int dimR = denBK->gCurrentDim( site + 1, right_n, right_2s, right_i );
+            assert( dimL > 0 );
+            assert( dimR > 0 );
+            if ( am_i_master ){
+               MPS[ site ]->random();
+               for ( int NL = right_n - 2; NL <= right_n; NL++ ){
+                  const int DS = (( right_n == NL + 1 ) ? 1 : 0 );
+                  const int IL = (( right_n == NL + 1 ) ? Irreps::directProd( right_i, Prob->gIrrep( site ) ) : right_i );
+                  for ( int TwoSL = right_2s - DS; TwoSL <= right_2s + DS; TwoSL+=2 ){
+                     const int dimL2 = denBK->gCurrentDim( site, NL, TwoSL, IL );
+                     if ( dimL2 > 0 ){
+                        double * space = MPS[ site ]->gStorage( NL, TwoSL, IL, right_n, right_2s, right_i );
+                        for ( int row = 0; row < dimL2; row++ ){ space[ row + dimL2 * 0 ] = 0.0; }
+                        if (( NL == left_n ) && ( TwoSL == left_2s ) && ( IL == left_i )){ space[ 0 + dimL * 0  ] = 42; }
+                     }
+                  }
+               }
+            }
+            left_normalize( MPS[ site ], NULL );
+            left_n  = right_n;
+            left_i  = right_i;
+            left_2s = right_2s;
+         }
+         assert( left_n  == Prob->gN() );
+         assert( left_i  == Prob->gIrrep() );
+         assert( left_2s == Prob->gTwoS() );
       }
    }
 
@@ -272,6 +341,7 @@ double CheMPS2::DMRG::Solve(){
       if ( am_i_master ){
          cout << "***  Information on completed instruction " << instruction << ":" << endl;
          cout << "***     The reduced virtual dimension DSU(2)               = " << OptScheme->get_D(instruction) << endl;
+         cout << "***     The total number of reduced MPS variables          = " << get_num_mps_var() << endl;
          cout << "***     Minimum energy encountered during all instructions = " << TotalMinEnergy << endl;
          cout << "***     Minimum energy encountered during the last sweep   = " << LastMinEnergy << endl;
          cout << "***     Maximum discarded weight during the last sweep     = " << MaxDiscWeightLastSweep << endl;
@@ -378,6 +448,16 @@ double CheMPS2::DMRG::solve_site( const int index, const double dvdson_rtol, con
    timings[ CHEMPS2_TIME_S_SPLIT ] += ( end.tv_sec - start.tv_sec ) + 1e-6 * ( end.tv_usec - start.tv_usec );
 
    return Energy;
+
+}
+
+int CheMPS2::DMRG::get_num_mps_var() const{
+
+   int num_var = 0;
+   for ( int site = 0; site < L; site++ ){
+      num_var += MPS[ site ]->gKappa2index( MPS[ site ]->gNKappa() );
+   }
+   return num_var;
 
 }
 

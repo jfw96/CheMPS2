@@ -1,6 +1,6 @@
 /*
    CheMPS2: a spin-adapted implementation of DMRG for ab initio quantum chemistry
-   Copyright (C) 2013-2017 Sebastian Wouters
+   Copyright (C) 2013-2018 Sebastian Wouters
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -167,7 +167,7 @@ void CheMPS2::TensorT::sBK( const SyBookkeeper * newBK ){ denBK = newBK; }
 void CheMPS2::TensorT::random(){
 
    for ( int cnt = 0; cnt < kappa2index[ nKappa ]; cnt++ ){
-      storage[ cnt ] = ((double) rand()) / RAND_MAX;
+      storage[ cnt ] = ( 2 * ( (double) rand() ) / RAND_MAX ) - 1.0; // Value in [-1,1[
    }
 
 }
