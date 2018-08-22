@@ -9,9 +9,9 @@ set (CHEMPS2LIB_SOURCE_FILES "CASPT2.cpp"
                              "CASSCFpt2.cpp"
                              "CDensityMatrix.cpp"
                              "CTensorT.cpp"
-                             "CTensorL.cpp"
+                             "CTensorL.cpp"                           
                              "CTensorLT.cpp"
-                             "CTensorO.cpp"
+                             "CTensorO.cpp"                            
                              "CTensorF0.cpp"
                              "CTensorF0T.cpp"
                              "CTensorF1.cpp"
@@ -100,7 +100,7 @@ set (CHEMPS2LIB_SOURCE_FILES "CASPT2.cpp"
                              "TensorS1.cpp"
                              "TensorT.cpp"
                              "TensorX.cpp"
-			     "TimeEvolution.cpp"
+			                    "TimeEvolution.cpp"
                              "ThreeDM.cpp"
                              "TwoDM.cpp"
                              "CTwoDM.cpp"
@@ -152,17 +152,33 @@ add_executable             (chemps2-bin executable.cpp)
 target_link_libraries      (chemps2-bin tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} )
 set_target_properties      (chemps2-bin PROPERTIES OUTPUT_NAME "chemps2")
 
+add_executable             (chemps2-dyn dynamics.cpp)
+target_link_libraries      (chemps2-dyn tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} )
+set_target_properties      (chemps2-dyn PROPERTIES OUTPUT_NAME "chemps2dyn")
+
+add_executable             (chemps2-fci fcidynamics.cpp)
+target_link_libraries      (chemps2-fci tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} )
+set_target_properties      (chemps2-fci PROPERTIES OUTPUT_NAME "chemps2fci")
+
+add_executable             (chemps2-ion ionize.cpp)
+target_link_libraries      (chemps2-ion tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
+set_target_properties      (chemps2-ion PROPERTIES OUTPUT_NAME "chemps2ion")
+
+add_executable             (chemps2-conv convert.cpp)
+target_link_libraries      (chemps2-conv tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
+set_target_properties      (chemps2-conv PROPERTIES OUTPUT_NAME "chemps2conv")
+
 # <<<  Install  >>>
 
 if (NOT STATIC_ONLY)
-    install (TARGETS chemps2-shared chemps2-bin
+    install (TARGETS chemps2-shared chemps2-bin chemps2-dyn chemps2-fci
                      EXPORT "${PROJECT_NAME}Targets-shared"
                      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
                      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
 if (NOT SHARED_ONLY)
-    install (TARGETS chemps2-static chemps2-bin
+    install (TARGETS chemps2-static chemps2-bin chemps2-dyn chemps2-fci
                      EXPORT "${PROJECT_NAME}Targets-static"
                      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
                      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

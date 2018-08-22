@@ -1,6 +1,6 @@
 /*
    CheMPS2: a spin-adapted implementation of DMRG for ab initio quantum chemistry
-   Copyright (C) 2013-2017 Sebastian Wouters
+   Copyright (C) 2013-2018 Sebastian Wouters
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -249,7 +249,7 @@ void print_help(){
 
 cout << "\n"
 "CheMPS2: a spin-adapted implementation of DMRG for ab initio quantum chemistry\n"
-"Copyright (C) 2013-2017 Sebastian Wouters\n"
+"Copyright (C) 2013-2018 Sebastian Wouters\n"
 "\n"
 "Usage: chemps2 [OPTIONS]\n"
 "\n"
@@ -345,6 +345,9 @@ cout << "\n"
 "\n"
 "       MOLCAS_ORDER = int, int, int, int\n"
 "              When all orbitals are active orbitals, provide a custom orbital reordering (default unspecified). When specified, this option takes precedence over MOLCAS_FIEDLER.\n"
+"\n"
+"       MOLCAS_OCC = int, int, int, int\n"
+"              When all orbitals are active orbitals, set initial guess to an ROHF determinant (default unspecified). The occupancy integers should be 0, 1 or 2 and the orbital ordering convention is FCIDUMP.\n"
 "\n"
 "       MOLCAS_MPS = bool\n"
 "              When all orbitals are active orbitals, switch on the creation of MPS checkpoints (TRUE or FALSE; default FALSE).\n"
@@ -458,12 +461,11 @@ int main( int argc, char ** argv ){
    int irrep        = -1;
    int excitation   = 0;
 
-   string sweep_states  = "";
-   string sweep_econv   = "";
-   string sweep_maxit   = "";
-   string sweep_noise   = "";
-   string sweep_rtol    = "";
-   string sweep_cutoff = "";
+   string sweep_states = "";
+   string sweep_econv  = "";
+   string sweep_maxit  = "";
+   string sweep_noise  = "";
+   string sweep_rtol   = "";
 
    string nocc = "";
    string nact = "";
@@ -477,6 +479,7 @@ int main( int argc, char ** argv ){
    bool   molcas_mps       = false;
    bool   molcas_state_avg = false;
    string molcas_order     = "";
+   string molcas_occ       = "";
 
    bool   scf_state_avg    = false;
    double scf_diis_thr     = 0.0;
@@ -491,17 +494,6 @@ int main( int argc, char ** argv ){
    double caspt2_imag    = 0.0;
    bool   caspt2_checkpt = false;
    bool   caspt2_cumul   = false;
-
-   bool   time_evolu      = false;
-   char   time_type       = 'K';
-   double time_step_major = 0.0;
-   double time_step_minor = 0.0;
-   double time_final      = 0.0;
-   string time_ninit      = "";
-   string time_hdf5output = "";
-   int    time_krysize    = 0;
-   bool   time_dumpfci    = false;
-   bool   time_dump2rdm   = false;
 
    bool   print_corr = false;
    string tmp_folder = "/tmp";
@@ -591,12 +583,6 @@ int main( int argc, char ** argv ){
          if ( file_exists( tmp_folder, "TMP_FOLDER" ) == false ){ return clean_exit( -1 ); }
       }
 
-      if ( line.find( "TIME_HDF5OUTPUT" ) != string::npos ){
-         const int pos   = line.find( "=" ) + 1;
-         time_hdf5output = line.substr( pos, line.length() - pos );
-         time_hdf5output.erase( remove( time_hdf5output.begin(), time_hdf5output.end(), ' ' ), time_hdf5output.end() );
-      }
-
       if ( find_integer( &group,        line, "GROUP",        true, 0, true,   7 ) == false ){ return clean_exit( -1 ); }
       if ( find_integer( &multiplicity, line, "MULTIPLICITY", true, 1, false, -1 ) == false ){ return clean_exit( -1 ); }
       if ( find_integer( &nelectrons,   line, "NELECTRONS",   true, 2, false, -1 ) == false ){ return clean_exit( -1 ); }
@@ -609,13 +595,10 @@ int main( int argc, char ** argv ){
       if ( find_double( &caspt2_ipea,  line, "CASPT2_IPEA",  true, 0.0 ) == false ){ return clean_exit( -1 ); }
       if ( find_double( &caspt2_imag,  line, "CASPT2_IMAG",  true, 0.0 ) == false ){ return clean_exit( -1 ); }
 
-
       char options1[] = { 'I', 'N', 'L', 'F' };
       char options2[] = { 'A', 'P' };
-      char options3[] = { 'K', 'R', 'E', 'F' };
       if ( find_character( &scf_active_space, line, "SCF_ACTIVE_SPACE", options1, 4 ) == false ){ return clean_exit( -1 ); }
       if ( find_character( &caspt2_orbs,      line, "CASPT2_ORBS",      options2, 2 ) == false ){ return clean_exit( -1 ); }
-      if ( find_character( &time_type,        line, "TIME_TYPE",        options3, 4 ) == false ){ return clean_exit( -1 ); }
 
       if ( find_boolean( &molcas_fiedler,   line, "MOLCAS_FIEDLER"   ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &molcas_mps,       line, "MOLCAS_MPS"       ) == false ){ return clean_exit( -1 ); }
@@ -624,9 +607,6 @@ int main( int argc, char ** argv ){
       if ( find_boolean( &caspt2_calc,      line, "CASPT2_CALC"      ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &caspt2_checkpt,   line, "CASPT2_CHECKPT"   ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &caspt2_cumul,     line, "CASPT2_CUMUL"     ) == false ){ return clean_exit( -1 ); }
-      if ( find_boolean( &time_evolu,       line, "TIME_EVOLU"       ) == false ){ return clean_exit( -1 ); }
-      if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"     ) == false ){ return clean_exit( -1 ); }
-      if ( find_boolean( &time_dump2rdm,    line, "TIME_DUMP2RDM"    ) == false ){ return clean_exit( -1 ); }
       if ( find_boolean( &print_corr,       line, "PRINT_CORR"       ) == false ){ return clean_exit( -1 ); }
 
       if ( line.find( "SWEEP_STATES" ) != string::npos ){
@@ -654,11 +634,6 @@ int main( int argc, char ** argv ){
          sweep_rtol = line.substr( pos, line.length() - pos );
       }
 
-      if ( line.find( "SWEEP_CUTOFF" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         sweep_cutoff = line.substr( pos, line.length() - pos );
-      }
-
       if ( line.find( "NOCC" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
          nocc = line.substr( pos, line.length() - pos );
@@ -679,31 +654,16 @@ int main( int argc, char ** argv ){
          molcas_order = line.substr( pos, line.length() - pos );
       }
 
+      if ( line.find( "MOLCAS_OCC" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         molcas_occ = line.substr( pos, line.length() - pos );
+      }
+
       if ( line.find( "MOLCAS_REORDER" ) != string::npos ){
          if ( am_i_master ){ cerr << "MOLCAS_REORDER is deprecated. Please use MOLCAS_ORDER and/or MOLCAS_FIEDLER." << endl; }
          return clean_exit( -1 );
       }
 
-      if ( line.find( "TIME_STEP_MAJOR" ) != string::npos ){
-         find_double( &time_step_major, line, "TIME_STEP_MAJOR", true, 0.0 );
-      }
-
-      if ( line.find( "TIME_STEP_MINOR" ) != string::npos ){
-         find_double( &time_step_minor, line, "TIME_STEP_MINOR", true, 0.0 );
-      }
-
-      if ( line.find( "TIME_FINAL" ) != string::npos ){
-         find_double( &time_final, line, "TIME_FINAL", true, 0.0 );
-      }
-
-      if ( line.find( "TIME_NINIT" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         time_ninit = line.substr( pos, line.length() - pos );
-      }
-
-      if ( line.find( "TIME_KRYSIZE" ) != string::npos ){
-         find_integer( &time_krysize, line, "TIME_KRYSIZE", true, 1, false, -1 );
-      }
    }
    input.close();
 
@@ -766,39 +726,24 @@ int main( int argc, char ** argv ){
       if ( am_i_master ){ cerr << "SWEEP_* are mandatory options!" << endl; }
       return clean_exit( -1 );
    }
-
-   if ( time_evolu && ( sweep_cutoff.length() == 0 ) ){
-      if ( am_i_master ){ cerr << "SWEEP_CUTOFF is a mandatory option when TIME_EVOLU = TRUE !" << endl; }
-      return clean_exit( -1 );
-   }   
-   
    const int ni_d     = count( sweep_states.begin(), sweep_states.end(), ',' ) + 1;
    const int ni_econv = count( sweep_econv.begin(),  sweep_econv.end(),  ',' ) + 1;
    const int ni_maxit = count( sweep_maxit.begin(),  sweep_maxit.end(),  ',' ) + 1;
    const int ni_noise = count( sweep_noise.begin(),  sweep_noise.end(),  ',' ) + 1;
    const int ni_rtol  = count( sweep_rtol.begin(),   sweep_rtol.end(),   ',' ) + 1;
-
-   bool num_eq  = (( ni_d == ni_econv ) && ( ni_d == ni_maxit ) && ( ni_d == ni_noise ) && ( ni_d == ni_rtol ));
-   if ( time_evolu ){
-      const int ni_cutoff = count( sweep_cutoff.begin(), sweep_cutoff.end(), ',' ) + 1;
-      num_eq = num_eq && ( ni_d == ni_cutoff );
-   }
+   const bool num_eq  = (( ni_d == ni_econv ) && ( ni_d == ni_maxit ) && ( ni_d == ni_noise ) && ( ni_d == ni_rtol ));
 
    if ( num_eq == false ){
       if ( am_i_master ){ cerr << "The number of instructions in SWEEP_* should be equal!" << endl; }
       return clean_exit( -1 );
    }
 
-   int    * value_states     = new int   [ ni_d ];    fetch_ints( sweep_states, value_states, ni_d );
-   double * value_econv      = new double[ ni_d ]; fetch_doubles( sweep_econv,  value_econv,  ni_d );
-   int    * value_maxit      = new int   [ ni_d ];    fetch_ints( sweep_maxit,  value_maxit,  ni_d );
-   double * value_noise      = new double[ ni_d ]; fetch_doubles( sweep_noise,  value_noise,  ni_d );
-   double * value_rtol       = new double[ ni_d ]; fetch_doubles( sweep_rtol,   value_rtol,   ni_d );
+   int    * value_states = new int   [ ni_d ];    fetch_ints( sweep_states, value_states, ni_d );
+   double * value_econv  = new double[ ni_d ]; fetch_doubles( sweep_econv,  value_econv,  ni_d );
+   int    * value_maxit  = new int   [ ni_d ];    fetch_ints( sweep_maxit,  value_maxit,  ni_d );
+   double * value_noise  = new double[ ni_d ]; fetch_doubles( sweep_noise,  value_noise,  ni_d );
+   double * value_rtol   = new double[ ni_d ]; fetch_doubles( sweep_rtol,   value_rtol,   ni_d );
 
-   double * value_cutoff     = new double[ ni_d ];
-   if ( time_evolu ){
-      fetch_doubles( sweep_cutoff,     value_cutoff,     ni_d );
-   }
    /*****************************************
    *  Check the active space specification  *
    ******************************************/
@@ -852,73 +797,42 @@ int main( int argc, char ** argv ){
    if (( full_active_space_calculation == true ) && ( molcas_order.length() > 0 )){
       const int list_length = count( molcas_order.begin(), molcas_order.end(), ',' ) + 1;
       if ( list_length != fcidump_norb ){
-         if ( am_i_master ){ cerr << "The number of integers specified in MOLCAS_ORDER should equal the number of orbitals in the FCIDUMP file!" << endl; }
+         if ( am_i_master ){ cerr << "The number of integers specified in MOLCAS_ORDER should be equal to the number of orbitals in the FCIDUMP file!" << endl; }
          return clean_exit( -1 );
       }
       dmrg2ham = new int[ fcidump_norb ];
       fetch_ints( molcas_order, dmrg2ham, fcidump_norb );
    }
 
-   int n_orbs        = 0;
-   for ( int cnt = 0; cnt < num_irreps; cnt++ ) { n_orbs += nocc_parsed[ cnt ] + nact_parsed[ cnt ] + nvir_parsed[ cnt ]; }
+   /**********************************
+   *  Parse occupancies if required  *
+   **********************************/
 
-   int *   time_ninit_parsed = NULL;
-   double* time_noise_parsed = NULL;
-
-   if ( time_evolu ){
-      
-      if ( time_step_major <= 0.0 ){
-         if ( am_i_master ){ cerr << "TIME_STEP_MAJOR should be greater than zero !" << endl; }
+   int * occupancies = NULL;
+   if (( full_active_space_calculation == true ) && ( molcas_occ.length() > 0 )){
+      const int list_length = count( molcas_occ.begin(), molcas_occ.end(), ',' ) + 1;
+      if ( list_length != fcidump_norb ){
+         if ( am_i_master ){ cerr << "The number of integers specified in MOLCAS_OCC should be equal to the number of orbitals in the FCIDUMP file!" << endl; }
          return clean_exit( -1 );
       }
-
-      if ( time_step_minor <= 0.0 ){
-         if ( am_i_master ){ cerr << "TIME_STEP_MINOR should be greater than zero !" << endl; }
-         return clean_exit( -1 );
-      }
-
-      if( std::abs( ( time_step_major / time_step_minor ) - round( time_step_major / time_step_minor ) ) > 1e-6 ){
-         if ( am_i_master ){ cerr << "TIME_STEP_MAJOR must be N*TIME_STEP_MINOR !" << endl; }
-         return clean_exit( -1 );
-      }
-
-      if ( time_final <= 0 ){
-         if ( am_i_master ){ cerr << "TIME_FINAL should be greater than zero !" << endl; }
-         return clean_exit( -1 );
-      }
-
-      time_ninit_parsed = new int[ n_orbs ];
-
-      if ( time_ninit.length() == 0 ){
-         if ( am_i_master ){ cerr << "TIME_NINIT is mandatory options when TIME_EVOLU = TRUE !" << endl; }
-         return clean_exit( -1 );
-      }
-
-      const int ni_ini  = count( time_ninit.begin(), time_ninit.end(), ',' ) + 1;
-      const bool init_ok = ( n_orbs == ni_ini );
-
-      if ( init_ok == false ){
-         if ( am_i_master ){ cerr << "There should be " << n_orbs << " numbers in TIME_NINIT when TIME_EVOLU = TRUE !" << endl; }
-         return clean_exit( -1 );
-      }
-
-      fetch_ints( time_ninit, time_ninit_parsed, n_orbs );
-
-      for ( int cnt = 0; cnt < n_orbs; cnt ++ ){
-         if ( time_ninit_parsed[ cnt ] < 0 || time_ninit_parsed[ cnt ] > 2 ){
-            if ( am_i_master ) { cerr << "The occupation number in TIME_NINIT has to be 0, 1 or 2 !" << endl; }
-            return clean_exit( - 1 );
+      occupancies = new int[ fcidump_norb ];
+      fetch_ints( molcas_occ, occupancies, fcidump_norb );
+      int occ_n_tot = 0;
+      int occ_2s_tot = 0;
+      for ( int cnt = 0; cnt < fcidump_norb; cnt++ ){
+         if (( occupancies[ cnt ] < 0 ) || ( occupancies[ cnt ] > 2 )){
+            if ( am_i_master ){ cerr << "The integers specified in MOLCAS_OCC should be 0, 1 or 2!" << endl; }
+            return clean_exit( -1 );
          }
+         occ_n_tot += occupancies[ cnt ];
+         if ( occupancies[ cnt ] == 1 ){ occ_2s_tot += 1; }
       }
-
-      int elec_sum = 0; for ( int cnt = 0; cnt < n_orbs; cnt++ ) { elec_sum += time_ninit_parsed[ cnt ];  }
-      if ( elec_sum != nelectrons ){
-         if ( am_i_master ) { cerr << "There should be " << nelectrons << " distributed over the molecular orbitals in TIME_NINIT !" << endl; }
-         return clean_exit( - 1 );
+      if ( occ_n_tot != nelectrons ){
+         if ( am_i_master ){ cerr << "The sum of the integers specified in MOLCAS_OCC should be equal to the number of electrons specified in the FCIDUMP file!" << endl; }
+         return clean_exit( -1 );
       }
-
-      if ( time_type == 'K' && time_krysize <= 0 ){
-         if ( am_i_master ){ cerr << "TIME_KRYSIZE should be greater than zero if TIME_TYPE = K!" << endl; }
+      if ( ( occ_2s_tot + 1 ) != multiplicity ){
+         if ( am_i_master ){ cerr << "The number of singly occupied orbitals in MOLCAS_OCC should be equal to the value 2S specified in the FCIDUMP file!" << endl; }
          return clean_exit( -1 );
       }
    }
@@ -940,53 +854,40 @@ int main( int argc, char ** argv ){
       cout << "   SWEEP_MAX_SWEEPS   = [ " << value_maxit [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_maxit [ cnt ]; } cout << " ]" << endl;
       cout << "   SWEEP_NOISE_PREFAC = [ " << value_noise [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_noise [ cnt ]; } cout << " ]" << endl;
       cout << "   SWEEP_DVDSON_RTOL  = [ " << value_rtol  [ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_rtol  [ cnt ]; } cout << " ]" << endl;
-      if ( time_evolu ){
-         cout << "   SWEEP_CUTOFF       = [ " << value_cutoff[ 0 ]; for ( int cnt = 1; cnt < ni_d; cnt++ ){ cout << " ; " << value_cutoff[ cnt ]; } cout << " ]" << endl;
-      }
-      
       cout << "   NOCC               = [ " << nocc_parsed[ 0 ]; for ( int cnt = 1; cnt < num_irreps; cnt++ ){ cout << " ; " << nocc_parsed[ cnt ]; } cout << " ]" << endl;
       cout << "   NACT               = [ " << nact_parsed[ 0 ]; for ( int cnt = 1; cnt < num_irreps; cnt++ ){ cout << " ; " << nact_parsed[ cnt ]; } cout << " ]" << endl;
       cout << "   NVIR               = [ " << nvir_parsed[ 0 ]; for ( int cnt = 1; cnt < num_irreps; cnt++ ){ cout << " ; " << nvir_parsed[ cnt ]; } cout << " ]" << endl;
-      if ( full_active_space_calculation and time_evolu == false ){
-         cout << "   MOLCAS_2RDM        = " << molcas_2rdm << endl;
-         cout << "   MOLCAS_3RDM        = " << molcas_3rdm << endl;
-         cout << "   MOLCAS_F4RDM       = " << molcas_f4rdm << endl;
-         cout << "   MOLCAS_FOCK        = " << molcas_fock << endl;
-         if ( molcas_order.length() > 0 ){
-            cout << "   MOLCAS_ORDER       = [ " << dmrg2ham[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << dmrg2ham[ cnt ]; } cout << " ]" << endl;
-         } else {
-            cout << "   MOLCAS_FIEDLER     = " << (( molcas_fiedler ) ? "TRUE" : "FALSE" ) << endl;
-         }
-         cout << "   MOLCAS_MPS         = " << (( molcas_mps ) ? "TRUE" : "FALSE" ) << endl;
-         cout << "   MOLCAS_STATE_AVG   = " << (( molcas_state_avg ) ? "TRUE" : "FALSE" ) << endl;
-      } else if ( time_evolu == false ) {
-         cout << "   SCF_STATE_AVG      = " << (( scf_state_avg ) ? "TRUE" : "FALSE" ) << endl;
-         cout << "   SCF_DIIS_THR       = " << scf_diis_thr << endl;
-         cout << "   SCF_GRAD_THR       = " << scf_grad_thr << endl;
-         cout << "   SCF_MAX_ITER       = " << scf_max_iter << endl;
-         cout << "   SCF_ACTIVE_SPACE   = " << (( scf_active_space == 'I' ) ? "I : no additional rotations" :
-                                             (( scf_active_space == 'N' ) ? "N : natural orbitals" :
-                                             (( scf_active_space == 'L' ) ? "L : localized and ordered orbitals" : "F : ordered orbitals only" ))) << endl;
-         cout << "   SCF_MOLDEN         = " << scf_molden << endl;
-         cout << "   CASPT2_CALC        = " << (( caspt2_calc ) ? "TRUE" : "FALSE" ) << endl;
-         cout << "   CASPT2_ORBS        = " << (( caspt2_orbs == 'A' ) ? "A : as specified in SCF_ACTIVE_SPACE" : "P : pseudocanonical orbitals" ) << endl;
-         cout << "   CASPT2_IPEA        = " << caspt2_ipea << endl;
-         cout << "   CASPT2_IMAG        = " << caspt2_imag << endl;
-         cout << "   CASPT2_CHECKPT     = " << (( caspt2_checkpt ) ? "TRUE" : "FALSE" ) << endl;
-         cout << "   CASPT2_CUMUL       = " << (( caspt2_cumul   ) ? "TRUE" : "FALSE" ) << endl;
-      }
-      cout << "   TIME_EVOLU         = " << (( time_evolu        ) ? "TRUE" : "FALSE" ) << endl;
-      if ( time_evolu ){
-         cout << "   TIME_TYPE          = " << time_type     << endl;
-         cout << "   TIME_STEP_MAJOR    = " << time_step_major << endl;
-         cout << "   TIME_STEP_MINOR    = " << time_step_minor << endl;
-         cout << "   TIME_FINAL         = " << time_final    << endl;
-         cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < n_orbs; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
-         cout << "   TIME_KRYSIZE       = " << time_krysize    << endl;
-         cout << "   TIME_HDF5OUTPUT    = " << time_hdf5output << endl;
-         cout << "   TIME_DUMPFCI       = " << (( time_dumpfci    ) ? "TRUE" : "FALSE" ) << endl;
-         cout << "   TIME_2RDM          = " << (( time_dump2rdm   ) ? "TRUE" : "FALSE" ) << endl;
-      }
+   if ( full_active_space_calculation ){
+      cout << "   MOLCAS_2RDM        = " << molcas_2rdm << endl;
+      cout << "   MOLCAS_3RDM        = " << molcas_3rdm << endl;
+      cout << "   MOLCAS_F4RDM       = " << molcas_f4rdm << endl;
+      cout << "   MOLCAS_FOCK        = " << molcas_fock << endl;
+   if ( molcas_order.length() > 0 ){
+      cout << "   MOLCAS_ORDER       = [ " << dmrg2ham[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << dmrg2ham[ cnt ]; } cout << " ]" << endl;
+   } else {
+      cout << "   MOLCAS_FIEDLER     = " << (( molcas_fiedler ) ? "TRUE" : "FALSE" ) << endl;
+   }
+   if ( molcas_occ.length() > 0 ){
+      cout << "   MOLCAS_OCC (HAM)   = [ " << occupancies[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << occupancies[ cnt ]; } cout << " ]" << endl;
+   }
+      cout << "   MOLCAS_MPS         = " << (( molcas_mps ) ? "TRUE" : "FALSE" ) << endl;
+      cout << "   MOLCAS_STATE_AVG   = " << (( molcas_state_avg ) ? "TRUE" : "FALSE" ) << endl;
+   } else {
+      cout << "   SCF_STATE_AVG      = " << (( scf_state_avg ) ? "TRUE" : "FALSE" ) << endl;
+      cout << "   SCF_DIIS_THR       = " << scf_diis_thr << endl;
+      cout << "   SCF_GRAD_THR       = " << scf_grad_thr << endl;
+      cout << "   SCF_MAX_ITER       = " << scf_max_iter << endl;
+      cout << "   SCF_ACTIVE_SPACE   = " << (( scf_active_space == 'I' ) ? "I : no additional rotations" :
+                                            (( scf_active_space == 'N' ) ? "N : natural orbitals" :
+                                            (( scf_active_space == 'L' ) ? "L : localized and ordered orbitals" : "F : ordered orbitals only" ))) << endl;
+      cout << "   SCF_MOLDEN         = " << scf_molden << endl;
+      cout << "   CASPT2_CALC        = " << (( caspt2_calc ) ? "TRUE" : "FALSE" ) << endl;
+      cout << "   CASPT2_ORBS        = " << (( caspt2_orbs == 'A' ) ? "A : as specified in SCF_ACTIVE_SPACE" : "P : pseudocanonical orbitals" ) << endl;
+      cout << "   CASPT2_IPEA        = " << caspt2_ipea << endl;
+      cout << "   CASPT2_IMAG        = " << caspt2_imag << endl;
+      cout << "   CASPT2_CHECKPT     = " << (( caspt2_checkpt ) ? "TRUE" : "FALSE" ) << endl;
+      cout << "   CASPT2_CUMUL       = " << (( caspt2_cumul   ) ? "TRUE" : "FALSE" ) << endl;
+   }
       cout << "   PRINT_CORR         = " << (( print_corr     ) ? "TRUE" : "FALSE" ) << endl;
       cout << "   TMP_FOLDER         = " << tmp_folder << endl;
       cout << " " << endl;
@@ -1000,30 +901,19 @@ int main( int argc, char ** argv ){
    CheMPS2::Hamiltonian * ham = new CheMPS2::Hamiltonian( fcidump, group );
    CheMPS2::ConvergenceScheme * opt_scheme = new CheMPS2::ConvergenceScheme( ni_d );
    for ( int count = 0; count < ni_d; count++ ){
-      if ( !time_evolu ){
-         opt_scheme->set_instruction( count, value_states[ count ],
-                                             value_econv [ count ],
-                                             value_maxit [ count ],
-                                             value_noise [ count ],
-                                             value_rtol  [ count ] );
-
-      } else {
-         opt_scheme->set_instruction( count, value_states[ count ],
-                                             value_cutoff[ count ],
-                                             value_econv [ count ],
-                                             value_maxit [ count ],
-                                             value_noise [ count ],
-                                             value_rtol  [ count ]);
-      }
+      opt_scheme->set_instruction( count, value_states[ count ],
+                                          value_econv [ count ],
+                                          value_maxit [ count ],
+                                          value_noise [ count ],
+                                          value_rtol  [ count ] );
    }
    delete [] value_states;
-   delete [] value_cutoff;
    delete [] value_econv;
    delete [] value_maxit;
    delete [] value_noise;
    delete [] value_rtol;
 
-   if ( full_active_space_calculation || time_evolu ){
+   if ( full_active_space_calculation ){
 
       CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
 
@@ -1045,158 +935,73 @@ int main( int argc, char ** argv ){
          #endif
          prob->setup_reorder_custom( dmrg2ham );
          delete [] dmrg2ham;
-      } else if ( molcas_order.length() > 0 ){
+      }
+      if ( molcas_order.length() > 0 ){
          assert( fcidump_norb == ham->getL() );
-         prob->setup_reorder_custom( dmrg2ham );
-         delete [] dmrg2ham;
-      } else {
-         dmrg2ham = new int[ ham->getL() ];
-         assert( fcidump_norb == ham->getL() );
-         for( int i = 0; i < ham->getL(); i++ ){ dmrg2ham[ i ] = i; }
          prob->setup_reorder_custom( dmrg2ham );
          delete [] dmrg2ham;
       }
 
-      if ( !time_evolu ){
-         CheMPS2::DMRG * dmrgsolver = new CheMPS2::DMRG( prob, opt_scheme, molcas_mps, tmp_folder );
+      CheMPS2::DMRG * dmrgsolver = new CheMPS2::DMRG( prob, opt_scheme, molcas_mps, tmp_folder, occupancies );
+      if ( molcas_occ.length() > 0 ){ delete [] occupancies; }
 
-         // Solve for the correct root
-         double DMRG_ENERGY;
-         for ( int state = 0; state < ( excitation + 1 ); state++ ){
-            if ( state > 0 ){ dmrgsolver->newExcitation( fabs( DMRG_ENERGY ) ); }
-            DMRG_ENERGY = dmrgsolver->Solve();
-            if (( state == 0 ) && ( excitation > 0 )){ dmrgsolver->activateExcitations( excitation ); }
+      // Solve for the correct root
+      double DMRG_ENERGY;
+      for ( int state = 0; state < ( excitation + 1 ); state++ ){
+         if ( state > 0 ){ dmrgsolver->newExcitation( fabs( DMRG_ENERGY ) ); }
+         DMRG_ENERGY = dmrgsolver->Solve();
+         if (( state == 0 ) && ( excitation > 0 )){ dmrgsolver->activateExcitations( excitation ); }
 
-            // Only if state specific or last state N-RDMs should be calculated
-            if (( molcas_state_avg == true ) || ( state == excitation )){
+         // Only if state specific or last state N-RDMs should be calculated
+         if (( molcas_state_avg == true ) || ( state == excitation )){
 
-               const bool calc_3rdm = (( molcas_3rdm.length() != 0 ) || ( molcas_f4rdm.length() != 0 ));
-               const bool calc_2rdm = (( print_corr == true ) || ( molcas_2rdm.length() != 0 ));
-               if (( calc_2rdm ) || ( calc_3rdm )){
+            const bool calc_3rdm = (( molcas_3rdm.length() != 0 ) || ( molcas_f4rdm.length() != 0 ));
+            const bool calc_2rdm = (( print_corr == true ) || ( molcas_2rdm.length() != 0 ));
+            if (( calc_2rdm ) || ( calc_3rdm )){
 
-                  dmrgsolver->calc_rdms_and_correlations( calc_3rdm, false );
-                  std::stringstream result_filename;
+               dmrgsolver->calc_rdms_and_correlations( calc_3rdm, false );
+               std::stringstream result_filename;
 
-                  // 2-RDM
-                  if ( molcas_2rdm.length() != 0 ){
-                     result_filename.str("");
-                     result_filename << molcas_2rdm << ".r" << state;
-                     dmrgsolver->get2DM()->save_HAM( result_filename.str() );
-                  }
-
-                  // 3-RDM
-                  if ( molcas_3rdm.length() != 0 ){
-                     result_filename.str("");
-                     result_filename << molcas_3rdm << ".r" << state;
-                     dmrgsolver->get3DM()->save_HAM( result_filename.str() );
-                  }
-
-                  // F . 4-RDM
-                  if ( molcas_f4rdm.length() != 0 ){
-                     const int LAS      = ham->getL();
-                     const int LAS_pow6 = LAS * LAS * LAS * LAS * LAS * LAS;
-                     double * fockmx = new double[ LAS * LAS ];
-                     double * work   = new double[ LAS_pow6  ];
-                     double * result = new double[ LAS_pow6  ];
-                     for ( int cnt = 0; cnt < LAS_pow6; cnt++ ){ result[ cnt ] = 0.0; }
-                     ham->readfock( molcas_fock, fockmx, true );
-                     CheMPS2::CASSCF::fock_dot_4rdm( fockmx, dmrgsolver, ham, 0, 0, work, result, false, false );
-
-                     result_filename.str("");
-                     result_filename << molcas_f4rdm << ".r" << state;
-                     CheMPS2::ThreeDM::save_HAM_generic( result_filename.str(), LAS, "F.4-RDM", result );
-                     delete [] fockmx;
-                     delete [] work;
-                     delete [] result;
-                  }
-                  if (( print_corr ) && ( state == excitation )){ dmrgsolver->getCorrelations()->Print(); }
+               // 2-RDM
+               if ( molcas_2rdm.length() != 0 ){
+                  result_filename.str("");
+                  result_filename << molcas_2rdm << ".r" << state;
+                  dmrgsolver->get2DM()->save_HAM( result_filename.str() );
                }
+
+               // 3-RDM
+               if ( molcas_3rdm.length() != 0 ){
+                  result_filename.str("");
+                  result_filename << molcas_3rdm << ".r" << state;
+                  dmrgsolver->get3DM()->save_HAM( result_filename.str() );
+               }
+
+               // F . 4-RDM
+               if ( molcas_f4rdm.length() != 0 ){
+                  const int LAS      = ham->getL();
+                  const int LAS_pow6 = LAS * LAS * LAS * LAS * LAS * LAS;
+                  double * fockmx = new double[ LAS * LAS ];
+                  double * work   = new double[ LAS_pow6  ];
+                  double * result = new double[ LAS_pow6  ];
+                  for ( int cnt = 0; cnt < LAS_pow6; cnt++ ){ result[ cnt ] = 0.0; }
+                  ham->readfock( molcas_fock, fockmx, true );
+                  CheMPS2::CASSCF::fock_dot_4rdm( fockmx, dmrgsolver, ham, 0, 0, work, result, false, false );
+
+                  result_filename.str("");
+                  result_filename << molcas_f4rdm << ".r" << state;
+                  CheMPS2::ThreeDM::save_HAM_generic( result_filename.str(), LAS, "F.4-RDM", result );
+                  delete [] fockmx;
+                  delete [] work;
+                  delete [] result;
+               }
+               if (( print_corr ) && ( state == excitation )){ dmrgsolver->getCorrelations()->Print(); }
             }
          }
-
-         // Clean up
-         if ( CheMPS2::DMRG_storeRenormOptrOnDisk ){ dmrgsolver->deleteStoredOperators(); }
-         delete dmrgsolver;
-
-      } else {
-         if( time_type == 'F' ){
-
-            int sum_up      = 0;
-            int sum_down    = 0;
-            int * bits_up   = new int[ prob->gL() ];
-            int * bits_down = new int[ prob->gL() ];
-
-            for( int orb = 0; orb < prob->gL(); orb++ ){
-               if( time_ninit_parsed[ orb ] == 2 ){
-                  bits_up[ orb ] = 1;
-                  bits_down[ orb ] = 1;
-                  sum_up++;
-                  sum_down++;
-               } else if ( time_ninit_parsed[ orb ] == 1 ) {
-                  bits_up[ orb ] = 1;
-                  bits_down[ orb ] = 0;
-                  sum_up++;
-               } else{
-                  bits_up[ orb ] = 0;
-                  bits_down[ orb ] = 0;
-               }
-            }
-
-            hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
-            if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
-
-            CheMPS2::CFCI * fcisolver = new CheMPS2::CFCI( ham, sum_up, sum_down, irrep, 100.0, 2, fileID );
-
-            int length = fcisolver->getVecLength( 0 );
-            dcomplex * start = new dcomplex [ length ];
-            fcisolver->ClearVector( length, start );
-            fcisolver->setFCIcoeff( bits_up, bits_down, 1.0, start );
-
-            dcomplex * end = new dcomplex [ length ];
-
-            fcisolver->TimeEvolution( time_step_minor, time_final, time_krysize, start, time_dumpfci, time_dump2rdm );
-
-            delete[] end;
-            delete[] start;
-
-            delete[] bits_up;
-            delete[] bits_down;
-            delete fcisolver;
-
-         } else {
-            if ( time_type == 'K' || time_type == 'R' ){
-               CheMPS2::SyBookkeeper * initBK  = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
-               CheMPS2::CTensorT    ** initMPS = new CheMPS2::CTensorT *[ prob->gL() ];
-
-               for ( int index = 0; index < n_orbs; index++ ) {
-                  initMPS[ index ] = new CheMPS2::CTensorT( index, initBK );
-                  initMPS[ index ]->gStorage()[ 0 ] = 1.0;
-               }
-
-               double normDT2 = norm( initMPS ); initMPS[ 0 ]->number_operator( 0.0, 1.0 / normDT2 );
-
-               hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
-               if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
-
-               CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
-               taylor->Propagate( time_type, initBK, initMPS, time_step_major, time_step_minor, time_final, time_krysize, false, time_dumpfci, time_dump2rdm );
-
-               if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
-
-               delete taylor;
-               for ( int cnt = 0; cnt < n_orbs; cnt++ ) {
-                  delete initMPS[ cnt ];
-               }
-               delete [] initMPS;
-               delete initBK;
-            } else {
-               cerr << " Your TIME_TYPE not implemented yet" << std::endl;
-               clean_exit( 1 );
-            }
-         }
-
       }
 
+      // Clean up
+      if ( CheMPS2::DMRG_storeRenormOptrOnDisk ){ dmrgsolver->deleteStoredOperators(); }
+      delete dmrgsolver;
       delete prob;
 
    } else {
@@ -1249,8 +1054,6 @@ int main( int argc, char ** argv ){
    delete [] nocc_parsed;
    delete [] nact_parsed;
    delete [] nvir_parsed;
-   delete [] time_ninit_parsed;
-   delete [] time_noise_parsed;
    delete opt_scheme;
    delete ham;
 

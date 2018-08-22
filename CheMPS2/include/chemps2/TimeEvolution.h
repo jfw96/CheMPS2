@@ -20,15 +20,20 @@ namespace CheMPS2 {
 
       ~TimeEvolution();
 
-      void Propagate( const char time_type, SyBookkeeper * initBK, CTensorT ** initMPS,
-                      const double time_step_major, const double time_step_minor, 
-                      const double time_final, const int kry_size, 
+      void Propagate( const char time_type, const double time_step_major, 
+                      const double time_step_minor, const double time_final, 
+                      CTensorT ** mpsIn, SyBookkeeper * bkIn, 
+                      const int kry_size, 
                       const bool doImaginary, const bool doDumpFCI, 
-                      const bool doDump2RDM );
+                      const bool doDump2RDM, const int nWeights = 0,
+                      const int * hfState = NULL );
 
       private:
       void HDF5_MAKE_DATASET( hid_t setID, const char * name, int rank,
                               const hsize_t * dims, hid_t typeID, const void * data );
+
+      double calcWieght( int nHoles, int nParticles, Problem * probState, CTensorT ** mpsState, SyBookkeeper * bkState, const int * hf_state );
+
 
       // void doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
 

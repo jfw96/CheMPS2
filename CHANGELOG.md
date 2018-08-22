@@ -1,3 +1,12 @@
+#### Version 1.8.7 LTS update (2018-03-25):
+* Bump up SO version from 2 to 3
+
+#### Version 1.8.6 LTS update (2018-03-16):
+* Set initial guess to an ROHF determinant (for @quanp)
+
+#### Version 1.8.5 LTS update (2018-01-18):
+* Fix build; bump up required CMake (thanks @quanp)
+
 #### Version 1.8.4 LTS update (2017-05-23):
 * MOLCAS state average CASPT2 interface (thanks @quanp)
 * Update build system for psi4 (thanks @loriab)

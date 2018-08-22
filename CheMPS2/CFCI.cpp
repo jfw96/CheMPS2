@@ -468,8 +468,6 @@ void CheMPS2::CFCI::StartupIrrepCenter(){
    if ( FCIverbose > 0 ){
       std::cout << "FCI::Startup : Workspace allocation done" << std::endl;
    }
-   std::cout << "Haha" << std::endl;
-
 
 }
 
@@ -479,7 +477,7 @@ void CheMPS2::CFCI::str2bits(const unsigned int Lval, const unsigned int bitstri
 
 }
 
-unsigned int CheMPS2::CFCI::bits2str(const unsigned int Lval, int * bits){
+unsigned int CheMPS2::CFCI::bits2str(const unsigned int Lval, const int * bits){
 
    unsigned int factor = 1;
    unsigned int result = 0;
@@ -517,7 +515,7 @@ void CheMPS2::CFCI::getBitsOfCounter(const int irrep_center, const unsigned int 
 
 }
 
-dcomplex CheMPS2::CFCI::getFCIcoeff(int * bits_up, int * bits_down, dcomplex * vector) const{
+dcomplex CheMPS2::CFCI::getFCIcoeff( const int * bits_up, const int * bits_down, dcomplex * vector ) const{
 
    const unsigned string_up   = bits2str(L, bits_up  );
    const unsigned string_down = bits2str(L, bits_down);
@@ -538,7 +536,7 @@ dcomplex CheMPS2::CFCI::getFCIcoeff(int * bits_up, int * bits_down, dcomplex * v
 
 }
 
-void CheMPS2::CFCI::setFCIcoeff(int * bits_up, int * bits_down, dcomplex value, dcomplex * vector) const{
+void CheMPS2::CFCI::setFCIcoeff( const int * bits_up, const int * bits_down, dcomplex value, dcomplex * vector) const{
 
    const unsigned string_up   = bits2str(L, bits_up  );
    const unsigned string_down = bits2str(L, bits_down);
@@ -2082,7 +2080,64 @@ void CheMPS2::CFCI::HDF5_MAKE_DATASET( hid_t setID, const char * name, int rank,
    }
 }
 
-void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned int krylovSize, dcomplex * input, const bool doDumpFCI, const bool doDump2RDM ){
+double CheMPS2::CFCI::calcWieght( int nHoles, int nParticles, dcomplex * state, const int * hf_state ){
+
+   double result = 0;
+
+   int* myoccus = new int[ 2 * L ];
+   for( int idx = 0; idx < 2 * L; idx++ ){
+      if( idx < ( Nel_up + Nel_down ) ){
+         myoccus[ idx ] = 1;
+      } else {
+         myoccus[ idx ] = 0;
+      }
+   }
+
+   std::sort( myoccus, myoccus + 2 * L );
+   do {
+      int* alphas = &myoccus[ 0 ];
+      int* betas = &myoccus[ L ];
+
+      int iHoles = 0;
+      int iParticles = 0;
+
+      for( int idx = 0; idx < L; idx++ ) { 
+         if ( alphas[ idx ] + betas[ idx ] < hf_state[ idx ] ){
+            iHoles += hf_state[ idx ] - ( alphas[ idx ] + betas[ idx ] );
+         }
+      }
+
+      for( int idx = 0; idx < L; idx++ ) { 
+         if ( alphas[ idx ] + betas[ idx ] > hf_state[ idx ] ){
+            iParticles += ( alphas[ idx ] + betas[ idx ] ) - hf_state[ idx ];
+         }
+      }
+
+      if( ( iHoles == nHoles ) && ( iParticles == nParticles ) ){
+         double test = std::pow( std::abs( getFCIcoeff( alphas, betas, state ) ), 2.0 );
+         if( nHoles == 1 && nParticles == 1 && test > 0 ){
+            for( int idx = 0; idx < L; idx++ ) { 
+               std::cout << alphas[ idx ] << " ";
+            }
+            std::cout << std::endl;
+            for( int idx = 0; idx < L; idx++ ) { 
+               std::cout << betas[ idx ] << " ";
+            }
+            std::cout << std::endl;
+            std::cout << test << std::endl;
+         }
+         result += test;
+      }
+
+   } while ( std::next_permutation( myoccus, myoccus + 2 * L ) );
+
+   delete[] myoccus;
+
+   return result;
+}
+
+
+void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_major, const double time_step_minor, double finalTime, const int * alpha, const int * beta, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM ){
 
    std::cout << "\n";
    std::cout << "   Starting to propagate FCI wave function\n";
@@ -2096,11 +2151,13 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
 
    const int veclength = getVecLength( 0 );
 
-   dcomplex * act  = new dcomplex [ veclength ];
-   dcomplex * next = new dcomplex [ veclength ];
-   FCIdcopy( veclength, input, act );
+   dcomplex * act = new dcomplex [ veclength ];
+   ClearVector( veclength, act );
+   setFCIcoeff( alpha, beta, 1.0, act );
 
-   for( double t = 0.0; t < finalTime; t+=timeStep ){
+   dcomplex * next = new dcomplex [ veclength ];
+
+   for ( double t = 0.0; t < finalTime; t += time_step_major ) {
       dcomplex * terdm   = new dcomplex[ L * L * L * L];
       const double energy      = std::real( Fill2RDM( act, terdm ) );
       const double normOfState = std::real( FCIddot( veclength, act, act ) );
@@ -2140,9 +2197,10 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
       std::cout                                                  << "\n";
       std::cout << "   Duration since start " << elapsed << " seconds\n";
       std::cout                                                  << "\n";
-      std::cout << "   t         = " << t                        << "\n";
-      std::cout << "   Tmax      = " << finalTime                << "\n";
-      std::cout << "   dt        = " << timeStep                 << "\n";
+      std::cout << "   t        = " << t                         << "\n";
+      std::cout << "   Tmax     = " << finalTime                 << "\n";
+      std::cout << "   dt major = " << time_step_major           << "\n";
+      std::cout << "   dt minor = " << time_step_minor           << "\n";
       std::cout << "   KryS      = " << krylovSize               << "\n";
       std::cout                                                  << "\n";
       std::cout << "   Norm      = " << normOfState              << "\n";
@@ -2156,16 +2214,16 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
       sprintf( dataPointname, "/Output/DataPoint%.5f", t );
       const hid_t dataPointID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
       hsize_t Lsq[ 2 ]; Lsq[ 0 ] = L; Lsq[ 1 ] = L;
-      HDF5_MAKE_DATASET( dataPointID, "chrono",    1, &dimScalar, H5T_NATIVE_DOUBLE, &elapsed     );
-      HDF5_MAKE_DATASET( dataPointID, "t",         1, &dimScalar, H5T_NATIVE_DOUBLE, &t           );
-      HDF5_MAKE_DATASET( dataPointID, "Tmax",      1, &dimScalar, H5T_NATIVE_DOUBLE, &finalTime   );
-      HDF5_MAKE_DATASET( dataPointID, "dt",        1, &dimScalar, H5T_NATIVE_DOUBLE, &timeStep    );
-      HDF5_MAKE_DATASET( dataPointID, "KryS",      1, &dimScalar, H5T_STD_I32LE,     &krylovSize  );
-      HDF5_MAKE_DATASET( dataPointID, "Norm",      1, &dimScalar, H5T_NATIVE_DOUBLE, &normOfState );
-      HDF5_MAKE_DATASET( dataPointID, "Energy",    1, &dimScalar, H5T_NATIVE_DOUBLE, &energy      );
-      HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL", 2, Lsq,        H5T_NATIVE_DOUBLE, oedmre       );
-      HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG", 2, Lsq,        H5T_NATIVE_DOUBLE, oedmim       );
-
+      HDF5_MAKE_DATASET( dataPointID, "chrono",      1, &dimScalar, H5T_NATIVE_DOUBLE, &elapsed         );
+      HDF5_MAKE_DATASET( dataPointID, "t",           1, &dimScalar, H5T_NATIVE_DOUBLE, &t               );
+      HDF5_MAKE_DATASET( dataPointID, "Tmax",        1, &dimScalar, H5T_NATIVE_DOUBLE, &finalTime       );
+      HDF5_MAKE_DATASET( dataPointID, "dtmajor",     1, &dimScalar, H5T_NATIVE_DOUBLE, &time_step_major );
+      HDF5_MAKE_DATASET( dataPointID, "dtminor",     1, &dimScalar, H5T_NATIVE_DOUBLE, &time_step_minor );
+      HDF5_MAKE_DATASET( dataPointID, "KryS",        1, &dimScalar, H5T_STD_I32LE,     &krylovSize      );
+      HDF5_MAKE_DATASET( dataPointID, "Norm",        1, &dimScalar, H5T_NATIVE_DOUBLE, &normOfState     );
+      HDF5_MAKE_DATASET( dataPointID, "Energy",      1, &dimScalar, H5T_NATIVE_DOUBLE, &energy          );
+      HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL",   2, Lsq,        H5T_NATIVE_DOUBLE, oedmre           );
+      HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG",   2, Lsq,        H5T_NATIVE_DOUBLE, oedmim           );
 
       if( doDumpFCI ){
          std::vector< std::vector< int > > alphasOut;
@@ -2210,9 +2268,15 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
 
       std::cout << "\n";
 
-      if ( t + timeStep < finalTime ) {
-         ArnoldiTimeStep( timeStep, krylovSize,  act, next );
-         FCIdcopy( veclength, next, act );
+      if ( t + time_step_major < finalTime ) {
+         for( double t_minor = 0.0; (time_step_major - t_minor) > 1e-6; t_minor+=time_step_minor ) {
+            if(time_type == 'K'){
+               ArnoldiTimeStep( time_step_minor, krylovSize,  act, next );
+            } else {
+               std::cerr << "Not implemented yet\n";
+            }
+            FCIdcopy( veclength, next, act );
+         }
       }
 
       std::cout << hashline;
@@ -2224,8 +2288,6 @@ void CheMPS2::CFCI::TimeEvolution( double timeStep, double finalTime, unsigned i
 }
 
 void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, dcomplex * input, dcomplex * output){
-
-   std::cout << "Hallo Zsuzsa" << std::endl;
 
    dcomplex step = dcomplex( 0.0, -1.0 * timeStep );
 
@@ -2249,12 +2311,10 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
       matvec( krylovBasisVectors[ kry - 1 ], newKrylov );
       double normOfState = std::real( FCIddot( veclength, newKrylov, newKrylov ) );
       dcomplex normalifactor = 1.0 / std::sqrt( normOfState );
-      std::cout << normOfState << " " << normalifactor << std::endl;
       int theone = 1;
       zscal_( &veclength, &normalifactor, newKrylov, &theone );
 
       double normOfState2 = std::real( FCIddot( veclength, newKrylov, newKrylov ) );
-      std::cout << normOfState2 << std::endl;
       krylovBasisVectors[ kry ] = newKrylov;
    }
 
@@ -2277,19 +2337,19 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
       }
    }
 
-   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-         std::cout << std::real( krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] ) << " ";
-      }
-      std::cout << std::endl;
-   }
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << std::real( krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] ) << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
 
-   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-         std::cout << std::real( overlaps[ irow +  icol * krylovSpaceDimension ] ) << " ";
-      }
-      std::cout << std::endl;
-   }
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << std::real( overlaps[ irow +  icol * krylovSpaceDimension ] ) << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
@@ -2392,68 +2452,6 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
    delete[] overlaps;
    delete[] krylovHamiltonian;
    delete[] krylovBasisVectors;
-
-//    if ( std::abs( overlaps[ krylovSpaceDimension ] ) > 1e-6 ) {
-//       std::cout << "CHEMPS2::TIME WARNING: Krylov vectors not completely orthonormal. |< kry_0 | kry_last>| is " << overlaps[ krylovSpaceDimension ] << std::endl;
-//    }
-
-//    int one                 = 1;
-//    int sqr                 = krylovSpaceDimension * krylovSpaceDimension;
-//    dcomplex * overlaps_inv = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
-//    zcopy_( &sqr, overlaps, &one, overlaps_inv, &one );
-
-//    int info_lu;
-//    int * piv = new int[ krylovSpaceDimension ];
-//    zgetrf_( &krylovSpaceDimension, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, &info_lu );
-
-//    dcomplex * work = new dcomplex[ krylovSpaceDimension ];
-//    int info_inve;
-
-//    zgetri_( &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, work, &krylovSpaceDimension, &info_inve );
-
-//    for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-//       for ( int j = i + 1; j < krylovSpaceDimension; j++ ) {
-//          overlaps_inv[ i + krylovSpaceDimension * j ] = overlaps_inv[ j + krylovSpaceDimension * i ];
-//       }
-//    }
-
-//    dcomplex * toExp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
-//    char notrans     = 'N';
-//    dcomplex zeroC   = 0.0;
-//    zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
-//            &step, overlaps_inv, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zeroC, toExp, &krylovSpaceDimension );
-
-//    int deg        = 6;
-//    double bla     = 1.0;
-//    int lwsp       = 4 * krylovSpaceDimension * krylovSpaceDimension + deg + 1;
-//    dcomplex * wsp = new dcomplex[ lwsp ];
-//    int * ipiv     = new int[ krylovSpaceDimension ];
-//    int iexph      = 0;
-//    int ns         = 0;
-//    int info;
-
-//    zgpadm_( &deg, &krylovSpaceDimension, &bla, toExp, &krylovSpaceDimension,
-//             wsp, &lwsp, ipiv, &iexph, &ns, &info );
-
-//    dcomplex * exph = &wsp[ iexph - 1 ];
-
-//    for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-//       FCIdaxpy( veclength, exph[ i + krylovSpaceDimension * 0 ], krylovBasisVectors[ i ], output );
-//    }
-
-//    delete[] wsp;
-//    delete[] ipiv;
-//    delete[] overlaps_inv;
-//    delete[] toExp;
-//    delete[] piv;
-//    delete[] work;
-
-//    for ( int cnt = 1; cnt < krylovSpaceDimension; cnt++ ) {
-//       delete[] krylovBasisVectors[ cnt ];
-//    }
-//    delete[] overlaps;
-//    delete[] krylovHamiltonian;
-//    delete[] krylovBasisVectors;
 
 }
 

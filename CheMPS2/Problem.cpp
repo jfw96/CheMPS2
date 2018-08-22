@@ -1,6 +1,6 @@
 /*
    CheMPS2: a spin-adapted implementation of DMRG for ab initio quantum chemistry
-   Copyright (C) 2013-2017 Sebastian Wouters
+   Copyright (C) 2013-2018 Sebastian Wouters
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 #include <math.h> // fabs
 #include <stdlib.h>
 
+#include "Problem.h"
+#include "Irreps.h"
 #include "MPIchemps2.h"
 #include "Problem.h"
 
@@ -400,3 +402,35 @@ bool CheMPS2::Problem::checkConsistency() const {
 
    return true;
 }
+
+bool CheMPS2::Problem::check_rohf_occ( int * occupancies ){
+
+   int sum_n__tot = 0;
+   int sum_2s_tot = 0;
+   int sum_i__tot = 0;
+   //Irreps SymmInfo(gSy());
+
+   for ( int site = 0; site < gL(); site++ ){
+      //cout << "Site " << site << " has irrep psi4 = " << gIrrep( site ) << " = " << SymmInfo.getIrrepName( gIrrep( site ) ) << endl;
+      //cout << "Site " << site << " has occupancy  = " << occupancies[ site ] << endl;
+      if (( occupancies[ site ] < 0 ) || ( occupancies[ site ] > 2 )){
+         cout << "Problem::check_rohf_occ() : occupancies[ " << site << " ] = " << occupancies[ site ] << " and should be 0, 1 or 2." << endl;
+         return false;
+      }
+      sum_n__tot += occupancies[ site ];
+      if ( occupancies[ site ] == 1 ){
+         sum_2s_tot += 1;
+         sum_i__tot = Irreps::directProd( sum_i__tot, gIrrep( site ) );
+      }
+   }
+
+   if (( sum_n__tot != gN() ) || ( sum_2s_tot != gTwoS() ) || ( sum_i__tot != gIrrep() )){
+      cout << "Problem::check_rohf_occ() : occupancies corresponds to ( N, 2S, I ) = ( " << sum_n__tot << ", " << sum_2s_tot << ", " << sum_i__tot << " ), while the DMRG targeted sector is ( N, 2S, I ) = ( " << gN() << ", " << gTwoS() << ", " << gIrrep() << " )." << endl;
+      return false;
+   }
+
+   return true;
+
+}
+
+

@@ -1,6 +1,6 @@
 /*
    CheMPS2: a spin-adapted implementation of DMRG for ab initio quantum chemistry
-   Copyright (C) 2013-2017 Sebastian Wouters
+   Copyright (C) 2013-2018 Sebastian Wouters
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -64,22 +64,20 @@ void CheMPS2::ConvergenceScheme::set_instruction( const int instruction, const i
 }
 
 
-void CheMPS2::ConvergenceScheme::set_instruction( const int instruction, const int D, const double cut_off, const double energy_conv, const int max_sweeps, const double noise_prefactor, const double davidson_rtol ) {
+void CheMPS2::ConvergenceScheme::set_instruction( const int instruction, const int D, const double cut_off, const int max_sweeps, const double noise_prefactor ) {
 
    assert( instruction >= 0 );
    assert( instruction < num_instructions );
    assert( D > 0 );
    assert( cut_off >= 0.0 );
-   assert( energy_conv > 0.0 );
    assert( max_sweeps > 0 );
-   assert( davidson_rtol > 0.0 );
 
    num_D             [ instruction ] = D;
-   energy_convergence[ instruction ] = energy_conv;
+   energy_convergence[ instruction ] = 0.1;
    cut_offs          [ instruction ] = cut_off;
    num_max_sweeps    [ instruction ] = max_sweeps;
    noise_prefac      [ instruction ] = noise_prefactor;
-   dvdson_rtol       [ instruction ] = davidson_rtol;
+   dvdson_rtol       [ instruction ] = 0.1;
 
 }
 

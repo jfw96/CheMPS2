@@ -1,6 +1,6 @@
 /*
    CheMPS2: a spin-adapted implementation of DMRG for ab initio quantum chemistry
-   Copyright (C) 2013-2017 Sebastian Wouters
+   Copyright (C) 2013-2018 Sebastian Wouters
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -135,8 +135,12 @@ namespace CheMPS2 {
 
       //! Reorder the orbitals for d(infinity)h. Previous reorderings are cleared.
       /** \param docc Array which contains for each irrep the number of doubly occupied orbitals
-             \param sp_threshold Threshold to detect Delta_g and Delta_u partners based on single-particle energies */
-      void setup_reorder_dinfh( int * docc, const double sp_threshold = 1e-5 );
+           \param sp_threshold Threshold to detect Delta_g and Delta_u partners based on single-particle energies */
+      void setup_reorder_dinfh(int * docc, const double sp_threshold=1e-5);
+
+      //! Check that ROHF-style occupancies are compatible with the currently targeted symmetry sector.
+      /** \param occupancies Array which contains per DMRG orbital (not HAM orbital ordering!) the ROHF-style occupancy (0, 1 or 2) */
+      bool check_rohf_occ( int * occupancies );
 
       private:
       //Pointer to the Hamiltonian --> constructed and destructed outside of this class
