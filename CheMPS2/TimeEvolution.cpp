@@ -378,7 +378,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
 
    int krylovSpaceDimension = kry_size;
 
-   dcomplex step = doImaginary ? -time_step : dcomplex( 0.0, -1.0 * time_step );
+   dcomplex step = doImaginary ? -time_step : dcomplex( 0.0, 1.0 * time_step );
 
    HamiltonianOperator * op = new HamiltonianOperator( prob, offset );
 
