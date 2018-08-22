@@ -22,7 +22,8 @@ namespace CheMPS2 {
 
       void Propagate( const char time_type, const double time_step_major, 
                       const double time_step_minor, const double time_final, 
-                      const int * ninit, const int kry_size, 
+                      CTensorT ** mpsIn, SyBookkeeper * bkIn, 
+                      const int kry_size, 
                       const bool doImaginary, const bool doDumpFCI, 
                       const bool doDump2RDM, const int nWeights = 0,
                       const int * hfState = NULL );

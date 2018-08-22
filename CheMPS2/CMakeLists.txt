@@ -9,11 +9,9 @@ set (CHEMPS2LIB_SOURCE_FILES "CASPT2.cpp"
                              "CASSCFpt2.cpp"
                              "CDensityMatrix.cpp"
                              "CTensorT.cpp"
-                             "CTensorL.cpp"
-                             "CTensorLF.cpp"                             
+                             "CTensorL.cpp"                           
                              "CTensorLT.cpp"
-                             "CTensorO.cpp"
-                             "CTensorF.cpp"                             
+                             "CTensorO.cpp"                            
                              "CTensorF0.cpp"
                              "CTensorF0T.cpp"
                              "CTensorF1.cpp"
@@ -162,9 +160,13 @@ add_executable             (chemps2-fci fcidynamics.cpp)
 target_link_libraries      (chemps2-fci tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} )
 set_target_properties      (chemps2-fci PROPERTIES OUTPUT_NAME "chemps2fci")
 
-add_executable             (chemps2-prp preparator.cpp)
-target_link_libraries      (chemps2-prp tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
-set_target_properties      (chemps2-prp PROPERTIES OUTPUT_NAME "chemps2prp")
+add_executable             (chemps2-ion ionize.cpp)
+target_link_libraries      (chemps2-ion tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
+set_target_properties      (chemps2-ion PROPERTIES OUTPUT_NAME "chemps2ion")
+
+add_executable             (chemps2-conv convert.cpp)
+target_link_libraries      (chemps2-conv tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
+set_target_properties      (chemps2-conv PROPERTIES OUTPUT_NAME "chemps2conv")
 
 # <<<  Install  >>>
 

@@ -602,7 +602,8 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
 
 void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_step_major, 
                                         const double time_step_minor, const double time_final, 
-                                        const int* ninit, const int kry_size,
+                                        CTensorT ** mpsIn, SyBookkeeper * bkIn, 
+                                        const int kry_size,
                                         const bool doImaginary, const bool doDumpFCI, 
                                         const bool doDump2RDM, const int nWeights,
                                         const int * hfState ) {
@@ -618,18 +619,19 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
 
    HamiltonianOperator * hamOp = new HamiltonianOperator( prob );
 
-   CheMPS2::SyBookkeeper * MPSBK  = new CheMPS2::SyBookkeeper( prob, ninit );
+   CheMPS2::SyBookkeeper * MPSBK  = new CheMPS2::SyBookkeeper( *bkIn );
    CheMPS2::CTensorT    ** MPS    = new CheMPS2::CTensorT *[ prob->gL() ];
 
    for ( int index = 0; index < prob->gL(); index++ ) {
-      MPS[ index ] = new CheMPS2::CTensorT( index, MPSBK );
-      MPS[ index ]->gStorage()[ 0 ] = 1.0;
+      MPS[ index ] = new CheMPS2::CTensorT( mpsIn[ index ] );
    }
-   normalize( prob->gL(),  MPS );
 
    double first_energy;
-   int nElecHF = 0; for ( int index = 0; index < prob->gL(); index++ ) { nElecHF += hfState[ index ]; }
-   const int deltaN = nElecHF - prob->gN();
+   int deltaN = 0;
+   if( nWeights > 0 ){
+      int nElecHF = 0; for ( int index = 0; index < prob->gL(); index++ ) { nElecHF += hfState[ index ]; }
+      deltaN = nElecHF - prob->gN();
+   }
 
    for ( double t = 0.0; t < time_final; t += time_step_major ) {
 
@@ -640,6 +642,9 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
       int * NSwes            = new int[ numInst ];
       const double normOfMPS = norm( MPS );
       const double energy    = std::real( hamOp->ExpectationValue( MPS, MPSBK ) );
+      const dcomplex oInit   = overlap( mpsIn, MPS );
+      const double reoInit   = std::real( oInit );
+      const double imoInit   = std::imag( oInit );
       COneDM * theodm        = new COneDM( MPS, MPSBK, prob );
       double * oedmre        = new double[ L * L ];
       double * oedmim        = new double[ L * L ];
@@ -700,6 +705,8 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
       std::cout                                                 << "\n";
       std::cout << "   Norm      = " << normOfMPS               << "\n";
       std::cout << "   Energy    = " << energy                  << "\n";
+      std::cout << "   Re(OInit) = " << reoInit                 << "\n";
+      std::cout << "   Im(OInit) = " << imoInit                 << "\n";
       std::cout                                                 << "\n";
       std::cout << "  occupation numbers of molecular orbitals:\n";
       std::cout << "   ";
@@ -730,6 +737,8 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
       HDF5_MAKE_DATASET( dataPointID, "NSwes",          1, &numInst,   H5T_STD_I32LE,      NSwes            );
       HDF5_MAKE_DATASET( dataPointID, "Norm",           1, &dimarray1, H5T_NATIVE_DOUBLE,  &normOfMPS       );
       HDF5_MAKE_DATASET( dataPointID, "Energy",         1, &dimarray1, H5T_NATIVE_DOUBLE,  &energy          );
+      HDF5_MAKE_DATASET( dataPointID, "REOInit",        1, &dimarray1, H5T_NATIVE_DOUBLE,  &reoInit         );
+      HDF5_MAKE_DATASET( dataPointID, "IMOInit",        1, &dimarray1, H5T_NATIVE_DOUBLE,  &imoInit         );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL",      2, Lsq,        H5T_NATIVE_DOUBLE,  oedmre           );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG",      2, Lsq,        H5T_NATIVE_DOUBLE,  oedmim           );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_DMRG_REAL", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmdmrgre       );
@@ -816,7 +825,7 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
             normalize( L, MPSDT );
 
             if( time_type == 'K' ){
-               doStep_arnoldi( time_step_minor, kry_size, -0.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
+               doStep_arnoldi( time_step_minor, kry_size, -1.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
             } else if ( time_type == 'R' ){
                doStep_runge_kutta( time_step_minor, kry_size, -1.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
             } else if ( time_type == 'E' ){

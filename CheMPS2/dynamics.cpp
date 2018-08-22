@@ -38,6 +38,62 @@
 
 using namespace std;
 
+void loadDIM(const std::string name, CheMPS2::SyBookkeeper * BKlocation){
+
+   //The hdf5 file
+   hid_t file_id = H5Fopen(name.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+      
+      //The current virtual dimensions
+      for (int bound=0; bound<=BKlocation->gL(); bound++){
+         for (int N=BKlocation->gNmin(bound); N<=BKlocation->gNmax(bound); N++){
+            for (int TwoS=BKlocation->gTwoSmin(bound,N); TwoS<=BKlocation->gTwoSmax(bound,N); TwoS+=2){
+               for (int Irrep=0; Irrep<BKlocation->getNumberOfIrreps(); Irrep++){
+     
+                  std::stringstream sstream;
+                  sstream << "/VirtDim_" << bound << "_" << N << "_" << TwoS << "_" << Irrep;
+                  hid_t group_id2 = H5Gopen(file_id, sstream.str().c_str(), H5P_DEFAULT);
+                  
+                     hid_t dataset_id2 = H5Dopen(group_id2, "Value", H5P_DEFAULT);
+                     int toRead;
+                     H5Dread(dataset_id2, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &toRead);
+                     BKlocation->SetDim(bound, N, TwoS, Irrep, toRead);
+                     H5Dclose(dataset_id2);
+                  
+                  H5Gclose(group_id2);
+                  
+               }
+            }
+         }
+      }
+      
+   H5Fclose(file_id);
+
+}
+
+void loadMPS( const std::string name, const int L, CheMPS2::CTensorT ** MPSlocation ){
+
+   //The hdf5 file
+   hid_t file_id = H5Fopen( name.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT );
+      
+   //The MPS
+   for (int site = 0; site < L; site++){
+      
+      std::stringstream sstream;
+      sstream << "/MPS_" << site;
+      hid_t group_id3 = H5Gopen( file_id, sstream.str().c_str(), H5P_DEFAULT );
+      
+      hid_t dataset_id3     = H5Dopen( group_id3, "Values", H5P_DEFAULT );
+      H5Dread( dataset_id3, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, MPSlocation[ site ]->gStorage() );
+      H5Dclose( dataset_id3 );
+
+      H5Gclose( group_id3 );
+      
+   }
+      
+   H5Fclose( file_id );
+
+}
+
 void fetch_ints( const string rawdata, int * result, const int num ){
 
    int pos  = 0;
@@ -331,6 +387,9 @@ cout << "\n"
 "       TIME_NINIT = int, int, int\n"
 "              Set the occupation numbers for the inital state. Ordered as in the FCIDUMP file. (positive integers).\n"
 "\n"
+"       TIME_INIT = /path/to/inital/state\n"
+"              Set to load the inital state from HDF5 file.\n"
+"\n"
 "       TIME_HF_STATE = int, int, int\n"
 "              Set the occupation numbers for the corresponding Hartree-Fock state inital state.\n"
 "\n"
@@ -379,6 +438,7 @@ int main( int argc, char ** argv ){
    double time_step_major = 0.0;
    double time_step_minor = 0.0;
    double time_final      = 0.0;
+   string time_init       = "";
    string time_ninit      = "";
    string time_hf_state   = "";
    string time_hdf5output = "";
@@ -431,6 +491,13 @@ int main( int argc, char ** argv ){
          fcidump = line.substr( pos, line.length() - pos );
          fcidump.erase( remove( fcidump.begin(), fcidump.end(), ' ' ), fcidump.end() );
          if ( file_exists( fcidump, "FCIDUMP" ) == false ){ return -1; }
+      }
+
+      if ( line.find( "TIME_INIT" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         time_init = line.substr( pos, line.length() - pos );
+         time_init.erase( remove( time_init.begin(), time_init.end(), ' ' ), time_init.end() );
+         if ( file_exists( time_init, "TIME_INIT" ) == false ){ return -1; }
       }
 
       if ( line.find( "TIME_HDF5OUTPUT" ) != string::npos ){
@@ -629,8 +696,13 @@ int main( int argc, char ** argv ){
       return -1;
    }
 
-   if ( time_ninit.length() == 0 ){
-      cerr << "TIME_NINIT is mandatory options when TIME_EVOLU = TRUE !" << endl;
+   if( ( time_init.length() > 0 ) && ( time_ninit.length() > 0 ) ){
+      cerr << " Please give only one inital state: TIME_NINIT or TIME_INIT, not both !" << endl;
+      return -1;
+   }
+
+   if ( ( time_ninit.length() == 0 ) && ( time_init.length() == 0 ) ){
+      cerr << "One of TIME_NINIT/TIME_INIT is mandatory !" << endl;
       return -1;
    }
 
@@ -639,27 +711,29 @@ int main( int argc, char ** argv ){
       return -1;
    }
 
-   const int ni_ini  = count( time_ninit.begin(), time_ninit.end(), ',' ) + 1;
-   const bool init_ok = ( fcidump_norb == ni_ini );
+   if( time_ninit.length() > 0 ){
+      const int ni_ini  = count( time_ninit.begin(), time_ninit.end(), ',' ) + 1;
+      const bool init_ok = ( fcidump_norb == ni_ini );
 
-   if ( init_ok == false ){
-      cerr << "There should be " << fcidump_norb << " numbers in TIME_NINIT when TIME_EVOLU = TRUE !" << endl;
-      return -1;
-   }
-
-   fetch_ints( time_ninit, time_ninit_parsed, fcidump_norb );
-
-   for ( int cnt = 0; cnt < fcidump_norb; cnt ++ ){
-      if ( ( time_ninit_parsed[ cnt ] < 0 ) || ( time_ninit_parsed[ cnt ] > 2 ) ){
-         cerr << "The occupation number in TIME_NINIT has to be 0, 1 or 2 !" << endl;
+      if ( init_ok == false ){
+         cerr << "There should be " << fcidump_norb << " numbers in TIME_NINIT when TIME_EVOLU = TRUE !" << endl;
          return -1;
       }
-   }
 
-   int elec_sum = 0; for ( int cnt = 0; cnt < fcidump_norb; cnt++ ) { elec_sum += time_ninit_parsed[ cnt ];  }
-   if ( elec_sum != nelectrons ){
-      cerr << "There should be " << nelectrons << " distributed over the molecular orbitals in TIME_NINIT !" << endl;
-      return -1;
+      fetch_ints( time_ninit, time_ninit_parsed, fcidump_norb );
+
+      for ( int cnt = 0; cnt < fcidump_norb; cnt ++ ){
+         if ( ( time_ninit_parsed[ cnt ] < 0 ) || ( time_ninit_parsed[ cnt ] > 2 ) ){
+            cerr << "The occupation number in TIME_NINIT has to be 0, 1 or 2 !" << endl;
+            return -1;
+         }
+      }
+
+      int elec_sum = 0; for ( int cnt = 0; cnt < fcidump_norb; cnt++ ) { elec_sum += time_ninit_parsed[ cnt ];  }
+      if ( elec_sum != nelectrons ){
+         cerr << "There should be " << nelectrons << " distributed over the molecular orbitals in TIME_NINIT !" << endl;
+         return -1;
+      }
    }
 
    if( time_n_weights > 0 ){
@@ -705,7 +779,11 @@ int main( int argc, char ** argv ){
    cout << "   TIME_STEP_MAJOR    = " << time_step_major << endl;
    cout << "   TIME_STEP_MINOR    = " << time_step_minor << endl;
    cout << "   TIME_FINAL         = " << time_final << endl;
-   cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
+   if( time_ninit.length() > 0 ){
+      cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
+   } else {
+      cout << "   TIME_INIT          = " << time_init << endl;
+   }
    if( time_n_weights > 0 ){
       cout << "   TIME_HF_STATE      = [ " << time_hf_state_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << time_hf_state_parsed[ cnt ]; } cout << " ]" << endl; 
       cout << "   TIME_N_WEIGHTS     = [ " << time_n_weights << endl; 
@@ -763,12 +841,42 @@ int main( int argc, char ** argv ){
       delete [] dmrg2ham;
    }
 
+   /****************************
+   *  Prepare the inital state *
+   ****************************/
+
+   CheMPS2::SyBookkeeper *  bkIn = NULL;
+   CheMPS2::CTensorT    ** mpsIn = NULL;
+   if( time_ninit.length() > 0 ){
+      bkIn = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
+      mpsIn = new CheMPS2::CTensorT *[ prob->gL() ];
+
+      for ( int index = 0; index < prob->gL(); index++ ) {
+         mpsIn[ index ] = new CheMPS2::CTensorT( index, bkIn );
+         mpsIn[ index ]->gStorage()[ 0 ] = 1.0;
+      }
+      normalize( prob->gL(),  mpsIn );
+   } else {
+      bkIn  = new CheMPS2::SyBookkeeper( prob, 1 );
+      loadDIM( time_init, bkIn );
+
+      mpsIn    = new CheMPS2::CTensorT *[ prob->gL() ];
+      for ( int index = 0; index < prob->gL(); index++ ) {
+         mpsIn[ index ] = new CheMPS2::CTensorT( index, bkIn );
+      }
+      loadMPS( time_init, prob->gL(), mpsIn );
+   }
+
+   /*************************
+   *  Do the time evolution *
+   *************************/
+
    if ( time_type == 'K' || time_type == 'R' || time_type == 'E' ){
       hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
       if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
 
       CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
-      taylor->Propagate( time_type, time_step_major, time_step_minor, time_final, time_ninit_parsed,
+      taylor->Propagate( time_type, time_step_major, time_step_minor, time_final, mpsIn, bkIn,
                          time_krysize, false, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
 
       if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
@@ -778,6 +886,11 @@ int main( int argc, char ** argv ){
       cerr << " Your TIME_TYPE is not implemented yet" << std::endl;
       return -1;
    }
+
+   // for ( int site = 0; site < prob->gL(); site++ ) {
+   //    delete mpsIn[ site ];
+   // }
+   // delete[] bkIn;
 
    delete prob;
    delete ham;
