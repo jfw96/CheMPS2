@@ -24,7 +24,7 @@ namespace CheMPS2 {
                       const double time_step_minor, const double time_final, 
                       CTensorT ** mpsIn, SyBookkeeper * bkIn, 
                       const int kry_size, 
-                      const bool doImaginary, const bool doDumpFCI, 
+                      const bool backwards, const bool doDumpFCI, 
                       const bool doDump2RDM, const int nWeights = 0,
                       const int * hfState = NULL );
 
@@ -35,20 +35,20 @@ namespace CheMPS2 {
       double calcWieght( int nHoles, int nParticles, Problem * probState, CTensorT ** mpsState, SyBookkeeper * bkState, const int * hf_state );
 
 
-      // void doStep_krylov( const int currentInstruction, const bool doImaginary, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
+      // void doStep_krylov( const int currentInstruction, const bool backwards, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
 
       void doStep_euler( const double time_step, const int kry_size, 
-                         dcomplex offset, const bool doImaginary, 
+                         dcomplex offset, const bool backwards, 
                          CTensorT ** mpsIn, SyBookkeeper * bkIn, 
                          CTensorT ** mpsOut, SyBookkeeper * bkOut );
 
       void doStep_arnoldi( const double time_step, const int kry_size,
-                           dcomplex offset, const bool doImaginary, 
+                           dcomplex offset, const bool backwards, 
                            CTensorT ** mpsIn, SyBookkeeper * bkIn,
                            CTensorT ** mpsOut, SyBookkeeper * bkOut );
 
       void doStep_runge_kutta( const double time_step, const int kry_size, 
-                               dcomplex offset, const bool doImaginary, 
+                               dcomplex offset, const bool backwards, 
                                CTensorT ** mpsIn, SyBookkeeper * bkIn, 
                                CTensorT ** mpsOut, SyBookkeeper * bkOut );
 

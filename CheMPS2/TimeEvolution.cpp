@@ -166,9 +166,9 @@ double CheMPS2::TimeEvolution::calcWieght( int nHoles, int nParticles, Problem *
 }
 
 
-void CheMPS2::TimeEvolution::doStep_euler( const double time_step, const int kry_size, dcomplex offset, const bool doImaginary, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+void CheMPS2::TimeEvolution::doStep_euler( const double time_step, const int kry_size, dcomplex offset, const bool backwards, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
-   dcomplex step = doImaginary ? -time_step : dcomplex( 0.0, -1.0 * time_step );
+   dcomplex step = backwards ? -time_step : dcomplex( 0.0, -1.0 * time_step );
 
    HamiltonianOperator * op = new HamiltonianOperator( prob, 0.0*offset );
 
@@ -204,9 +204,9 @@ void CheMPS2::TimeEvolution::doStep_euler( const double time_step, const int kry
 
 }
 
-void CheMPS2::TimeEvolution::doStep_runge_kutta( const double time_step, const int kry_size, dcomplex offset, const bool doImaginary, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+void CheMPS2::TimeEvolution::doStep_runge_kutta( const double time_step, const int kry_size, dcomplex offset, const bool backwards, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
-   dcomplex step = doImaginary ? -time_step : dcomplex( 0.0, -1.0 * time_step );
+   dcomplex step = backwards ? dcomplex( 0.0, 1.0 * time_step ) : dcomplex( 0.0, -1.0 * time_step );
 
    HamiltonianOperator * op = new HamiltonianOperator( prob, offset );
 
@@ -374,11 +374,11 @@ void CheMPS2::TimeEvolution::doStep_runge_kutta( const double time_step, const i
    delete op;
 }
 
-void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int kry_size, dcomplex offset, const bool doImaginary, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int kry_size, dcomplex offset, const bool backwards, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
    int krylovSpaceDimension = kry_size;
 
-   dcomplex step = doImaginary ? -time_step : dcomplex( 0.0, 1.0 * time_step );
+   dcomplex step = backwards ? dcomplex( 0.0, 1.0 * time_step ) : dcomplex( 0.0, -1.0 * time_step );
 
    HamiltonianOperator * op = new HamiltonianOperator( prob, offset );
 
@@ -604,7 +604,7 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
                                         const double time_step_minor, const double time_final, 
                                         CTensorT ** mpsIn, SyBookkeeper * bkIn, 
                                         const int kry_size,
-                                        const bool doImaginary, const bool doDumpFCI, 
+                                        const bool backwards, const bool doDumpFCI, 
                                         const bool doDump2RDM, const int nWeights,
                                         const int * hfState ) {
    std::cout << "\n";
@@ -825,11 +825,11 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
             normalize( L, MPSDT );
 
             if( time_type == 'K' ){
-               doStep_arnoldi( time_step_minor, kry_size, -1.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
+               doStep_arnoldi( time_step_minor, kry_size, -1.0 * first_energy, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
             } else if ( time_type == 'R' ){
-               doStep_runge_kutta( time_step_minor, kry_size, -1.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
+               doStep_runge_kutta( time_step_minor, kry_size, -1.0 * first_energy, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
             } else if ( time_type == 'E' ){
-               doStep_euler( time_step_minor, kry_size, -1.0 * first_energy, doImaginary, MPS, MPSBK, MPSDT, MPSBKDT );
+               doStep_euler( time_step_minor, kry_size, -1.0 * first_energy, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
             }
 
             for ( int site = 0; site < L; site++ ) {
@@ -841,7 +841,7 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
             MPS   = MPSDT;
             MPSBK = MPSBKDT;
 
-            if ( doImaginary ) {
+            if ( backwards ) {
                normalize( L, MPS );
             }
          }

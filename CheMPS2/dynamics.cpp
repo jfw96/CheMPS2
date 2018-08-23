@@ -402,6 +402,9 @@ cout << "\n"
 "       TIME_HDF5OUTPUT = /path/to/hdf5/destination\n"
 "              Set the file path for the HDF5 output when specified (default unspecified).\n"
 "\n"
+"       TIME_BACKWARD = bool\n"
+"              Set if the time evolution is forward or backward (default FALSE).\n"
+"\n"
 "       TIME_DUMPFCI = bool\n"
 "              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_EVOLU = TRUE and TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
 "\n"
@@ -444,6 +447,7 @@ int main( int argc, char ** argv ){
    string time_hdf5output = "";
    int    time_n_weights  = 0; 
    int    time_krysize    = 0;
+   bool   time_backward   = false;
    bool   time_dumpfci    = false;
    bool   time_dump2rdm   = false;
 
@@ -515,8 +519,9 @@ int main( int argc, char ** argv ){
       if ( find_character( &time_type,        line, "TIME_TYPE",        options1, 4 ) == false ){ return -1; }
 
       if ( find_boolean( &reorder_fiedler,  line, "REORDER_FIEDLER"   ) == false ){ return -1; }
-      if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"     ) == false ){ return -1; }
-      if ( find_boolean( &time_dump2rdm,    line, "TIME_DUMP2RDM"    ) == false ){ return -1; }
+      if ( find_boolean( &time_backward,    line, "TIME_BACKWARD"     ) == false ){ return -1; }
+      if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"      ) == false ){ return -1; }
+      if ( find_boolean( &time_dump2rdm,    line, "TIME_DUMP2RDM"     ) == false ){ return -1; }
 
       if ( line.find( "SWEEP_STATES" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
@@ -877,7 +882,7 @@ int main( int argc, char ** argv ){
 
       CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
       taylor->Propagate( time_type, time_step_major, time_step_minor, time_final, mpsIn, bkIn,
-                         time_krysize, false, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
+                         time_krysize, time_backward, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
 
       if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
 
