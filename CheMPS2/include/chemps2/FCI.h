@@ -288,7 +288,16 @@ namespace CheMPS2{
              \param vector The FCI vector with getVecLength(0) variables from which a coefficient is desired
              \return The corresponding FCI coefficient; 0.0 if bits_up and bits_down do not form a valid FCI determinant */
          double getFCIcoeff(int * bits_up, int * bits_down, double * vector) const;
-         
+
+         //! Set thisVector to a creator/annihilator acting on otherVector
+         /** \param whichOperator With which operator should be acted on the other FCI state: C means creator and A means annihilator
+             \param isUp Boolean which denotes if the operator corresponds to an up (alpha) or down (beta) electron
+             \param orbIndex Orbital index on which the operator acts
+             \param thisVector Vector with length getVecLength(0) where the result of the operation should be stored
+             \param otherFCI FCI instance which corresponds to the FCI vector otherVector on which is acted
+             \param otherVector Vector with length otherFCI->getVecLength(0) which contains the FCI vector on which is acted */
+         void ActWithSecondQuantizedOperator(const char whichOperator, const bool isUp, const unsigned int orbIndex, double * thisVector, const FCI * otherFCI, double * otherVector) const;
+
       protected:
       
 //==========> Functions involving Hamiltonian matrix elements
@@ -377,15 +386,6 @@ namespace CheMPS2{
          static void FCIdscal(const unsigned int vecLength, const double alpha, double * vec);
          
 //==========> Protected functions regarding the Green's functions
-         
-         //! Set thisVector to a creator/annihilator acting on otherVector
-         /** \param whichOperator With which operator should be acted on the other FCI state: C means creator and A means annihilator
-             \param isUp Boolean which denotes if the operator corresponds to an up (alpha) or down (beta) electron
-             \param orbIndex Orbital index on which the operator acts
-             \param thisVector Vector with length getVecLength(0) where the result of the operation should be stored
-             \param otherFCI FCI instance which corresponds to the FCI vector otherVector on which is acted
-             \param otherVector Vector with length otherFCI->getVecLength(0) which contains the FCI vector on which is acted */
-         void ActWithSecondQuantizedOperator(const char whichOperator, const bool isUp, const unsigned int orbIndex, double * thisVector, const FCI * otherFCI, double * otherVector) const;
          
          //! Set resultVector to the number operator of a specific site acting on sourceVector
          /** \param orbIndex Orbital index of the number operator

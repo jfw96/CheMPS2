@@ -102,7 +102,7 @@ namespace CheMPS2{
          
 //==========> The core routines for users
          
-         void TimeEvolution( const char time_type, const double time_step_major, const double time_step_minor, double finalTime, const int * alpha, const int * beta, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM );
+         void TimeEvolution( const char time_type, const double time_step_major, const double time_step_minor, double finalTime, dcomplex * inital, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM );
 
 
 //          //! Calculates the FCI ground state with Davidson's algorithm

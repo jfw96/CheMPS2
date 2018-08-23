@@ -2137,7 +2137,7 @@ double CheMPS2::CFCI::calcWieght( int nHoles, int nParticles, dcomplex * state, 
 }
 
 
-void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_major, const double time_step_minor, double finalTime, const int * alpha, const int * beta, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM ){
+void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_major, const double time_step_minor, double finalTime, dcomplex * inital, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM ){
 
    std::cout << "\n";
    std::cout << "   Starting to propagate FCI wave function\n";
@@ -2152,19 +2152,22 @@ void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_
    const int veclength = getVecLength( 0 );
 
    dcomplex * act = new dcomplex [ veclength ];
-   ClearVector( veclength, act );
-   setFCIcoeff( alpha, beta, 1.0, act );
+   for(int i = 0; i < getVecLength( 0 ); i++){
+      act[ i ] = inital[ i ];
+   }
 
    dcomplex * next = new dcomplex [ veclength ];
 
    for ( double t = 0.0; t < finalTime; t += time_step_major ) {
       dcomplex * terdm   = new dcomplex[ L * L * L * L];
       const double energy      = std::real( Fill2RDM( act, terdm ) );
-      const double normOfState = std::real( FCIddot( veclength, act, act ) );
+      const double normOfState = std::real( std::sqrt( FCIddot( veclength, act, act ) ) );
+      const double reOinit     = std::real( FCIddot( veclength, inital, act ) );
+      const double imOinit     = std::imag( FCIddot( veclength, inital, act ) );
 
-      if( t == 0.0 ){
-         Econstant += -1.0 *  energy;
-      }
+      // if( t == 0.0 ){
+      //    Econstant += -1.0 *  energy;
+      // }
 
       struct timeval end;
       gettimeofday( &end, NULL );
@@ -2205,6 +2208,8 @@ void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_
       std::cout                                                  << "\n";
       std::cout << "   Norm      = " << normOfState              << "\n";
       std::cout << "   Energy    = " << energy                   << "\n";
+      std::cout << "   Re(OInit) = " << reOinit                  << "\n";
+      std::cout << "   Im(OInit) = " << imOinit                  << "\n";
       std::cout                                                  << "\n";
       std::cout << "  occupation numbers of molecular orbitals:      \n";
       std::cout << "   "; for ( int i = 0; i < L; i++ ) { std::cout << std::setw( 20 ) << oedmre[ i + L * i ];  }
@@ -2222,6 +2227,8 @@ void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_
       HDF5_MAKE_DATASET( dataPointID, "KryS",        1, &dimScalar, H5T_STD_I32LE,     &krylovSize      );
       HDF5_MAKE_DATASET( dataPointID, "Norm",        1, &dimScalar, H5T_NATIVE_DOUBLE, &normOfState     );
       HDF5_MAKE_DATASET( dataPointID, "Energy",      1, &dimScalar, H5T_NATIVE_DOUBLE, &energy          );
+      HDF5_MAKE_DATASET( dataPointID, "ReOInit",     1, &dimScalar, H5T_NATIVE_DOUBLE, &reOinit         );
+      HDF5_MAKE_DATASET( dataPointID, "ImOinit",     1, &dimScalar, H5T_NATIVE_DOUBLE, &imOinit         );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL",   2, Lsq,        H5T_NATIVE_DOUBLE, oedmre           );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG",   2, Lsq,        H5T_NATIVE_DOUBLE, oedmim           );
 
@@ -2289,7 +2296,7 @@ void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_
 
 void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, dcomplex * input, dcomplex * output){
 
-   dcomplex step = dcomplex( 0.0, -1.0 * timeStep );
+   dcomplex step = dcomplex( 0.0, 1.0 * timeStep );
 
    int veclength = getVecLength( 0 ); // Checked "assert( max_integer >= maxVecLength );" at FCI::StartupIrrepCenter()
    ClearVector( veclength, output );
@@ -2301,41 +2308,42 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
    //// Generating Krylov Space vectors
    ////
    ////////////////////////////////////////////////////////////////////////////////////////
-   dcomplex ** krylovBasisVectors = new dcomplex * [ krylovSpaceDimension ];
 
-   // Step 1
-   krylovBasisVectors[ 0 ] = input;
+   // dcomplex ** krylovBasisVectors = new dcomplex * [ krylovSpaceDimension ];
+
+   // // Step 1
+   // krylovBasisVectors[ 0 ] = input;
    
-   for ( int kry = 1; kry < krylovSpaceDimension; kry++ ) {
-      dcomplex * newKrylov = new dcomplex [ veclength ];
-      matvec( krylovBasisVectors[ kry - 1 ], newKrylov );
-      double normOfState = std::real( FCIddot( veclength, newKrylov, newKrylov ) );
-      dcomplex normalifactor = 1.0 / std::sqrt( normOfState );
-      int theone = 1;
-      zscal_( &veclength, &normalifactor, newKrylov, &theone );
+   // for ( int kry = 1; kry < krylovSpaceDimension; kry++ ) {
+   //    dcomplex * newKrylov = new dcomplex [ veclength ];
+   //    matvec( krylovBasisVectors[ kry - 1 ], newKrylov );
+   //    double normOfState = std::real( FCIddot( veclength, newKrylov, newKrylov ) );
+   //    dcomplex normalifactor = 1.0 / std::sqrt( normOfState );
+   //    int theone = 1;
+   //    zscal_( &veclength, &normalifactor, newKrylov, &theone );
 
-      double normOfState2 = std::real( FCIddot( veclength, newKrylov, newKrylov ) );
-      krylovBasisVectors[ kry ] = newKrylov;
-   }
+   //    double normOfState2 = std::real( FCIddot( veclength, newKrylov, newKrylov ) );
+   //    krylovBasisVectors[ kry ] = newKrylov;
+   // }
 
-   ////////////////////////////////////////////////////////////////////////////////////////
-   ////
-   //// Building S and H
-   ////
-   ////////////////////////////////////////////////////////////////////////////////////////
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // ////
+   // //// Building S and H
+   // ////
+   // ////////////////////////////////////////////////////////////////////////////////////////
 
-   dcomplex *  krylovHamiltonian  = new dcomplex   [ krylovSpaceDimension * krylovSpaceDimension ];
-   dcomplex *  overlaps           = new dcomplex   [ krylovSpaceDimension * krylovSpaceDimension ];
+   // dcomplex *  krylovHamiltonian  = new dcomplex   [ krylovSpaceDimension * krylovSpaceDimension ];
+   // dcomplex *  overlaps           = new dcomplex   [ krylovSpaceDimension * krylovSpaceDimension ];
 
-   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-      for ( int icol = irow; icol < krylovSpaceDimension; icol++ ){
-         overlaps[ irow + krylovSpaceDimension * icol ] = FCIddot( veclength, krylovBasisVectors[ irow ], krylovBasisVectors[ icol ] );
-         overlaps[ icol + krylovSpaceDimension * irow ] = std::conj( overlaps[ irow + krylovSpaceDimension * icol ] );
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = irow; icol < krylovSpaceDimension; icol++ ){
+   //       overlaps[ irow + krylovSpaceDimension * icol ] = FCIddot( veclength, krylovBasisVectors[ irow ], krylovBasisVectors[ icol ] );
+   //       overlaps[ icol + krylovSpaceDimension * irow ] = std::conj( overlaps[ irow + krylovSpaceDimension * icol ] );
 
-         krylovHamiltonian[ irow + krylovSpaceDimension * icol ] = FCIaHb( veclength, krylovBasisVectors[ irow ], krylovBasisVectors[ icol ] );
-         krylovHamiltonian[ icol + krylovSpaceDimension * irow ] = std::conj( krylovHamiltonian[ irow + krylovSpaceDimension * icol ] );
-      }
-   }
+   //       krylovHamiltonian[ irow + krylovSpaceDimension * icol ] = FCIaHb( veclength, krylovBasisVectors[ irow ], krylovBasisVectors[ icol ] );
+   //       krylovHamiltonian[ icol + krylovSpaceDimension * irow ] = std::conj( krylovHamiltonian[ irow + krylovSpaceDimension * icol ] );
+   //    }
+   // }
 
    // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
    //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
@@ -2350,6 +2358,48 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
    //    }
    //    std::cout << std::endl;
    // }
+
+
+   //////////////////////////////// DEBUG /////////////////////////////////////////////////////
+
+   dcomplex ** krylovBasisVectors = new dcomplex * [ krylovSpaceDimension ];
+   dcomplex *  krylovHamiltonian  = new dcomplex   [ krylovSpaceDimension * krylovSpaceDimension ];
+   dcomplex *  overlaps           = new dcomplex   [ krylovSpaceDimension * krylovSpaceDimension ];
+
+   // Step 1
+   krylovBasisVectors[ 0 ]                           = input;
+   krylovHamiltonian[ 0 + 0 * krylovSpaceDimension ] = FCIaHb( veclength, krylovBasisVectors[ 0 ], krylovBasisVectors[ 0 ] );
+   overlaps[ 0 + 0 * krylovSpaceDimension ]          = FCIddot( veclength, krylovBasisVectors[ 0 ], krylovBasisVectors[ 0 ] );
+   
+   for ( int kry = 1; kry < krylovSpaceDimension; kry++ ) {
+
+      dcomplex * newKrylov = new dcomplex [ veclength ];
+      matvec( krylovBasisVectors[ kry - 1 ], newKrylov );
+      FCIdaxpy( veclength, getEconst(), krylovBasisVectors[ kry - 1 ], newKrylov );
+
+      for ( int i = 0; i < kry; i++ ) {
+
+         dcomplex coef = -krylovHamiltonian[ i + ( kry - 1 ) * krylovSpaceDimension ] / overlaps[ i + i * krylovSpaceDimension ];
+         FCIdaxpy( veclength, coef, krylovBasisVectors[ i ], newKrylov );
+
+      }
+
+      krylovBasisVectors[ kry ] = newKrylov;
+
+      for ( int i = 0; i <= kry; i++ ) {
+         overlaps[ i + kry * krylovSpaceDimension ]          = FCIddot( veclength, krylovBasisVectors[ i ], krylovBasisVectors[ kry ] );
+         overlaps[ kry + i * krylovSpaceDimension ]          = std::conj( overlaps[ i + kry * krylovSpaceDimension ] );
+         krylovHamiltonian[ i + kry * krylovSpaceDimension ] = FCIaHb( veclength, krylovBasisVectors[ i ], krylovBasisVectors[ kry ] );
+         krylovHamiltonian[ kry + i * krylovSpaceDimension ] = std::conj( krylovHamiltonian[ i + kry * krylovSpaceDimension ] );
+      }
+   }
+
+   ///////////////////////////////// DEBUG END ////////////////////////////////////////////////
+
+
+
+
+
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////

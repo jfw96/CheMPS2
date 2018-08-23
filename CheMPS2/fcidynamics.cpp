@@ -28,12 +28,12 @@
 #include <sstream>
 
 #include "Initialize.h"
-#include "CASSCF.h"
+#include "Problem.h"
 #include "Molden.h"
 #include "MPIchemps2.h"
 #include "EdmistonRuedenberg.h"
-#include "TimeEvolution.h"
 #include "CFCI.h"
+#include "FCI.h"
 #include "Irreps.h"
 
 using namespace std;
@@ -316,6 +316,9 @@ cout << "\n"
 "       TIME_BETA = int, int, int\n"
 "              Set the beta occupation numbers for the inital state. Ordered as in the FCIDUMP file. ( 0 or 1 ).\n"
 "\n"
+"       TIME_C_I_GS = int\n"
+"              Set the inital state to c_(i alpha) | GS > if given. TIME_ALPHA and TIME_BETA is used to find the requested symmetry. \n"
+"\n"
 "       TIME_KRYSIZE = int\n"
 "              Set the maximum Krylov space dimension of a time propagation step.\n"
 "\n"
@@ -354,6 +357,7 @@ int main( int argc, char ** argv ){
    string time_beta       = "";   
    string time_hdf5output = "";
    int    time_krysize    = 0;
+   int    time_c_i_gs     = -1;
    bool   time_dumpfci    = false;
    bool   time_dump2rdm   = false;
 
@@ -441,6 +445,8 @@ int main( int argc, char ** argv ){
          const int pos = line.find( "=" ) + 1;
          time_beta = line.substr( pos, line.length() - pos );
       }
+
+      if ( find_integer( &time_c_i_gs, line, "TIME_C_I_GS", true, 0, false, -1 ) == false ){ return -1; }
 
       if ( line.find( "TIME_KRYSIZE" ) != string::npos ){
          find_integer( &time_krysize, line, "TIME_KRYSIZE", true, 1, false, -1 );
@@ -537,6 +543,11 @@ int main( int argc, char ** argv ){
       return -1;
    }
 
+   if( time_c_i_gs > fcidump_norb ){
+      cerr << "If given, TIME_C_I_GS must be within 0 and L - 1 !" << endl;
+      return -1;
+   }
+
    if ( time_type == 'K' && time_krysize <= 0 ){
       cerr << "TIME_KRYSIZE should be greater than zero if TIME_TYPE = K!" << endl;
       return -1;
@@ -590,31 +601,108 @@ int main( int argc, char ** argv ){
    cout << "   TIME_STEP_MINOR    = " << time_step_minor << endl;
    cout << "   TIME_FINAL         = " << time_final << endl;
    cout << "   TIME_ALPHA         = [ " << time_alpha_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << time_alpha_parsed[ cnt ]; } cout << " ]" << endl;
+   cout << "   TIME_BETA          = [ " <<  time_beta_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " <<  time_beta_parsed[ cnt ]; } cout << " ]" << endl;
+   cout << "   TIME_C_I_GS        = " << time_c_i_gs  << endl;
    cout << "   TIME_KRYSIZE       = " << time_krysize << endl;
    cout << "   TIME_HDF5OUTPUT    = " << time_hdf5output << endl;
    cout << "   TIME_DUMPFCI       = " << (( time_dumpfci    ) ? "TRUE" : "FALSE" ) << endl;
    cout << "   TIME_DUMP2RDM      = " << (( time_dump2rdm   ) ? "TRUE" : "FALSE" ) << endl;
    cout << " " << endl;
 
-   /********************************
-   *  Running the DMRG calculation *
-   ********************************/
+   /*******************************
+   *  Running the FCI calculation *
+   *******************************/
 
    CheMPS2::Initialize::Init();
-   CheMPS2::Hamiltonian * ham = new CheMPS2::Hamiltonian( fcidump, group );
-   CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
+   CheMPS2::Hamiltonian *   ham  = NULL;
+   CheMPS2::Problem     *  prob  = NULL;
+   CheMPS2::CFCI        * solver = NULL;
 
    int sum_up      = 0; for( int idx = 0; idx < fcidump_norb; idx++ ) {   sum_up += time_alpha_parsed[ idx ]; }
    int sum_down    = 0; for( int idx = 0; idx < fcidump_norb; idx++ ) { sum_down +=  time_beta_parsed[ idx ]; }
 
-   hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
-   if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
 
-   CheMPS2::CFCI * fcisolver = new CheMPS2::CFCI( ham, sum_up, sum_down, irrep, 100.0, 2, fileID );
+   if( time_c_i_gs == -1 ){
 
-   fcisolver->TimeEvolution( time_type, time_step_major, time_step_minor, time_final, time_alpha_parsed, time_beta_parsed, time_krysize, time_dumpfci, time_dump2rdm );
+      /***********************************************
+      *  Alpha and beta orbitals create inital state *
+      ***********************************************/
 
-   delete fcisolver;
+      ham = new CheMPS2::Hamiltonian( fcidump, group );
+      prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
+
+      hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
+      if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
+
+      solver = new CheMPS2::CFCI( ham, sum_up, sum_down, irrep, 100.0, 2, fileID );
+
+      // solver->TimeEvolution( time_type, time_step_major, time_step_minor, time_final, time_alpha_parsed, time_beta_parsed, time_krysize, time_dumpfci, time_dump2rdm );
+
+   } {
+
+      /*****************************************************
+      *  Ionized molecule in ground state is inital state  *
+      *****************************************************/
+
+      // Generating the ground state
+      CheMPS2::Hamiltonian *    hamGS = new CheMPS2::Hamiltonian( fcidump, group );
+      CheMPS2::Problem     *   probGS = new CheMPS2::Problem( hamGS, multiplicity - 1, nelectrons, irrep );
+      CheMPS2::FCI         * solverGS = new CheMPS2::FCI( hamGS, sum_up, sum_down, irrep, 100.0, 2 );
+
+      double * vectorGS = new double[ solverGS->getVecLength( 0 ) ];
+      solverGS->ClearVector( solverGS->getVecLength( 0 ), vectorGS );
+      vectorGS[ solverGS->LowestEnergyDeterminant() ] = 1.0;
+      std::cout << solverGS->GSDavidson( vectorGS ) << std::endl;
+
+
+      // Apply the ionization
+       ham = new CheMPS2::Hamiltonian( fcidump, group );
+      prob = new CheMPS2::Problem( ham, multiplicity - 1 + 1, nelectrons - 1, irrep );
+
+      CheMPS2::FCI * solver_c = new CheMPS2::FCI( ham, sum_up - 1, sum_down, irrep, 100.0, 2);
+      double * vector_c = new double[ solver_c->getVecLength( 0 ) ];
+      solver_c->ClearVector( solver_c->getVecLength( 0 ), vector_c );
+      solver_c->ActWithSecondQuantizedOperator( 'A', true, time_c_i_gs, vector_c, solverGS, vectorGS );
+
+      double norm = 0.0;
+      for(int i = 0; i < solver_c->getVecLength( 0 ); i++) {
+         norm += vector_c[ i ] * vector_c[ i ];
+      }
+      std::cout << "norm" << std::endl;
+      std::cout << norm << std::endl;
+      std::cout << 2.0 * norm << std::endl;
+      std::cout << sqrt( 2.0 * norm ) << std::endl;
+
+      delete hamGS;
+      delete probGS;
+      delete solverGS;
+
+      delete[] vectorGS;
+      delete solver_c;
+
+      // Do the dynamics calculation
+      hid_t fileID = H5_CHEMPS2_TIME_NO_H5OUT;
+      if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
+      
+      solver = new CheMPS2::CFCI( ham, sum_up - 1, sum_down, irrep, 100.0, 2, fileID );
+
+      dcomplex * vectorInit = new dcomplex[ solver->getVecLength( 0 ) ];
+      
+      for(int i = 0; i < solver->getVecLength( 0 ); i++) {
+         vectorInit[ i ] = sqrt( 2.0 ) * vector_c[ i ];
+      }
+
+      dcomplex norm2 = 0.0;
+      for(int i = 0; i < solver->getVecLength( 0 ); i++) {
+         norm2 = norm2 + vectorInit[ i ] * vectorInit[ i ];
+      }
+      std::cout << norm2 << std::endl;
+
+      solver->TimeEvolution( time_type, time_step_major, time_step_minor, time_final, vectorInit, time_krysize, time_dumpfci, time_dump2rdm );
+
+   }
+
+   delete solver; 
 
    delete prob;
    delete ham;
