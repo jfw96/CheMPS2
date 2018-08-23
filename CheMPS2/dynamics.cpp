@@ -795,6 +795,7 @@ int main( int argc, char ** argv ){
    }
    cout << "   TIME_KRYSIZE       = " << time_krysize << endl;
    cout << "   TIME_HDF5OUTPUT    = " << time_hdf5output << endl;
+   cout << "   TIME_BACKWARD      = " << (( time_backward   ) ? "TRUE" : "FALSE" ) << endl;   
    cout << "   TIME_DUMPFCI       = " << (( time_dumpfci    ) ? "TRUE" : "FALSE" ) << endl;
    cout << "   TIME_DUMP2RDM      = " << (( time_dump2rdm   ) ? "TRUE" : "FALSE" ) << endl;
    cout << " " << endl;
