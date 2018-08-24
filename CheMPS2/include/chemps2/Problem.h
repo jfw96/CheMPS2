@@ -86,6 +86,8 @@ namespace CheMPS2 {
       /** \return The constant part of the Hamiltonian */
       double gEconst() const { return Ham->getEconst(); }
 
+      const Hamiltonian * gHamil() const { return Ham; }
+
       //! Get a specific interaction matrix element
       /** \param alpha The first index (0 <= alpha < L)
              \param beta The second index

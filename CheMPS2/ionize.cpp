@@ -181,8 +181,11 @@ void applyAnnihilator( const int pos, CheMPS2::CTensorT** mpsIn, CheMPS2::SyBook
    assert( pos < L );
    assert( ( L + 1 ) == bkOut->gL() );
 
-   CheMPS2::SyBookkeeper* bkTemp = new CheMPS2::SyBookkeeper( *bkOut );
+   CheMPS2::Problem * probTemp = new CheMPS2::Problem( probOut->gHamil(), probOut->gTwoS(), probOut->gN(), probOut->gIrrep() );
+   probTemp->construct_mxelem();
 
+   CheMPS2::SyBookkeeper* bkTemp = new CheMPS2::SyBookkeeper( probTemp, 1 );
+  
    for( int site = 0; site < L; site++ ){
       for ( int NL = bkIn->gNmin( site ); NL <= bkIn->gNmax( site ); NL++ ) {
          for ( int TwoSL = bkIn->gTwoSmin( site, NL ); TwoSL <= bkIn->gTwoSmax( site, NL ); TwoSL += 2 ) {
@@ -246,6 +249,7 @@ void applyAnnihilator( const int pos, CheMPS2::CTensorT** mpsIn, CheMPS2::SyBook
    }
    delete[] mpsTemp;
    delete bkTemp;
+   delete probTemp;
 
 }
 
@@ -438,6 +442,23 @@ int main( int argc, char ** argv ){
    hamION->setTmat( position, fcidump_norb, 1.0 );
    CheMPS2::Problem probION( hamION, fcidump_two_s, fcidump_nelec, CheMPS2::Irreps::directProd( fcidump_irrep, irrepsparsed[ position ] ) );
    probION.construct_mxelem();
+
+   int* nmax = new int [ fcidump_norb + 1 ];
+   int* nmin = new int [ fcidump_norb + 1 ];
+   
+   for(int i = 0; i < fcidump_norb; i++)
+   {
+      nmax[ i ] = 2;
+      nmin[ i ] = 0;
+   }
+   nmax[ fcidump_norb ] = 1;
+   nmin[ fcidump_norb ] = 1;
+
+   probION.setup_occu_max( nmax );
+   probION.setup_occu_min( nmin );
+
+   delete[] nmax;
+   delete[] nmin;
 
    CheMPS2::SyBookkeeper * bkOut  = new CheMPS2::SyBookkeeper( &probION, 100 );
    CheMPS2::CTensorT    ** mpsOut = new CheMPS2::CTensorT *[ fcidump_norb + 1 ];
