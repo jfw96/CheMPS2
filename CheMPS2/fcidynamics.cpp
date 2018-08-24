@@ -310,6 +310,9 @@ cout << "\n"
 "       TIME_FINAL = flt\n"
 "              Set the final time for the time evolution calculation (positive float). \n"
 "\n"
+"       TIME_BACKWARD = bool\n"
+"              Set if the time evolution is forward or backward (default FALSE).\n"
+"\n"
 "       TIME_ALPHA = int, int, int\n"
 "              Set the alpha occupation numbers for the inital state. Ordered as in the FCIDUMP file. ( 0 or 1 ).\n"
 "\n"
@@ -358,6 +361,7 @@ int main( int argc, char ** argv ){
    string time_hdf5output = "";
    int    time_krysize    = 0;
    int    time_c_i_gs     = -1;
+   bool   time_backward   = false;   
    bool   time_dumpfci    = false;
    bool   time_dump2rdm   = false;
 
@@ -421,6 +425,7 @@ int main( int argc, char ** argv ){
       char options1[] = { 'K', 'R', 'E', 'F' };
       if ( find_character( &time_type,        line, "TIME_TYPE",        options1, 4 ) == false ){ return -1; }
 
+      if ( find_boolean( &time_backward,    line, "TIME_BACKWARD"    ) == false ){ return -1; }
       if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"     ) == false ){ return -1; }
       if ( find_boolean( &time_dump2rdm,    line, "TIME_DUMP2RDM"    ) == false ){ return -1; }
 
@@ -600,6 +605,7 @@ int main( int argc, char ** argv ){
    cout << "   TIME_STEP_MAJOR    = " << time_step_major << endl;
    cout << "   TIME_STEP_MINOR    = " << time_step_minor << endl;
    cout << "   TIME_FINAL         = " << time_final << endl;
+   cout << "   TIME_BACKWARD      = " << time_backward << endl;
    cout << "   TIME_ALPHA         = [ " << time_alpha_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << time_alpha_parsed[ cnt ]; } cout << " ]" << endl;
    cout << "   TIME_BETA          = [ " <<  time_beta_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " <<  time_beta_parsed[ cnt ]; } cout << " ]" << endl;
    cout << "   TIME_C_I_GS        = " << time_c_i_gs  << endl;
@@ -635,8 +641,11 @@ int main( int argc, char ** argv ){
       if ( time_hdf5output.length() > 0){ fileID = H5Fcreate( time_hdf5output.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT ); }
 
       solver = new CheMPS2::CFCI( ham, sum_up, sum_down, irrep, 100.0, 2, fileID );
+      dcomplex * vectorInit = new dcomplex[ solver->getVecLength( 0 ) ];
+      solver->setFCIcoeff( time_alpha_parsed, time_beta_parsed, 1.0, vectorInit );
 
-      // solver->TimeEvolution( time_type, time_step_major, time_step_minor, time_final, time_alpha_parsed, time_beta_parsed, time_krysize, time_dumpfci, time_dump2rdm );
+      solver->TimeEvolution( time_type, time_step_major, time_step_minor, time_final, time_backward, vectorInit, time_krysize, time_dumpfci, time_dump2rdm );
+      delete[] vectorInit;
 
    } {
 
@@ -654,7 +663,6 @@ int main( int argc, char ** argv ){
       vectorGS[ solverGS->LowestEnergyDeterminant() ] = 1.0;
       std::cout << solverGS->GSDavidson( vectorGS ) << std::endl;
 
-
       // Apply the ionization
        ham = new CheMPS2::Hamiltonian( fcidump, group );
       prob = new CheMPS2::Problem( ham, multiplicity - 1 + 1, nelectrons - 1, irrep );
@@ -663,15 +671,6 @@ int main( int argc, char ** argv ){
       double * vector_c = new double[ solver_c->getVecLength( 0 ) ];
       solver_c->ClearVector( solver_c->getVecLength( 0 ), vector_c );
       solver_c->ActWithSecondQuantizedOperator( 'A', true, time_c_i_gs, vector_c, solverGS, vectorGS );
-
-      double norm = 0.0;
-      for(int i = 0; i < solver_c->getVecLength( 0 ); i++) {
-         norm += vector_c[ i ] * vector_c[ i ];
-      }
-      std::cout << "norm" << std::endl;
-      std::cout << norm << std::endl;
-      std::cout << 2.0 * norm << std::endl;
-      std::cout << sqrt( 2.0 * norm ) << std::endl;
 
       delete hamGS;
       delete probGS;
@@ -691,14 +690,10 @@ int main( int argc, char ** argv ){
       for(int i = 0; i < solver->getVecLength( 0 ); i++) {
          vectorInit[ i ] = sqrt( 2.0 ) * vector_c[ i ];
       }
+      delete[] vector_c;
 
-      dcomplex norm2 = 0.0;
-      for(int i = 0; i < solver->getVecLength( 0 ); i++) {
-         norm2 = norm2 + vectorInit[ i ] * vectorInit[ i ];
-      }
-      std::cout << norm2 << std::endl;
-
-      solver->TimeEvolution( time_type, time_step_major, time_step_minor, time_final, vectorInit, time_krysize, time_dumpfci, time_dump2rdm );
+      solver->TimeEvolution( time_type, time_step_major, time_step_minor, time_final, time_backward, vectorInit, time_krysize, time_dumpfci, time_dump2rdm );
+      delete[] vectorInit;
 
    }
 

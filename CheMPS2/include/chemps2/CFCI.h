@@ -102,7 +102,7 @@ namespace CheMPS2{
          
 //==========> The core routines for users
          
-         void TimeEvolution( const char time_type, const double time_step_major, const double time_step_minor, double finalTime, dcomplex * inital, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM );
+         void TimeEvolution( const char time_type, const double time_step_major, const double time_step_minor, double finalTime, const bool dobackwards, dcomplex * inital, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM );
 
 
 //          //! Calculates the FCI ground state with Davidson's algorithm
@@ -418,7 +418,7 @@ namespace CheMPS2{
              \param vec The vector which has to be rescaled */
          static void FCIdscal(const unsigned int vecLength, const dcomplex alpha, dcomplex * vec);
          
-         void ArnoldiTimeStep( double timeStep, unsigned int krylovSize, dcomplex * input, dcomplex * output);
+         void ArnoldiTimeStep( double timeStep, const bool dobackwards, unsigned int krylovSize, dcomplex * input, dcomplex * output);
 
 // //==========> Protected functions regarding the Green's functions
          

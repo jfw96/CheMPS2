@@ -518,11 +518,11 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
    ////////////////////////////////////////////////////////////////////////////////////////
 
    dcomplex * toExp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
-   char notrans     = 'N';
    dcomplex zeroC   = 0.0;
    dcomplex oneC    = 1.0;
+   char notrans     = 'N';
    zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
-           &step, overlaps_inv, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zeroC, toExp, &krylovSpaceDimension );
+         &step, overlaps_inv, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zeroC, toExp, &krylovSpaceDimension );
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
@@ -825,9 +825,9 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
             normalize( L, MPSDT );
 
             if( time_type == 'K' ){
-               doStep_arnoldi( time_step_minor, kry_size, -0.0 * first_energy, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
+               doStep_arnoldi( time_step_minor, kry_size, 0.0 * first_energy, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
             } else if ( time_type == 'R' ){
-               doStep_runge_kutta( time_step_minor, kry_size, -1.0 * first_energy, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
+               doStep_runge_kutta( time_step_minor, kry_size, -0.0 * first_energy, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
             } else if ( time_type == 'E' ){
                doStep_euler( time_step_minor, kry_size, -1.0 * first_energy, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
             }
@@ -840,10 +840,6 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
 
             MPS   = MPSDT;
             MPSBK = MPSBKDT;
-
-            if ( backwards ) {
-               normalize( L, MPS );
-            }
          }
       }
 

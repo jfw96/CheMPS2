@@ -2137,7 +2137,7 @@ double CheMPS2::CFCI::calcWieght( int nHoles, int nParticles, dcomplex * state, 
 }
 
 
-void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_major, const double time_step_minor, double finalTime, dcomplex * inital, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM ){
+void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_major, const double time_step_minor, double finalTime, const bool dobackwards, dcomplex * inital, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM ){
 
    std::cout << "\n";
    std::cout << "   Starting to propagate FCI wave function\n";
@@ -2164,10 +2164,6 @@ void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_
       const double normOfState = std::real( std::sqrt( FCIddot( veclength, act, act ) ) );
       const double reOinit     = std::real( FCIddot( veclength, inital, act ) );
       const double imOinit     = std::imag( FCIddot( veclength, inital, act ) );
-
-      // if( t == 0.0 ){
-      //    Econstant += -1.0 *  energy;
-      // }
 
       struct timeval end;
       gettimeofday( &end, NULL );
@@ -2278,7 +2274,7 @@ void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_
       if ( t + time_step_major < finalTime ) {
          for( double t_minor = 0.0; (time_step_major - t_minor) > 1e-6; t_minor+=time_step_minor ) {
             if(time_type == 'K'){
-               ArnoldiTimeStep( time_step_minor, krylovSize,  act, next );
+               ArnoldiTimeStep( time_step_minor, dobackwards, krylovSize, act, next );
             } else {
                std::cerr << "Not implemented yet\n";
             }
@@ -2294,73 +2290,20 @@ void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_
 
 }
 
-void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, dcomplex * input, dcomplex * output){
+void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, const bool dobackwards, unsigned int krylovSize, dcomplex * input, dcomplex * output){
 
-   dcomplex step = dcomplex( 0.0, 1.0 * timeStep );
+   dcomplex step = dobackwards ? dcomplex( 0.0, 1.0 * timeStep ) : dcomplex( 0.0, -1.0 * timeStep );
 
    int veclength = getVecLength( 0 ); // Checked "assert( max_integer >= maxVecLength );" at FCI::StartupIrrepCenter()
    ClearVector( veclength, output );
 
    int krylovSpaceDimension = krylovSize;
 
-   ////////////////////////////////////////////////////////////////////////////////////////
-   ////
-   //// Generating Krylov Space vectors
-   ////
-   ////////////////////////////////////////////////////////////////////////////////////////
-
-   // dcomplex ** krylovBasisVectors = new dcomplex * [ krylovSpaceDimension ];
-
-   // // Step 1
-   // krylovBasisVectors[ 0 ] = input;
-   
-   // for ( int kry = 1; kry < krylovSpaceDimension; kry++ ) {
-   //    dcomplex * newKrylov = new dcomplex [ veclength ];
-   //    matvec( krylovBasisVectors[ kry - 1 ], newKrylov );
-   //    double normOfState = std::real( FCIddot( veclength, newKrylov, newKrylov ) );
-   //    dcomplex normalifactor = 1.0 / std::sqrt( normOfState );
-   //    int theone = 1;
-   //    zscal_( &veclength, &normalifactor, newKrylov, &theone );
-
-   //    double normOfState2 = std::real( FCIddot( veclength, newKrylov, newKrylov ) );
-   //    krylovBasisVectors[ kry ] = newKrylov;
-   // }
-
-   // ////////////////////////////////////////////////////////////////////////////////////////
-   // ////
-   // //// Building S and H
-   // ////
-   // ////////////////////////////////////////////////////////////////////////////////////////
-
-   // dcomplex *  krylovHamiltonian  = new dcomplex   [ krylovSpaceDimension * krylovSpaceDimension ];
-   // dcomplex *  overlaps           = new dcomplex   [ krylovSpaceDimension * krylovSpaceDimension ];
-
-   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-   //    for ( int icol = irow; icol < krylovSpaceDimension; icol++ ){
-   //       overlaps[ irow + krylovSpaceDimension * icol ] = FCIddot( veclength, krylovBasisVectors[ irow ], krylovBasisVectors[ icol ] );
-   //       overlaps[ icol + krylovSpaceDimension * irow ] = std::conj( overlaps[ irow + krylovSpaceDimension * icol ] );
-
-   //       krylovHamiltonian[ irow + krylovSpaceDimension * icol ] = FCIaHb( veclength, krylovBasisVectors[ irow ], krylovBasisVectors[ icol ] );
-   //       krylovHamiltonian[ icol + krylovSpaceDimension * irow ] = std::conj( krylovHamiltonian[ irow + krylovSpaceDimension * icol ] );
-   //    }
-   // }
-
-   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-   //       std::cout << std::real( krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] ) << " ";
-   //    }
-   //    std::cout << std::endl;
-   // }
-
-   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-   //       std::cout << std::real( overlaps[ irow +  icol * krylovSpaceDimension ] ) << " ";
-   //    }
-   //    std::cout << std::endl;
-   // }
-
-
-   //////////////////////////////// DEBUG /////////////////////////////////////////////////////
+   //////////////////////////////////////////////////////////////////////////////////////
+   //
+   // Generating Krylov Space vectors
+   //
+   //////////////////////////////////////////////////////////////////////////////////////
 
    dcomplex ** krylovBasisVectors = new dcomplex * [ krylovSpaceDimension ];
    dcomplex *  krylovHamiltonian  = new dcomplex   [ krylovSpaceDimension * krylovSpaceDimension ];
@@ -2393,13 +2336,6 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
          krylovHamiltonian[ kry + i * krylovSpaceDimension ] = std::conj( krylovHamiltonian[ i + kry * krylovSpaceDimension ] );
       }
    }
-
-   ///////////////////////////////// DEBUG END ////////////////////////////////////////////////
-
-
-
-
-
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
@@ -2439,6 +2375,7 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, unsigned int krylovSize, d
    //// Calculate the matrix exponential
    ////
    ////////////////////////////////////////////////////////////////////////////////////////
+
    int deg        = 20;
    double bla     = 1.0;
    int lwsp       = 4 * krylovSpaceDimension * krylovSpaceDimension + deg + 1;
