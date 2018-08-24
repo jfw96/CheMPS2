@@ -45,6 +45,8 @@ CheMPS2::Problem::~Problem() {
    }
 
    if ( mx_elem != NULL ) { delete[] mx_elem; }
+   if ( max_occu != NULL ) { delete[] max_occu; }
+   if ( min_occu != NULL ) { delete[] min_occu; }
 }
 
 void CheMPS2::Problem::SetupReorderD2h() {
@@ -434,3 +436,36 @@ bool CheMPS2::Problem::check_rohf_occ( int * occupancies ){
 }
 
 
+void CheMPS2::Problem::setup_occu_max( int * max_occupations ){
+   max_occu = new int[ gL() + 1];
+   
+   for(int i = 0; i <= gL(); i++){
+      int frozenright = 0; for( int idx = i; idx < gL(); idx++ ) { frozenright += 2 - max_occupations[ idx ]; }
+      max_occu[ i ] = std::min( std::min( std::min( gN() - frozenright, 2 * i ), gN() ), i + ( gN() - gTwoS() ) / 2 );
+   }
+}
+
+void CheMPS2::Problem::setup_occu_min( int * min_occupations ){
+   min_occu = new int[ gL() + 1 ];
+   
+   for(int i = 0; i <= gL(); i++){
+      int frozenright = 0; for( int idx = i; idx < gL(); idx++ ) { frozenright += min_occupations[ idx ]; }
+      min_occu[ i ] = std::max( std::max( 0, gN() + 2 * ( i - gL() ) + frozenright ), i - gL() + ( gN() + gTwoS() ) / 2 + frozenright );
+   }
+}
+
+int CheMPS2::Problem::gNmax ( int boundary ) const {
+   if( max_occu != NULL ){
+      return max_occu[ boundary ];
+   } else {
+      return std::min( std::min( 2 * boundary, gN() ), boundary + ( gN() - gTwoS() ) / 2 );
+   }
+}
+
+int CheMPS2::Problem::gNmin ( int boundary ) const {
+   if( min_occu != NULL ){
+      return min_occu[ boundary ];
+   } else {
+      return std::max( std::max( 0, gN() + 2 * ( boundary - gL() ) ), boundary - gL() + ( gN() + gTwoS() ) / 2 );
+   }
+}

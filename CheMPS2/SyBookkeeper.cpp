@@ -166,8 +166,8 @@ void CheMPS2::SyBookkeeper::allocate_arrays() {
    TwoSmin = new int *[ gL() + 1 ];
    TwoSmax = new int *[ gL() + 1 ];
    for ( int boundary = 0; boundary <= gL(); boundary++ ) {
-      Nmin[ boundary ]    = std::max( std::max( 0, gN() + 2 * ( boundary - gL() ) ), boundary - gL() + ( gN() + gTwoS() ) / 2 );
-      Nmax[ boundary ]    = std::min( std::min( 2 * boundary, gN() ), boundary + ( gN() - gTwoS() ) / 2 );
+      Nmin[ boundary ]    = Prob->gNmin( boundary );
+      Nmax[ boundary ]    = Prob->gNmax( boundary );
       TwoSmin[ boundary ] = new int[ Nmax[ boundary ] - Nmin[ boundary ] + 1 ];
       TwoSmax[ boundary ] = new int[ Nmax[ boundary ] - Nmin[ boundary ] + 1 ];
       for ( int N = Nmin[ boundary ]; N <= Nmax[ boundary ]; N++ ) {

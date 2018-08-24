@@ -396,6 +396,12 @@ cout << "\n"
 "       TIME_N_WEIGHTS = int\n"
 "              Set the numbers of CI-weights to be calculated (default 0).\n"
 "\n"
+"       TIME_N_MAX = int, int, int, int\n"
+"              Set the maximum number of electrons for all sites in Hamiltonian order ( defailt 2, 2, 2, .... ).\n"
+"\n"
+"       TIME_N_MIN = int, int, int, int\n"
+"              Set the minimum number of electrons for all sites in Hamiltonian order ( defailt 0, 0, 0, .... ).\n"
+"\n"
 "       TIME_KRYSIZE = int\n"
 "              Set the maximum Krylov space dimension of a time propagation step. Required when TIME_EVOLU = TRUE (positive integer).\n"
 "\n"
@@ -444,6 +450,8 @@ int main( int argc, char ** argv ){
    string time_init       = "";
    string time_ninit      = "";
    string time_hf_state   = "";
+   string time_n_min      = "";
+   string time_n_max      = "";
    string time_hdf5output = "";
    int    time_n_weights  = 0; 
    int    time_krysize    = 0;
@@ -570,6 +578,16 @@ int main( int argc, char ** argv ){
          time_hf_state = line.substr( pos, line.length() - pos );
       }
 
+      if ( line.find( "TIME_N_MAX" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         time_n_max = line.substr( pos, line.length() - pos );
+      }
+
+      if ( line.find( "TIME_N_MIN" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         time_n_min = line.substr( pos, line.length() - pos );
+      }
+
       if ( line.find( "TIME_KRYSIZE" ) != string::npos ){
          find_integer( &time_krysize, line, "TIME_KRYSIZE", true, 1, false, -1 );
       }
@@ -679,7 +697,8 @@ int main( int argc, char ** argv ){
 
    int * time_ninit_parsed    = new int[ fcidump_norb ];
    int * time_hf_state_parsed = NULL;
-
+   int * time_n_max_parsed    = NULL;
+   int * time_n_min_parsed    = NULL;
 
    if ( time_step_major <= 0.0 ){
       cerr << "TIME_STEP_MAJOR should be greater than zero !" << endl;
@@ -738,6 +757,46 @@ int main( int argc, char ** argv ){
       if ( elec_sum != nelectrons ){
          cerr << "There should be " << nelectrons << " distributed over the molecular orbitals in TIME_NINIT !" << endl;
          return -1;
+      }
+   }
+
+   if( time_n_max.length() > 0 ){
+      const int num  = count( time_n_max.begin(), time_n_max.end(), ',' ) + 1;
+      const bool nmax_ok = ( fcidump_norb == num );
+
+      if ( nmax_ok == false ){
+         cerr << "If given, there should be " << fcidump_norb << " numbers in TIME_N_MAX !" << endl;
+         return -1;
+      }
+
+      time_n_max_parsed = new int[ fcidump_norb ];
+      fetch_ints( time_n_max, time_n_max_parsed, fcidump_norb );
+
+      for ( int cnt = 0; cnt < fcidump_norb; cnt ++ ){
+         if ( ( time_n_max_parsed[ cnt ] < 0 ) || ( time_n_max_parsed[ cnt ] > 2 ) ){
+            cerr << "The maximum number in TIME_N_MAX has to be 0, 1 or 2 !" << endl;
+            return -1;
+         }
+      }
+   }
+
+   if( time_n_min.length() > 0 ){
+      const int num  = count( time_n_min.begin(), time_n_min.end(), ',' ) + 1;
+      const bool nmax_ok = ( fcidump_norb == num );
+
+      if ( nmax_ok == false ){
+         cerr << "If given, there should be " << fcidump_norb << " numbers in TIME_N_MAX !" << endl;
+         return -1;
+      }
+
+      time_n_min_parsed = new int[ fcidump_norb ];
+      fetch_ints( time_n_min, time_n_min_parsed, fcidump_norb );
+
+      for ( int cnt = 0; cnt < fcidump_norb; cnt ++ ){
+         if ( ( time_n_min_parsed[ cnt ] < 0 ) || ( time_n_min_parsed[ cnt ] > 2 ) ){
+            cerr << "The maximum number in TIME_N_MIN has to be 0, 1 or 2 !" << endl;
+            return -1;
+         }
       }
    }
 
@@ -819,6 +878,8 @@ int main( int argc, char ** argv ){
    delete [] value_noise;
 
    CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
+   if( time_n_max.length() > 0 ) { prob->setup_occu_max( time_n_max_parsed ); }
+   if( time_n_min.length() > 0 ) { prob->setup_occu_min( time_n_min_parsed ); }
 
    /***********************************
    *  Reorder the orbitals if desired *

@@ -142,6 +142,14 @@ namespace CheMPS2 {
       /** \param occupancies Array which contains per DMRG orbital (not HAM orbital ordering!) the ROHF-style occupancy (0, 1 or 2) */
       bool check_rohf_occ( int * occupancies );
 
+      void setup_occu_max( int * max_occupations );
+
+      void setup_occu_min( int * min_occupations );
+
+      int gNmax ( int boundary ) const;
+
+      int gNmin ( int boundary ) const;
+
       private:
       //Pointer to the Hamiltonian --> constructed and destructed outside of this class
       const Hamiltonian * Ham;
@@ -169,6 +177,12 @@ namespace CheMPS2 {
 
       //f2[DMRGIndex] = HamiltonianIndex
       int * f2;
+      
+      // Maximum occupation of size
+      int * max_occu = NULL;
+
+      // Maximum occupation of size
+      int * min_occu = NULL;
 
       //Matrix element table
       double * mx_elem;
