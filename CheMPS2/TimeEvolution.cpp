@@ -168,7 +168,7 @@ double CheMPS2::TimeEvolution::calcWieght( int nHoles, int nParticles, Problem *
 
 void CheMPS2::TimeEvolution::doStep_euler( const double time_step, const int kry_size, dcomplex offset, const bool backwards, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
-   dcomplex step = backwards ? -time_step : dcomplex( 0.0, -1.0 * time_step );
+   dcomplex step = backwards ? dcomplex( 0.0, 1.0 * time_step ) : dcomplex( 0.0, -1.0 * time_step );
 
    HamiltonianOperator * op = new HamiltonianOperator( prob, 0.0*offset );
 
@@ -455,19 +455,19 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
       }
    }
 
-   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-         std::cout << std::real( krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] ) << " ";
-      }
-      std::cout << std::endl;
-   }
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << std::real( krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] ) << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
 
-   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-         std::cout << std::real( overlaps[ irow +  icol * krylovSpaceDimension ] ) << " ";
-      }
-      std::cout << std::endl;
-   }
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << std::real( overlaps[ irow +  icol * krylovSpaceDimension ] ) << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
@@ -490,26 +490,26 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
    zgetri_( &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, work, &krylovSpaceDimension, &info_inve );
    assert( info_inve == 0);
 
-   ////////////////////////////////////////////////////////////////////////////////////////
-   ////
-   //// Test the inverse
-   ////
-   ////////////////////////////////////////////////////////////////////////////////////////
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // ////
+   // //// Test the inverse
+   // ////
+   // ////////////////////////////////////////////////////////////////////////////////////////
 
-   dcomplex * tobeiden = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
-   char notrans2     = 'N';
-   dcomplex zeroC2   = 0.0;
-   dcomplex oneC2    = 1.0;
-   zgemm_( &notrans2, &notrans2, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
-           &oneC2, overlaps, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, &zeroC2, tobeiden, &krylovSpaceDimension );
+   // dcomplex * tobeiden = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   // char notrans2     = 'N';
+   // dcomplex zeroC2   = 0.0;
+   // dcomplex oneC2    = 1.0;
+   // zgemm_( &notrans2, &notrans2, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
+   //         &oneC2, overlaps, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, &zeroC2, tobeiden, &krylovSpaceDimension );
 
-   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-         std::cout << std::real( tobeiden[ irow +  icol * krylovSpaceDimension ] ) << " ";
-      }
-      std::cout << std::endl;
-   }
-   delete[] tobeiden;
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << std::real( tobeiden[ irow +  icol * krylovSpaceDimension ] ) << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
+   // delete[] tobeiden;
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
