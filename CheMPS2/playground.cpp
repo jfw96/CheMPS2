@@ -130,30 +130,31 @@ int main( int argc, char ** argv ){
 
    int dim = 1000;
 
-   dcomplex * dataA = new dcomplex[ dim*dim ];
-   dcomplex * dataB = new dcomplex[ dim*dim ];
-   dcomplex * dataC = new dcomplex[ dim*dim ];
+   // dcomplex * dataA = new dcomplex[ dim*dim ];
+   // dcomplex * dataB = new dcomplex[ dim*dim ];
+   // dcomplex * dataC = new dcomplex[ dim*dim ];
    
-   char trans = 'C';
-   char notrans = 'N';
-   dcomplex alpha = 1.0;
-
-   for(size_t i = 0; i < 100; i++)
-   {
-      zgemm_( &notrans, &notrans, &dim, &dim, &dim, &alpha, dataA, &dim, dataB, &dim, &alpha, dataC, &dim );     
-   }
-   
-
-   // double * dataA = new double[ dim*dim ];
-   // double * dataB = new double[ dim*dim ];
-   // double * dataC = new double[ dim*dim ];
-
    // char trans = 'C';
    // char notrans = 'N';
-   // double alpha = 1.0;
+   // dcomplex alpha = 1.0;
 
-   // dgemm_( &notrans, &notrans, &dim, &dim, &dim, &alpha, dataA, &dim, dataB, &dim, &alpha, dataC, &dim );
+   // for(size_t i = 0; i < 100; i++)
+   // {
+   //    zgemm_( &notrans, &notrans, &dim, &dim, &dim, &alpha, dataA, &dim, dataB, &dim, &alpha, dataC, &dim );     
+   // }
+   
 
+   double * dataA = new double[ dim*dim ];
+   double * dataB = new double[ dim*dim ];
+   double * dataC = new double[ dim*dim ];
+
+   char trans = 'C';
+   char notrans = 'N';
+   double alpha = 1.0;
+ 
+   for(size_t i = 0; i < 100; i++){
+      dgemm_( &notrans, &notrans, &dim, &dim, &dim, &alpha, dataA, &dim, dataB, &dim, &alpha, dataC, &dim );
+   }
 
 
    return 0;
