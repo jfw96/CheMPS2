@@ -168,6 +168,10 @@ add_executable             (chemps2-conv convert.cpp)
 target_link_libraries      (chemps2-conv tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
 set_target_properties      (chemps2-conv PROPERTIES OUTPUT_NAME "chemps2conv")
 
+add_executable             (chemps2-play playground.cpp)
+target_link_libraries      (chemps2-play tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
+set_target_properties      (chemps2-play PROPERTIES OUTPUT_NAME "chemps2play")
+
 # <<<  Install  >>>
 
 if (NOT STATIC_ONLY)
