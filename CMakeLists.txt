@@ -26,7 +26,7 @@ option (SHARED_ONLY          "Compile only the shared library"         OFF)
 option (ENABLE_TESTS         "Compile the tests"                       ON)
 option (ENABLE_XHOST         "Enable processor-specific optimizations" ON)
 option (ENABLE_GENERIC       "Enable mostly static linking in shared library" OFF)
-option (ENABLE_OPENMP        "Enable OpenMP parallelization"           OFF)
+option (ENABLE_OPENMP        "Enable OpenMP parallelization"           ON)
 option (WITH_MPI             "Build the library with MPI"              OFF)
 option (BUILD_FPIC           "Static library in STATIC_ONLY will be compiled with position independent code" OFF)
 
