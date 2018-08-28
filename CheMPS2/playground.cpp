@@ -65,36 +65,36 @@ int main( int argc, char ** argv ){
 
    CheMPS2::SyBookkeeper * bkIn  = new CheMPS2::SyBookkeeper( prob, 500 );
 
-   // for( int bla = 0; bla < 1000; bla++ ){
-   //    CheMPS2::CTensorT** mpsIn = new CheMPS2::CTensorT *[ prob->gL() ];
+   for( int bla = 0; bla < 1000; bla++ ){
+      CheMPS2::CTensorT** mpsIn = new CheMPS2::CTensorT *[ prob->gL() ];
 
-   //    for ( int index = 0; index < prob->gL(); index++ ) {
-   //       mpsIn[ index ] = new CheMPS2::CTensorT( index, bkIn );
-   //       mpsIn[ index ]->random();
-   //    }
+      for ( int index = 0; index < prob->gL(); index++ ) {
+         mpsIn[ index ] = new CheMPS2::CTensorT( index, bkIn );
+         mpsIn[ index ]->random();
+      }
       
-   //    CheMPS2::CTensorO * overlapOld;
-   //    overlapOld = new CheMPS2::CTensorO( 1, true, bkIn, bkIn );
-   //    overlapOld->create( mpsIn[ 0 ], mpsIn[ 0 ] );
+      CheMPS2::CTensorO * overlapOld;
+      overlapOld = new CheMPS2::CTensorO( 1, true, bkIn, bkIn );
+      overlapOld->create( mpsIn[ 0 ], mpsIn[ 0 ] );
 
-   //    CheMPS2::CTensorO * overlapNext;
+      CheMPS2::CTensorO * overlapNext;
 
-   //    for ( int i = 1; i < L; i++ ) {
-   //       // std::cout << i << std::endl;
-   //       overlapNext = new CheMPS2::CTensorO( i + 1, true, bkIn, bkIn );
-   //       overlapNext->update_ownmem( mpsIn[ i ], mpsIn[ i ], overlapOld );
-   //       delete overlapOld;
-   //       overlapOld = overlapNext;
+      for ( int i = 1; i < L; i++ ) {
+         // std::cout << i << std::endl;
+         overlapNext = new CheMPS2::CTensorO( i + 1, true, bkIn, bkIn );
+         overlapNext->update_ownmem( mpsIn[ i ], mpsIn[ i ], overlapOld );
+         delete overlapOld;
+         overlapOld = overlapNext;
 
-   //    }
+      }
 
-   //    assert( overlapOld->gNKappa() == 1 );
-   //    dcomplex result = overlapOld->trace();
-   //    delete overlapOld;
+      assert( overlapOld->gNKappa() == 1 );
+      dcomplex result = overlapOld->trace();
+      delete overlapOld;
 
-   //    std::cout << bla << " " << result << std::endl;
+      std::cout << bla << " " << result << std::endl;
 
-   // }
+   }
 
    // for( int bla = 0; bla < 1000; bla++ ){
    //    CheMPS2::TensorT** mpsIn = new CheMPS2::TensorT *[ prob->gL() ];
@@ -128,33 +128,34 @@ int main( int argc, char ** argv ){
    // }
 
 
-   int dim = 1000;
+   // int dim = 1000;
 
-   // dcomplex * dataA = new dcomplex[ dim*dim ];
-   // dcomplex * dataB = new dcomplex[ dim*dim ];
-   // dcomplex * dataC = new dcomplex[ dim*dim ];
+   // // dcomplex * dataA = new dcomplex[ dim*dim ];
+   // // dcomplex * dataB = new dcomplex[ dim*dim ];
+   // // dcomplex * dataC = new dcomplex[ dim*dim ];
    
+   // // char trans = 'C';
+   // // char notrans = 'N';
+   // // dcomplex alpha = 1.0;
+
+   // // for(size_t i = 0; i < 100; i++)
+   // // {
+   // //    zgemm_( &notrans, &notrans, &dim, &dim, &dim, &alpha, dataA, &dim, dataB, &dim, &alpha, dataC, &dim );     
+   // // }
+   
+
+   // double * dataA = new double[ dim*dim ];
+   // double * dataB = new double[ dim*dim ];
+   // double * dataC = new double[ dim*dim ];
+
    // char trans = 'C';
    // char notrans = 'N';
-   // dcomplex alpha = 1.0;
-
+   // double alpha = 1.0;
+   
    // for(size_t i = 0; i < 100; i++)
    // {
-   //    zgemm_( &notrans, &notrans, &dim, &dim, &dim, &alpha, dataA, &dim, dataB, &dim, &alpha, dataC, &dim );     
+   // dgemm_( &notrans, &notrans, &dim, &dim, &dim, &alpha, dataA, &dim, dataB, &dim, &alpha, dataC, &dim );
    // }
-   
-
-   double * dataA = new double[ dim*dim ];
-   double * dataB = new double[ dim*dim ];
-   double * dataC = new double[ dim*dim ];
-
-   char trans = 'C';
-   char notrans = 'N';
-   double alpha = 1.0;
- 
-   for(size_t i = 0; i < 100; i++){
-      dgemm_( &notrans, &notrans, &dim, &dim, &dim, &alpha, dataA, &dim, dataB, &dim, &alpha, dataC, &dim );
-   }
 
 
    return 0;
