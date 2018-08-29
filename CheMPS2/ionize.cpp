@@ -486,10 +486,14 @@ int main( int argc, char ** argv ){
    hamION->setTmat( position, fcidump_norb, 0.0 );
    for( int i = 0; i < fcidump_norb; i++ ){
       for( int j = 0; j < fcidump_norb; j++ ){
-         hamION->setTmat( i, j, ham->getTmat( i, j ) );
+         if( std::abs( ham->getTmat( i, j ) ) > 0 ){
+            hamION->setTmat( i, j, ham->getTmat( i, j ) );
+         }
          for( int k = 0; k < fcidump_norb; k++ ){
             for( int l = 0; l < fcidump_norb; l++ ){
-               hamION->setVmat( i, j, k, l, ham->getVmat( i, j, k, l ) );
+               if( std::abs( ham->getVmat( i, j, k, l ) ) > 0 ){
+                  hamION->setVmat( i, j, k, l, ham->getVmat( i, j, k, l ) );
+               }
             }
          }
       }
