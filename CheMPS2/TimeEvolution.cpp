@@ -712,7 +712,6 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
       std::cout << "   ";
       for ( int i = 0; i < L; i++ ) { std::cout << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << oedmre[ i + L * i ]; }
       std::cout                                                 << "\n";
-      std::cout                                                 << "\n";
 
       for( int iWeight = 0; iWeight < nWeights; iWeight++ ){
          std::cout << "  " << nHoles[ iWeight ] <<  "h" << nParticles[ iWeight] << "p-weight  = " << weights[ iWeight ] << "\n";
@@ -737,8 +736,8 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
       HDF5_MAKE_DATASET( dataPointID, "NSwes",          1, &numInst,   H5T_STD_I32LE,      NSwes            );
       HDF5_MAKE_DATASET( dataPointID, "Norm",           1, &dimarray1, H5T_NATIVE_DOUBLE,  &normOfMPS       );
       HDF5_MAKE_DATASET( dataPointID, "Energy",         1, &dimarray1, H5T_NATIVE_DOUBLE,  &energy          );
-      HDF5_MAKE_DATASET( dataPointID, "REOInit",        1, &dimarray1, H5T_NATIVE_DOUBLE,  &reoInit         );
-      HDF5_MAKE_DATASET( dataPointID, "IMOInit",        1, &dimarray1, H5T_NATIVE_DOUBLE,  &imoInit         );
+      HDF5_MAKE_DATASET( dataPointID, "ReOInit",        1, &dimarray1, H5T_NATIVE_DOUBLE,  &reoInit         );
+      HDF5_MAKE_DATASET( dataPointID, "ImOInit",        1, &dimarray1, H5T_NATIVE_DOUBLE,  &imoInit         );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL",      2, Lsq,        H5T_NATIVE_DOUBLE,  oedmre           );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG",      2, Lsq,        H5T_NATIVE_DOUBLE,  oedmim           );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_DMRG_REAL", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmdmrgre       );
@@ -811,7 +810,6 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
          delete thetdmbuilder;
          delete thetdm;
       }      
-      std::cout << "\n";
 
       if ( t + time_step_major < time_final ) {
          for( double t_minor = 0.0; (time_step_major - t_minor) > 1e-6; t_minor+=time_step_minor ) {

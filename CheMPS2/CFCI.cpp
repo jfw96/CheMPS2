@@ -2224,7 +2224,7 @@ void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_
       HDF5_MAKE_DATASET( dataPointID, "Norm",        1, &dimScalar, H5T_NATIVE_DOUBLE, &normOfState     );
       HDF5_MAKE_DATASET( dataPointID, "Energy",      1, &dimScalar, H5T_NATIVE_DOUBLE, &energy          );
       HDF5_MAKE_DATASET( dataPointID, "ReOInit",     1, &dimScalar, H5T_NATIVE_DOUBLE, &reOinit         );
-      HDF5_MAKE_DATASET( dataPointID, "ImOinit",     1, &dimScalar, H5T_NATIVE_DOUBLE, &imOinit         );
+      HDF5_MAKE_DATASET( dataPointID, "ImOInit",     1, &dimScalar, H5T_NATIVE_DOUBLE, &imOinit         );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL",   2, Lsq,        H5T_NATIVE_DOUBLE, oedmre           );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG",   2, Lsq,        H5T_NATIVE_DOUBLE, oedmim           );
 
