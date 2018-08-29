@@ -33,6 +33,7 @@
 #include "MPIchemps2.h"
 #include "EdmistonRuedenberg.h"
 #include "CFCI.h"
+#include "Lapack.h"
 #include "FCI.h"
 #include "Irreps.h"
 
@@ -688,10 +689,25 @@ int main( int argc, char ** argv ){
       dcomplex * vectorInit = new dcomplex[ solver->getVecLength( 0 ) ];
       
       for(int i = 0; i < solver->getVecLength( 0 ); i++) {
-         vectorInit[ i ] = sqrt( 2.0 ) * vector_c[ i ];
+         vectorInit[ i ] = vector_c[ i ];
       }
       delete[] vector_c;
 
+      // normalize
+      int length = solver->getVecLength( 0 ); // Checked "assert( max_integer >= maxVecLength );" at FCI::StartupIrrepCenter()
+      int inc = 1;
+
+      #ifdef CHEMPS2_MKL
+      dcomplex norm;
+      zdotc_( &norm, &length , vectorInit , &inc , vectorInit , &inc );
+      #else
+      dcomplex norm = zdotc_( &length , vectorInit , &inc , vectorInit , &inc );
+      #endif
+      
+      dcomplex factor = std::pow( std::abs( norm ), -0.5 );
+      zscal_( &length , &factor , vectorInit , &inc );
+
+      // do the time evolution
       solver->TimeEvolution( time_type, time_step_major, time_step_minor, time_final, time_backward, vectorInit, time_krysize, time_dumpfci, time_dump2rdm );
       delete[] vectorInit;
 

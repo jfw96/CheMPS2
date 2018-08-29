@@ -932,6 +932,8 @@ int main( int argc, char ** argv ){
          mpsIn[ index ] = new CheMPS2::CTensorT( index, bkIn );
       }
       loadMPS( time_init, prob->gL(), mpsIn );
+
+      normalize( prob->gL(), mpsIn );
    }
 
    /*************************

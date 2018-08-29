@@ -157,7 +157,7 @@ target_link_libraries      (chemps2-dyn tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} 
 set_target_properties      (chemps2-dyn PROPERTIES OUTPUT_NAME "chemps2dyn")
 
 add_executable             (chemps2-fci fcidynamics.cpp)
-target_link_libraries      (chemps2-fci tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} )
+target_link_libraries      (chemps2-fci tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
 set_target_properties      (chemps2-fci PROPERTIES OUTPUT_NAME "chemps2fci")
 
 add_executable             (chemps2-ion ionize.cpp)
