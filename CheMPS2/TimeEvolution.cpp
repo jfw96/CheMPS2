@@ -387,7 +387,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
    //// Generating Krylov Space vectors
    ////
    ////////////////////////////////////////////////////////////////////////////////////////
-   std::cout << "   Krylov space vectors:\n";
+   std::cout << "  Krylov space vectors:\n";
 
    CTensorT *** krylovBasisVectors          = new CTensorT **[ krylovSpaceDimension ];
    SyBookkeeper ** krylovBasisSyBookkeepers = new SyBookkeeper *[ krylovSpaceDimension ];

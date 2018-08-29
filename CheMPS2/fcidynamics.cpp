@@ -647,7 +647,7 @@ int main( int argc, char ** argv ){
       solver->TimeEvolution( time_type, time_step_major, time_step_minor, time_final, time_backward, vectorInit, time_krysize, time_dumpfci, time_dump2rdm );
       delete[] vectorInit;
 
-   } {
+   } else {
 
       /*****************************************************
       *  Ionized molecule in ground state is inital state  *
