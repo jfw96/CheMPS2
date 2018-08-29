@@ -187,6 +187,8 @@ void applyAnnihilator( const int pos, CheMPS2::CTensorT** mpsIn, CheMPS2::SyBook
    CheMPS2::SyBookkeeper* bkTemp = new CheMPS2::SyBookkeeper( probTemp, 1 );
   
    for( int site = 0; site < L; site++ ){
+      bkTemp->allToZeroAtLink( site );
+      bkTemp->allToZeroAtLink( site + 1 );
       for ( int NL = bkIn->gNmin( site ); NL <= bkIn->gNmax( site ); NL++ ) {
          for ( int TwoSL = bkIn->gTwoSmin( site, NL ); TwoSL <= bkIn->gTwoSmax( site, NL ); TwoSL += 2 ) {
             for ( int IL = 0; IL < bkIn->getNumberOfIrreps(); IL++ ) {
