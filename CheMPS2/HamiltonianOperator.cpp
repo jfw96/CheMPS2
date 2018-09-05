@@ -625,7 +625,7 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
    }
 
    for ( int inst = 0; inst < scheme->get_number(); inst++ ){
-      for ( int i = 0; i < scheme->get_max_sweeps( inst ); ++i ) {
+      for ( int i = 0; i < 2 * scheme->get_max_sweeps( inst ); ++i ) {
          for ( int site = L - 2; site > 0; site-- ) {
 
             CSobject * added = new CSobject( site, bkOut );
