@@ -69,6 +69,12 @@ namespace CheMPS2 {
                   CTensorT ** mpsOut, SyBookkeeper * bkOut,
                   ConvergenceScheme * scheme );
 
+      void SSOrthogonalize( int statesToOrtho,
+                            CTensorT ** mpsMain, SyBookkeeper * bkMain,
+                            CTensorT *** others, SyBookkeeper ** bookkeepersOthers,
+                            CTensorT ** mpsOut, SyBookkeeper * bkOut,
+                            ConvergenceScheme * scheme );
+
       // Double Site functions
       void DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
                           int statesToAdd,
@@ -102,6 +108,8 @@ namespace CheMPS2 {
       void allocateTensors( const int index, const bool movingRight, SyBookkeeper * bkUp, SyBookkeeper * bkDown );
 
       void deleteTensors( const int index, const bool movingRight );
+
+      void orthogonalize( int pos, const int numStates, CTensorT *mpsMain, SyBookkeeper * bkMain, CTensorT **os, SyBookkeeper **bks, CTensorT * mpsOut, SyBookkeeper *bkOut, bool movingRight );
 
       const Problem * prob;
 
@@ -151,6 +159,7 @@ namespace CheMPS2 {
 
       // TensorO's
       CTensorO ** Otensors;
+
    };
 } // namespace CheMPS2
 

@@ -18,6 +18,7 @@
 */
 
 #include <iostream>
+#include <assert.h>
 
 #include "CHeffNS.h"
 #include "CHeffNS_1S.h"
@@ -26,6 +27,8 @@
 #include "CTensorT.h"
 #include "HamiltonianOperator.h"
 #include "Special.h"
+#include "Lapack.h"
+
 
 CheMPS2::HamiltonianOperator::HamiltonianOperator( const Problem * probIn, dcomplex offsetIn ) : prob( probIn ), offset( offsetIn ), L( probIn->gL() ) {
 
@@ -438,6 +441,220 @@ void CheMPS2::HamiltonianOperator::SSSum( int statesToAdd,
    }
    delete[] overlaps;
    deleteAllBoundaryOperators();
+}
+
+void CheMPS2::HamiltonianOperator::SSOrthogonalize( int statesToOrtho,
+                                                    CTensorT ** mpsMain, SyBookkeeper * bkMain,
+                                                    CTensorT *** others, SyBookkeeper ** bookkeepersOthers,
+                                                    CTensorT ** mpsOut, SyBookkeeper * bkOut,
+                                                    ConvergenceScheme * scheme ){
+
+   for ( int index = 0; index < L; index++ ) {
+      mpsMain[ index ]->zcopy( mpsOut[ index ] );
+   }
+
+   deleteAllBoundaryOperators();
+   for ( int index = 0; index < L - 1; index++ ) {
+      left_normalize( mpsOut[ index ], mpsOut[ index + 1 ] );
+   }
+   left_normalize( mpsOut[ L - 1 ], NULL );
+
+   CTensorO ** overlapsMain = new CTensorO *[ L - 1 ];
+   for( int cnt = 0; cnt < L - 1; cnt++  ){
+      overlapsMain[ cnt ] = new CTensorO( cnt + 1, true, bkOut, bkMain );
+      if( cnt == 0 ){
+         overlapsMain[ cnt ]->create( mpsOut[ cnt ], mpsMain[ cnt ] );
+      } else {
+         overlapsMain[ cnt ]->update_ownmem( mpsOut[ cnt ], mpsMain[ cnt ], overlapsMain[ cnt - 1 ] );
+      }
+   }
+
+   CTensorO *** overlapsO = new CTensorO **[ statesToOrtho ];
+   for ( int st = 0; st < statesToOrtho; st++ ) {
+      overlapsO[ st ] = new CTensorO *[ L - 1 ];
+      for( int cnt = 0; cnt < L - 1; cnt++  ){
+         overlapsO[ st ][ cnt ] = new CTensorO( cnt + 1, true, bkOut, bookkeepersOthers[ st ] );
+         if( cnt == 0 ){
+            overlapsO[ st ][ cnt ]->create( mpsOut[ cnt ], others[ st ][ cnt ] );
+         } else {
+            overlapsO[ st ][ cnt ]->update_ownmem( mpsOut[ cnt ], others[ st ][ cnt ], overlapsO[ st ][ cnt - 1 ] );
+         }
+      }
+
+      for( int inst = 0; inst < scheme->get_number(); inst++ ){
+         for ( int iswe = 0; iswe < scheme->get_max_sweeps( inst ); ++iswe ) {
+            for ( int site = L - 1; site > 0; site-- ) {
+
+               CTensorT * phi_e = new CTensorT( site, bkOut );
+               phi_e->Clear();
+               CTensorO * leftOverlapPhi  = ( site - 1 ) >= 0 ? overlapsMain[ site - 1 ] : NULL;
+               CTensorO * rightOverlapPhi = ( site + 1 ) < L ?  overlapsMain[ site ] : NULL;
+               phi_e->Join( leftOverlapPhi, mpsMain[ site ], rightOverlapPhi );
+
+               CTensorT ** os = new CTensorT*[ statesToOrtho ];
+               for ( int st = 0; st < statesToOrtho; st++ ) {
+                  os[ st ]           = new CTensorT( site, bookkeepersOthers[ st ] );
+                  CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlapsO[ st ][ site - 1 ] : NULL;
+                  CTensorO * rightOverlapA = ( site + 1 ) < L ? overlapsO[ st ][ site ] : NULL;
+                  os[ st ]->Join( leftOverlapA, others[ st ][ site ], rightOverlapA );
+               }
+
+               orthogonalize( site, statesToOrtho, phi_e, bkMain, os, bookkeepersOthers, mpsOut[ site ], bkOut, false );
+
+               right_normalize( mpsOut[ site - 1 ], mpsOut[ site ] );
+
+               delete overlapsMain[ site - 1 ];
+               overlapsMain[ site - 1 ] = new CTensorO( site, false, bkOut, bkMain );
+               if ( site == L - 1 ){
+                  overlapsMain[ site - 1 ]->create( mpsOut[ site ], mpsMain[ site ] );
+               } else {
+                  overlapsMain[ site - 1 ]->update_ownmem( mpsOut[ site ], mpsMain[ site ], overlapsMain[ site ] );
+               }
+
+               for ( int st = 0; st < statesToOrtho; st++ ) {
+                  delete overlapsO[ st ][ site - 1 ];
+                  overlapsO[ st ][ site - 1 ] = new CTensorO( site, false, bkOut, bookkeepersOthers[ st ] );
+                  if ( site == L - 1 ) {
+                     overlapsO[ st ][ site - 1 ]->create( mpsOut[ site ], others[ st ][ site ] );
+                  } else {
+                     overlapsO[ st ][ site - 1 ]->update_ownmem( mpsOut[ site ], others[ st ][ site ], overlapsO[ st ][ site ] );
+                  }
+               }
+
+               delete phi_e;
+               for ( int st = 0; st < statesToOrtho; st++ ) {
+                  delete os[ st ];
+               }
+               delete[] os;
+
+            }
+            
+            for ( int site = 0; site < L - 1; site++ ) {
+
+               CTensorT * phi_e = new CTensorT( site, bkOut );
+               phi_e->Clear();
+               CTensorO * leftOverlapPhi  = ( site - 1 ) >= 0 ? overlapsMain[ site - 1 ] : NULL;
+               CTensorO * rightOverlapPhi = ( site + 1 ) < L ?  overlapsMain[ site ] : NULL;
+               phi_e->Join( leftOverlapPhi, mpsMain[ site ], rightOverlapPhi );
+
+               CTensorT ** os = new CTensorT*[ statesToOrtho ];
+               for ( int st = 0; st < statesToOrtho; st++ ) {
+                  os[ st ]           = new CTensorT( site, bookkeepersOthers[ st ] );
+                  CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlapsO[ st ][ site - 1 ] : NULL;
+                  CTensorO * rightOverlapA = ( site + 1 ) < L ? overlapsO[ st ][ site ] : NULL;
+                  os[ st ]->Join( leftOverlapA, others[ st ][ site ], rightOverlapA );
+               }
+
+               orthogonalize( site, statesToOrtho, phi_e, bkMain, os, bookkeepersOthers, mpsOut[ site ], bkOut, false );
+
+               left_normalize( mpsOut[ site ], mpsOut[ site + 1 ] );
+
+               delete overlapsMain[ site ];
+               overlapsMain[ site ] = new CTensorO( site + 1, true, bkOut, bkMain );
+               if ( site == 0 ){
+                  overlapsMain[ site ]->create( mpsOut[ site ], mpsMain[ site ] );
+               } else {
+                  overlapsMain[ site ]->update_ownmem( mpsOut[ site ], mpsMain[ site ], overlapsMain[ site - 1 ] );
+               }
+
+               for ( int st = 0; st < statesToOrtho; st++ ) {
+                  delete overlapsO[ st ][ site ];
+                  overlapsO[ st ][ site ] = new CTensorO( site + 1, true, bkOut, bookkeepersOthers[ st ] );
+                  if ( site == 0 ) {
+                     overlapsO[ st ][ site ]->create( mpsOut[ site ], others[ st ][ site ] );
+                  } else {
+                     overlapsO[ st ][ site ]->update_ownmem( mpsOut[ site ], others[ st ][ site ], overlapsO[ st ][ site - 1 ] );
+                  }
+               }
+
+               delete phi_e;
+               for ( int st = 0; st < statesToOrtho; st++ ) {
+                  delete os[ st ];
+               }
+               delete[] os;
+
+            }
+         }
+      }
+
+   }
+
+}
+
+void CheMPS2::HamiltonianOperator::orthogonalize( int pos, const int numStates, CTensorT *mpsMain, SyBookkeeper * bkMain, CTensorT **os, SyBookkeeper **bks, CTensorT * mpsOut, SyBookkeeper *bkOut, bool movingRight ){
+
+   int nStates = numStates;
+
+   dcomplex * oos = new dcomplex[ numStates * numStates ];
+   for( int i = 0; i < numStates; i++ ){
+      for( int j = 0; j < numStates; j++ ){
+         CTensorO * oo = new CTensorO( pos, false, bkMain, bkMain );
+         oo->create( os[ i ], os[ j ] );
+         oos[ i + numStates * j ] = oo->trace();
+         delete oo;
+      }
+   }
+
+   dcomplex * ops = new dcomplex[ numStates ];
+   for( int i = 0; i < numStates; i++ ){
+      CTensorO * op = new CTensorO( pos, false, bkMain, bkMain );
+      op->create( os[ i ], mpsMain );
+      ops[ i ] = op->trace();
+      delete op;
+   }
+
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Calculating the inverse
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
+
+   int one                 = 1;
+   int sqr                 = nStates * nStates;
+   dcomplex * oo_inv = new dcomplex[ nStates * nStates ];
+   zcopy_( &sqr, oos, &one, oo_inv, &one );
+
+   int info_lu;
+   int * piv = new int[ nStates ];
+   zgetrf_( &nStates, &nStates, oo_inv, &nStates, piv, &info_lu );
+   assert( info_lu == 0);
+
+   dcomplex * work = new dcomplex[ nStates ];
+   int info_inve;
+   zgetri_( &nStates, oo_inv, &nStates, piv, work, &nStates, &info_inve );
+   assert( info_inve == 0);
+
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Multiply
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
+
+   char notrans = 'N';
+   dcomplex oneD = 1.0;
+   dcomplex zero = 0.0;
+   dcomplex * lambda = new dcomplex[ nStates ];
+   zgemm_( &notrans, &notrans, &nStates, &one, &nStates, &oneD, oo_inv, &nStates, ops, &nStates, &zero, lambda, &nStates );
+
+   ////////////////////////////////////////////////////////////////////////////////////////
+   ////
+   //// Output
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////////
+
+   mpsMain->zcopy( mpsOut );
+
+   for( int st = 0; st < nStates; st++ ){
+      mpsOut->add( os[ st ], -1.0 * std::conj( lambda[ st ] ) );
+   }
+
+   delete[] oos;
+   delete[] ops;
+   delete[] oo_inv;
+   delete[] piv;
+   delete[] work;
+   delete[] lambda;
+
 }
 
 void CheMPS2::HamiltonianOperator::DSApply( CTensorT ** mpsA, SyBookkeeper * bkA,

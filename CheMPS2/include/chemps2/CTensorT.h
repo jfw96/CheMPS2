@@ -111,7 +111,7 @@ namespace CheMPS2 {
 
       void scale( dcomplex alpha );
 
-      void add( CTensorT * toAdd );
+      void add( CTensorT * toAdd, dcomplex factor = 1.0 );
 
       void addNoise( dcomplex NoiseLevel );
 

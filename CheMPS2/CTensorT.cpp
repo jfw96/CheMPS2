@@ -194,7 +194,7 @@ void CheMPS2::CTensorT::addNoise( dcomplex NoiseLevel ) {
    }   
 }
 
-void CheMPS2::CTensorT::add( CTensorT * toAdd ) {
+void CheMPS2::CTensorT::add( CTensorT * toAdd, dcomplex factor ) {
    assert( index == toAdd->gIndex() );
 
    for ( int ikappa = 0; ikappa < nKappa; ikappa++ ) {
@@ -226,7 +226,7 @@ void CheMPS2::CTensorT::add( CTensorT * toAdd ) {
 
          int dim      = dimLEXP * dimREXP;
          int inc      = 1;
-         dcomplex one = 1.0;
+         dcomplex one = factor;
 
          dcomplex * BlockExp = storage + kappa2index[ ikappa ];
          dcomplex * BlockNon = toAdd->gStorage() + toAdd->gKappa2index( memNonExpKappa );
