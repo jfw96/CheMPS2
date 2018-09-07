@@ -449,9 +449,6 @@ void CheMPS2::HamiltonianOperator::SSOrthogonalize( int statesToOrtho,
                                                     CTensorT ** mpsOut, SyBookkeeper * bkOut,
                                                     ConvergenceScheme * scheme ){
 
-   for ( int index = 0; index < L; index++ ) {
-      mpsMain[ index ]->zcopy( mpsOut[ index ] );
-   }
 
    deleteAllBoundaryOperators();
    for ( int index = 0; index < L - 1; index++ ) {
@@ -483,23 +480,24 @@ void CheMPS2::HamiltonianOperator::SSOrthogonalize( int statesToOrtho,
 
       for( int inst = 0; inst < scheme->get_number(); inst++ ){
          for ( int iswe = 0; iswe < scheme->get_max_sweeps( inst ); ++iswe ) {
+            // std::cout << "Sarting right to left " << inst << " " << iswe << " " << st << std::endl;
             for ( int site = L - 1; site > 0; site-- ) {
-
+               // std::cout << site << std::endl;
                CTensorT * phi_e = new CTensorT( site, bkOut );
                phi_e->Clear();
                CTensorO * leftOverlapPhi  = ( site - 1 ) >= 0 ? overlapsMain[ site - 1 ] : NULL;
                CTensorO * rightOverlapPhi = ( site + 1 ) < L ?  overlapsMain[ site ] : NULL;
                phi_e->Join( leftOverlapPhi, mpsMain[ site ], rightOverlapPhi );
 
-               CTensorT ** os = new CTensorT*[ statesToOrtho ];
-               for ( int st = 0; st < statesToOrtho; st++ ) {
-                  os[ st ]           = new CTensorT( site, bookkeepersOthers[ st ] );
-                  CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlapsO[ st ][ site - 1 ] : NULL;
-                  CTensorO * rightOverlapA = ( site + 1 ) < L ? overlapsO[ st ][ site ] : NULL;
-                  os[ st ]->Join( leftOverlapA, others[ st ][ site ], rightOverlapA );
+               CTensorT ** os = new CTensorT*[ st + 1 ];
+               for ( int st2 = 0; st2 <= st; st2++ ) {
+                  os[ st2 ]           = new CTensorT( site, bkOut );
+                  CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlapsO[ st2 ][ site - 1 ] : NULL;
+                  CTensorO * rightOverlapA = ( site + 1 ) < L ? overlapsO[ st2 ][ site ] : NULL;
+                  os[ st2 ]->Join( leftOverlapA, others[ st2 ][ site ], rightOverlapA );
                }
 
-               orthogonalize( site, statesToOrtho, phi_e, bkMain, os, bookkeepersOthers, mpsOut[ site ], bkOut, false );
+               orthogonalize( site, st + 1, phi_e, bkMain, os, bookkeepersOthers, mpsOut[ site ], bkOut, false );
 
                right_normalize( mpsOut[ site - 1 ], mpsOut[ site ] );
 
@@ -511,24 +509,24 @@ void CheMPS2::HamiltonianOperator::SSOrthogonalize( int statesToOrtho,
                   overlapsMain[ site - 1 ]->update_ownmem( mpsOut[ site ], mpsMain[ site ], overlapsMain[ site ] );
                }
 
-               for ( int st = 0; st < statesToOrtho; st++ ) {
-                  delete overlapsO[ st ][ site - 1 ];
-                  overlapsO[ st ][ site - 1 ] = new CTensorO( site, false, bkOut, bookkeepersOthers[ st ] );
+               for ( int st2 = 0; st2 <= st; st2++ ) {
+                  delete overlapsO[ st2 ][ site - 1 ];
+                  overlapsO[ st2 ][ site - 1 ] = new CTensorO( site, false, bkOut, bookkeepersOthers[ st2 ] );
                   if ( site == L - 1 ) {
-                     overlapsO[ st ][ site - 1 ]->create( mpsOut[ site ], others[ st ][ site ] );
+                     overlapsO[ st2 ][ site - 1 ]->create( mpsOut[ site ], others[ st2 ][ site ] );
                   } else {
-                     overlapsO[ st ][ site - 1 ]->update_ownmem( mpsOut[ site ], others[ st ][ site ], overlapsO[ st ][ site ] );
+                     overlapsO[ st2 ][ site - 1 ]->update_ownmem( mpsOut[ site ], others[ st2 ][ site ], overlapsO[ st2 ][ site ] );
                   }
                }
 
                delete phi_e;
-               for ( int st = 0; st < statesToOrtho; st++ ) {
-                  delete os[ st ];
+               for ( int st2 = 0; st2 <= st; st2++ ) {
+                  delete os[ st2 ];
                }
                delete[] os;
 
             }
-            
+            // std::cout << "Sarting left to right " << std::endl;
             for ( int site = 0; site < L - 1; site++ ) {
 
                CTensorT * phi_e = new CTensorT( site, bkOut );
@@ -537,15 +535,15 @@ void CheMPS2::HamiltonianOperator::SSOrthogonalize( int statesToOrtho,
                CTensorO * rightOverlapPhi = ( site + 1 ) < L ?  overlapsMain[ site ] : NULL;
                phi_e->Join( leftOverlapPhi, mpsMain[ site ], rightOverlapPhi );
 
-               CTensorT ** os = new CTensorT*[ statesToOrtho ];
-               for ( int st = 0; st < statesToOrtho; st++ ) {
-                  os[ st ]           = new CTensorT( site, bookkeepersOthers[ st ] );
-                  CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlapsO[ st ][ site - 1 ] : NULL;
-                  CTensorO * rightOverlapA = ( site + 1 ) < L ? overlapsO[ st ][ site ] : NULL;
-                  os[ st ]->Join( leftOverlapA, others[ st ][ site ], rightOverlapA );
+               CTensorT ** os = new CTensorT*[ st + 1 ];
+               for ( int st2 = 0; st2 <= st; st2++ ) {
+                  os[ st2 ]           = new CTensorT( site, bkOut );
+                  CTensorO * leftOverlapA  = ( site - 1 ) >= 0 ? overlapsO[ st2 ][ site - 1 ] : NULL;
+                  CTensorO * rightOverlapA = ( site + 1 ) < L ? overlapsO[ st2 ][ site ] : NULL;
+                  os[ st2 ]->Join( leftOverlapA, others[ st2 ][ site ], rightOverlapA );
                }
 
-               orthogonalize( site, statesToOrtho, phi_e, bkMain, os, bookkeepersOthers, mpsOut[ site ], bkOut, false );
+               orthogonalize( site, st + 1, phi_e, bkMain, os, bookkeepersOthers, mpsOut[ site ], bkOut, false );
 
                left_normalize( mpsOut[ site ], mpsOut[ site + 1 ] );
 
@@ -557,19 +555,19 @@ void CheMPS2::HamiltonianOperator::SSOrthogonalize( int statesToOrtho,
                   overlapsMain[ site ]->update_ownmem( mpsOut[ site ], mpsMain[ site ], overlapsMain[ site - 1 ] );
                }
 
-               for ( int st = 0; st < statesToOrtho; st++ ) {
-                  delete overlapsO[ st ][ site ];
-                  overlapsO[ st ][ site ] = new CTensorO( site + 1, true, bkOut, bookkeepersOthers[ st ] );
+               for ( int st2 = 0; st2 <= st; st2++ ) {
+                  delete overlapsO[ st2 ][ site ];
+                  overlapsO[ st2 ][ site ] = new CTensorO( site + 1, true, bkOut, bookkeepersOthers[ st2 ] );
                   if ( site == 0 ) {
-                     overlapsO[ st ][ site ]->create( mpsOut[ site ], others[ st ][ site ] );
+                     overlapsO[ st2 ][ site ]->create( mpsOut[ site ], others[ st2 ][ site ] );
                   } else {
-                     overlapsO[ st ][ site ]->update_ownmem( mpsOut[ site ], others[ st ][ site ], overlapsO[ st ][ site - 1 ] );
+                     overlapsO[ st2 ][ site ]->update_ownmem( mpsOut[ site ], others[ st2 ][ site ], overlapsO[ st2 ][ site - 1 ] );
                   }
                }
 
                delete phi_e;
-               for ( int st = 0; st < statesToOrtho; st++ ) {
-                  delete os[ st ];
+               for ( int st2 = 0; st2 <= st; st2++ ) {
+                  delete os[ st2 ];
                }
                delete[] os;
 
@@ -602,6 +600,13 @@ void CheMPS2::HamiltonianOperator::orthogonalize( int pos, const int numStates, 
       ops[ i ] = op->trace();
       delete op;
    }
+
+   // for ( int irow = 0; irow < numStates; irow++ ){
+   //    for ( int icol = 0; icol < numStates; icol++ ){
+   //       std::cout << oos[ irow +  icol * numStates ] << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////

@@ -374,7 +374,7 @@ void CheMPS2::TimeEvolution::doStep_runge_kutta( const double time_step, const i
    delete op;
 }
 
-void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int kry_size, dcomplex offset, const bool backwards, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
+void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int kry_size, dcomplex offset, const bool backwards, const bool doOrtho, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut ) {
 
    int krylovSpaceDimension = kry_size;
 
@@ -419,10 +419,32 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
       op->DSApply( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
                    mpsTemp, bkTemp, scheme );
 
-      normalize( L, mpsTemp );
+      if( doOrtho ){
+         SyBookkeeper * bkTemp2 = new SyBookkeeper( *bkTemp );
+         CTensorT ** mpsTemp2   = new CTensorT *[ L ];
+         for ( int index = 0; index < L; index++ ) {
+            mpsTemp2[ index ] = new CTensorT( mpsTemp[ index ] );
+         }
 
-      krylovBasisVectors[ kry ]       = mpsTemp;
-      krylovBasisSyBookkeepers[ kry ] = bkTemp;
+         op->SSOrthogonalize( 1, mpsTemp, bkTemp, &krylovBasisVectors[ kry - 1], &krylovBasisSyBookkeepers[ kry - 1 ], mpsTemp2, bkTemp2, scheme );
+
+         normalize( L, mpsTemp2 );
+
+         krylovBasisVectors[ kry ]       = mpsTemp2;
+         krylovBasisSyBookkeepers[ kry ] = bkTemp2;
+
+         // for ( int site = 0; site < L; site++ ) {
+         //    delete mpsTemp[ site ];
+         // }
+         // delete[] mpsTemp;
+         // delete bkTemp;
+
+      } else {
+         normalize( L, mpsTemp );
+         krylovBasisVectors[ kry ]       = mpsTemp;
+         krylovBasisSyBookkeepers[ kry ] = bkTemp;
+      }
+
 
       gettimeofday( &endVec, NULL );
       const double elapsed = ( endVec.tv_sec - startVec.tv_sec ) + 1e-6 * ( endVec.tv_usec - startVec.tv_usec );
@@ -604,7 +626,8 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
                                         const double time_step_minor, const double time_final, 
                                         CTensorT ** mpsIn, SyBookkeeper * bkIn, 
                                         const int kry_size,
-                                        const bool backwards, const bool doDumpFCI, 
+                                        const bool backwards, const bool doOrtho,
+                                        const bool doDumpFCI, 
                                         const bool doDump2RDM, const int nWeights,
                                         const int * hfState ) {
    std::cout << "\n";
@@ -823,7 +846,7 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
             normalize( L, MPSDT );
 
             if( time_type == 'K' ){
-               doStep_arnoldi( time_step_minor, kry_size, -0.0 * first_energy, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
+               doStep_arnoldi( time_step_minor, kry_size, -0.0 * first_energy, backwards, doOrtho, MPS, MPSBK, MPSDT, MPSBKDT );
             } else if ( time_type == 'R' ){
                doStep_runge_kutta( time_step_minor, kry_size, -0.0 * first_energy, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
             } else if ( time_type == 'E' ){

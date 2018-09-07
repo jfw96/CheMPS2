@@ -29,6 +29,7 @@
 
 #include "Initialize.h"
 #include "CASSCF.h"
+#include "HamiltonianOperator.h"
 #include "Molden.h"
 #include "MPIchemps2.h"
 #include "EdmistonRuedenberg.h"
@@ -387,6 +388,9 @@ cout << "\n"
 "       TIME_NINIT = int, int, int\n"
 "              Set the occupation numbers for the inital state. Ordered as in the FCIDUMP file. (positive integers).\n"
 "\n"
+"       TIME_2_NINIT = int, int, int\n"
+"              Set the occupation numbers of a second state that is supposed with the first. Ordered as in the FCIDUMP file. (positive integers).\n"
+"\n"
 "       TIME_INIT = /path/to/inital/state\n"
 "              Set to load the inital state from HDF5 file.\n"
 "\n"
@@ -410,6 +414,9 @@ cout << "\n"
 "\n"
 "       TIME_BACKWARD = bool\n"
 "              Set if the time evolution is forward or backward (default FALSE).\n"
+"\n"
+"       TIME_ORTHO = bool\n"
+"              Set if the Krylov vector get orthogonalized (default FALSE).\n"
 "\n"
 "       TIME_DUMPFCI = bool\n"
 "              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_EVOLU = TRUE and TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
@@ -449,6 +456,7 @@ int main( int argc, char ** argv ){
    double time_final      = 0.0;
    string time_init       = "";
    string time_ninit      = "";
+   string time_2_ninit    = "";
    string time_hf_state   = "";
    string time_n_min      = "";
    string time_n_max      = "";
@@ -456,6 +464,7 @@ int main( int argc, char ** argv ){
    int    time_n_weights  = 0; 
    int    time_krysize    = 0;
    bool   time_backward   = false;
+   bool   time_ortho      = false;
    bool   time_dumpfci    = false;
    bool   time_dump2rdm   = false;
 
@@ -528,6 +537,7 @@ int main( int argc, char ** argv ){
 
       if ( find_boolean( &reorder_fiedler,  line, "REORDER_FIEDLER"   ) == false ){ return -1; }
       if ( find_boolean( &time_backward,    line, "TIME_BACKWARD"     ) == false ){ return -1; }
+      if ( find_boolean( &time_ortho,       line, "TIME_ORTHO"        ) == false ){ return -1; }
       if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"      ) == false ){ return -1; }
       if ( find_boolean( &time_dump2rdm,    line, "TIME_DUMP2RDM"     ) == false ){ return -1; }
 
@@ -571,6 +581,11 @@ int main( int argc, char ** argv ){
       if ( line.find( "TIME_NINIT" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
          time_ninit = line.substr( pos, line.length() - pos );
+      }
+
+      if ( line.find( "TIME_2_NINIT" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         time_2_ninit = line.substr( pos, line.length() - pos );
       }
 
       if ( line.find( "TIME_HF_STATE" ) != string::npos ){
@@ -696,6 +711,7 @@ int main( int argc, char ** argv ){
    ************************/
 
    int * time_ninit_parsed    = new int[ fcidump_norb ];
+   int * time_2_ninit_parsed    = new int[ fcidump_norb ];
    int * time_hf_state_parsed = NULL;
    int * time_n_max_parsed    = NULL;
    int * time_n_min_parsed    = NULL;
@@ -754,6 +770,31 @@ int main( int argc, char ** argv ){
       }
 
       int elec_sum = 0; for ( int cnt = 0; cnt < fcidump_norb; cnt++ ) { elec_sum += time_ninit_parsed[ cnt ];  }
+      if ( elec_sum != nelectrons ){
+         cerr << "There should be " << nelectrons << " distributed over the molecular orbitals in TIME_NINIT !" << endl;
+         return -1;
+      }
+   }
+
+   if( time_2_ninit.length() > 0 ){
+      const int ni_ini  = count( time_2_ninit.begin(), time_2_ninit.end(), ',' ) + 1;
+      const bool init_ok = ( fcidump_norb == ni_ini );
+
+      if ( init_ok == false ){
+         cerr << "There should be " << fcidump_norb << " numbers in TIME_2_NINIT when TIME_EVOLU = TRUE !" << endl;
+         return -1;
+      }
+
+      fetch_ints( time_2_ninit, time_2_ninit_parsed, fcidump_norb );
+
+      for ( int cnt = 0; cnt < fcidump_norb; cnt ++ ){
+         if ( ( time_2_ninit_parsed[ cnt ] < 0 ) || ( time_2_ninit_parsed[ cnt ] > 2 ) ){
+            cerr << "The occupation number in TIME_NINIT has to be 0, 1 or 2 !" << endl;
+            return -1;
+         }
+      }
+
+      int elec_sum = 0; for ( int cnt = 0; cnt < fcidump_norb; cnt++ ) { elec_sum += time_2_ninit_parsed[ cnt ];  }
       if ( elec_sum != nelectrons ){
          cerr << "There should be " << nelectrons << " distributed over the molecular orbitals in TIME_NINIT !" << endl;
          return -1;
@@ -854,7 +895,8 @@ int main( int argc, char ** argv ){
    }
    cout << "   TIME_KRYSIZE       = " << time_krysize << endl;
    cout << "   TIME_HDF5OUTPUT    = " << time_hdf5output << endl;
-   cout << "   TIME_BACKWARD      = " << (( time_backward   ) ? "TRUE" : "FALSE" ) << endl;   
+   cout << "   TIME_BACKWARD      = " << (( time_backward   ) ? "TRUE" : "FALSE" ) << endl;
+   cout << "   TIME_ORTHO         = " << (( time_ortho      ) ? "TRUE" : "FALSE" ) << endl;   
    cout << "   TIME_DUMPFCI       = " << (( time_dumpfci    ) ? "TRUE" : "FALSE" ) << endl;
    cout << "   TIME_DUMP2RDM      = " << (( time_dump2rdm   ) ? "TRUE" : "FALSE" ) << endl;
    cout << " " << endl;
@@ -914,7 +956,39 @@ int main( int argc, char ** argv ){
 
    CheMPS2::SyBookkeeper *  bkIn = NULL;
    CheMPS2::CTensorT    ** mpsIn = NULL;
-   if( time_ninit.length() > 0 ){
+   if( ( time_ninit.length() > 0  ) && ( time_2_ninit.length() > 0  ) ){
+      bkIn = new CheMPS2::SyBookkeeper( prob, 30 );
+      mpsIn = new CheMPS2::CTensorT *[ prob->gL() ];
+      
+      CheMPS2::SyBookkeeper *  bkA = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
+      CheMPS2::CTensorT    ** mpsA = new CheMPS2::CTensorT *[ prob->gL() ];
+      CheMPS2::SyBookkeeper *  bkB = new CheMPS2::SyBookkeeper( prob, time_2_ninit_parsed );
+      CheMPS2::CTensorT    ** mpsB = new CheMPS2::CTensorT *[ prob->gL() ];
+
+      for ( int index = 0; index < prob->gL(); index++ ) {
+         mpsA[ index ] = new CheMPS2::CTensorT( index, bkA );
+         mpsB[ index ] = new CheMPS2::CTensorT( index, bkB );
+         mpsIn[ index ] = new CheMPS2::CTensorT( index, bkIn );
+         mpsA[ index ]->gStorage()[ 0 ] = 1.0;
+         mpsB[ index ]->gStorage()[ 0 ] = 1.0;
+         mpsIn[ index ]->random();
+      }
+      normalize( prob->gL(),  mpsA );
+      normalize( prob->gL(),  mpsB );
+
+      CheMPS2::HamiltonianOperator * hamOp = new CheMPS2::HamiltonianOperator( prob );
+
+      dcomplex fac[] = {1.0, -1.0};
+      CheMPS2::CTensorT    ** states[ 2 ]; 
+      CheMPS2::SyBookkeeper    * bks[ 2 ]; 
+      states[ 0 ] = mpsA;
+      states[ 1 ] = mpsB;
+      bks[ 0 ] = bkA;
+      bks[ 1 ] = bkB;
+      hamOp->DSSum(2, &fac[ 0 ], &states[ 0 ], &bks[ 0 ], mpsIn, bkIn, opt_scheme );
+      normalize( prob->gL(), mpsIn );
+
+   } else if( time_ninit.length() > 0  ){
       bkIn = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
       mpsIn = new CheMPS2::CTensorT *[ prob->gL() ];
 
@@ -946,7 +1020,7 @@ int main( int argc, char ** argv ){
 
       CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
       taylor->Propagate( time_type, time_step_major, time_step_minor, time_final, mpsIn, bkIn,
-                         time_krysize, time_backward, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
+                         time_krysize, time_backward, time_ortho, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
 
       if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
 

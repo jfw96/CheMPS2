@@ -28,6 +28,7 @@
 #include <sstream>
 
 #include "Initialize.h"
+#include "HamiltonianOperator.h"
 #include "CASSCF.h"
 #include "Molden.h"
 #include "MPIchemps2.h"
@@ -49,52 +50,74 @@ int main( int argc, char ** argv ){
    CheMPS2::Initialize::Init();
    string fcidump = "h10_sto-6g-ao.fcidump";
    CheMPS2::Hamiltonian * ham = new CheMPS2::Hamiltonian( fcidump, 0 );
-   // CheMPS2::ConvergenceScheme * opt_scheme = new CheMPS2::ConvergenceScheme( ni_d );
-   // for ( int count = 0; count < ni_d; count++ ){
-   //    opt_scheme->set_instruction( count, value_states[ count ],
-   //                                        value_cutoff[ count ],
-   //                                        value_maxit [ count ],
-   //                                        value_noise [ count ]);
-   // }
-   // delete [] value_states;
-   // delete [] value_cutoff;
-   // delete [] value_maxit;
-   // delete [] value_noise;
+   CheMPS2::ConvergenceScheme * opt_scheme = new CheMPS2::ConvergenceScheme( 1 );
 
+   opt_scheme->set_instruction( 0, 100, 0.0, 3, 0.0 );
+  
    CheMPS2::Problem * prob = new CheMPS2::Problem( ham, 0, 10, 0 );
+   prob->construct_mxelem();
+   CheMPS2::SyBookkeeper * bkIn   = new CheMPS2::SyBookkeeper( prob, 100 );
+   CheMPS2::SyBookkeeper * bkO    = new CheMPS2::SyBookkeeper( prob, 100 );
+   CheMPS2::SyBookkeeper * bkOut  = new CheMPS2::SyBookkeeper( prob, 100 );
+   CheMPS2::CTensorT** mpsIn      = new CheMPS2::CTensorT *[ prob->gL() ];
+   CheMPS2::CTensorT** mpsO       = new CheMPS2::CTensorT *[ prob->gL() ];
+   CheMPS2::CTensorT** mpsOut     = new CheMPS2::CTensorT *[ prob->gL() ];
 
-   CheMPS2::SyBookkeeper * bkIn  = new CheMPS2::SyBookkeeper( prob, 500 );
-
-   for( int bla = 0; bla < 1000; bla++ ){
-      CheMPS2::CTensorT** mpsIn = new CheMPS2::CTensorT *[ prob->gL() ];
-
-      for ( int index = 0; index < prob->gL(); index++ ) {
-         mpsIn[ index ] = new CheMPS2::CTensorT( index, bkIn );
-         mpsIn[ index ]->random();
-      }
-      
-      CheMPS2::CTensorO * overlapOld;
-      overlapOld = new CheMPS2::CTensorO( 1, true, bkIn, bkIn );
-      overlapOld->create( mpsIn[ 0 ], mpsIn[ 0 ] );
-
-      CheMPS2::CTensorO * overlapNext;
-
-      for ( int i = 1; i < L; i++ ) {
-         // std::cout << i << std::endl;
-         overlapNext = new CheMPS2::CTensorO( i + 1, true, bkIn, bkIn );
-         overlapNext->update_ownmem( mpsIn[ i ], mpsIn[ i ], overlapOld );
-         delete overlapOld;
-         overlapOld = overlapNext;
-
-      }
-
-      assert( overlapOld->gNKappa() == 1 );
-      dcomplex result = overlapOld->trace();
-      delete overlapOld;
-
-      std::cout << bla << " " << result << std::endl;
-
+   for ( int index = 0; index < prob->gL(); index++ ) {
+      mpsIn[ index ]  = new CheMPS2::CTensorT( index,  bkIn );
+      mpsO [ index ]  = new CheMPS2::CTensorT( index,   bkO );
+      mpsOut[ index ] = new CheMPS2::CTensorT( index, bkOut );
+       mpsIn[ index ]->random();
+        mpsO[ index ]->random();
+      mpsOut[ index ]->random();
    }
+   normalize( prob->gL(), mpsIn );
+   normalize( prob->gL(), mpsO );
+   normalize( prob->gL(), mpsOut );
+
+   CheMPS2::HamiltonianOperator * op = new CheMPS2::HamiltonianOperator( prob, 0.0 );
+
+   std::cout << overlap( mpsIn,  mpsO ) << std::endl;
+   std::cout << overlap( mpsOut, mpsO ) << std::endl;
+   std::cout << overlap( mpsOut, mpsIn ) << std::endl;
+
+   op->SSOrthogonalize( 1, mpsIn, bkIn, &mpsO, &bkO, mpsOut, bkOut, opt_scheme );
+
+   std::cout << overlap( mpsIn,  mpsO ) << std::endl;
+   std::cout << overlap( mpsOut, mpsO ) << std::endl;
+   std::cout << overlap( mpsOut, mpsIn ) << std::endl;
+   std::cout << norm( mpsIn ) << std::endl;
+   std::cout << norm( mpsOut ) << std::endl;
+
+   std::cout << op->ExpectationValue( mpsIn, bkIn ) << std::endl;
+   std::cout << op->ExpectationValue( mpsOut, bkOut ) << std::endl;
+
+   // for( int bla = 0; bla < 1000; bla++ ){
+      
+   //    CheMPS2::CTensorO * overlapOld;
+   //    overlapOld = new CheMPS2::CTensorO( 1, true, bkIn, bkIn );
+   //    overlapOld->create( mpsIn[ 0 ], mpsIn[ 0 ] );
+
+   //    CheMPS2::CTensorO * overlapNext;
+
+   //    for ( int i = 1; i < L; i++ ) {
+   //       // std::cout << i << std::endl;
+   //       overlapNext = new CheMPS2::CTensorO( i + 1, true, bkIn, bkIn );
+   //       overlapNext->update_ownmem( mpsIn[ i ], mpsIn[ i ], overlapOld );
+   //       delete overlapOld;
+   //       overlapOld = overlapNext;
+
+   //    }
+
+   //    assert( overlapOld->gNKappa() == 1 );
+   //    dcomplex result = overlapOld->trace();
+   //    delete overlapOld;
+
+   //    std::cout << bla << " " << result << std::endl;
+
+   // }
+
+
 
    // for( int bla = 0; bla < 1000; bla++ ){
    //    CheMPS2::TensorT** mpsIn = new CheMPS2::TensorT *[ prob->gL() ];
