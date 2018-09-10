@@ -454,19 +454,19 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
       }
    }
 
-   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-   //       std::cout << std::real( krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] ) << " ";
-   //    }
-   //    std::cout << std::endl;
-   // }
+   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+         std::cout << std::real( krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] ) << " ";
+      }
+      std::cout << std::endl;
+   }
 
-   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-   //       std::cout << std::real( overlaps[ irow +  icol * krylovSpaceDimension ] ) << " ";
-   //    }
-   //    std::cout << std::endl;
-   // }
+   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+         std::cout << std::real( overlaps[ irow +  icol * krylovSpaceDimension ] ) << " ";
+      }
+      std::cout << std::endl;
+   }
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
@@ -823,7 +823,7 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
             normalize( L, MPSDT );
 
             if( time_type == 'K' ){
-               doStep_arnoldi( time_step_minor, kry_size, -0.0*first_energy, backwards, doOrtho, MPS, MPSBK, MPSDT, MPSBKDT );
+               doStep_arnoldi( time_step_minor, kry_size, -1.0 * first_energy, backwards, doOrtho, MPS, MPSBK, MPSDT, MPSBKDT );
             } else if ( time_type == 'R' ){
                doStep_runge_kutta( time_step_minor, kry_size, -0.0 * first_energy, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
             } else if ( time_type == 'E' ){
