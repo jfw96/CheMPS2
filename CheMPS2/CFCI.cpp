@@ -2190,9 +2190,9 @@ void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_
          }
       }
 
-      if( t == 0.0 ){
-         Econstant += -1.0 *  energy;
-      }
+      // if( t == 0.0 ){
+      //    Econstant += -1.0 *  energy;
+      // }
 
       std::cout << hashline;
       std::cout                                                  << "\n";
@@ -2325,10 +2325,10 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, const bool dobackwards, un
       matvec( krylovBasisVectors[ kry - 1 ], newKrylov );
       FCIdaxpy( veclength, getEconst(), krylovBasisVectors[ kry - 1 ], newKrylov );
 
-      // for ( int i = 0; i < kry; i++ ) {
-      //    dcomplex coef = -krylovHamiltonian[ i + ( kry - 1 ) * krylovSpaceDimension ] / overlaps[ i + i * krylovSpaceDimension ];
-      //    FCIdaxpy( veclength, coef, krylovBasisVectors[ i ], newKrylov );
-      // }
+      for ( int i = 0; i < kry; i++ ) {
+         dcomplex coef = -krylovHamiltonian[ i + ( kry - 1 ) * krylovSpaceDimension ] / overlaps[ i + i * krylovSpaceDimension ];
+         FCIdaxpy( veclength, coef, krylovBasisVectors[ i ], newKrylov );
+      }
 
       dcomplex norm_inv = std::pow( std::real( FCIddot( veclength, newKrylov, newKrylov ) ), -0.5 );
       FCIdscal( veclength, norm_inv, newKrylov );

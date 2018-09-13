@@ -861,7 +861,7 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
                delete add;
             }
             if ( scheme->get_noise_prefactor( inst ) > 0 ) { added->addNoise( scheme->get_noise_prefactor( inst ) ); }
-            added->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( inst ), scheme->get_cut_off( inst ), false, true );
+            added->Split( mpsOut[ site ], mpsOut[ site + 1 ], 2 * scheme->get_D( inst ), scheme->get_cut_off( inst ), false, true );
             delete added;
 
             // Otensors
@@ -889,7 +889,7 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
             }
 
             if ( scheme->get_noise_prefactor( inst ) > 0 ) { added->addNoise( scheme->get_noise_prefactor( inst ) ); }
-            added->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( inst ), scheme->get_cut_off( inst ), true, true );
+            added->Split( mpsOut[ site ], mpsOut[ site + 1 ], 2 * scheme->get_D( inst ), scheme->get_cut_off( inst ), true, true );
             delete added;
 
             // Otensors
