@@ -664,8 +664,9 @@ void CheMPS2::HamiltonianOperator::orthogonalize( int pos, const int numStates, 
 
 void CheMPS2::HamiltonianOperator::DSApply( CTensorT ** mpsA, SyBookkeeper * bkA,
                                             CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                                            ConvergenceScheme * scheme ) {
-   DSApplyAndAdd( mpsA, bkA, 0, NULL, NULL, NULL, mpsOut, bkOut, scheme );
+                                            ConvergenceScheme * scheme,
+                                          const double dimensionFactor ) {
+   DSApplyAndAdd( mpsA, bkA, 0, NULL, NULL, NULL, mpsOut, bkOut, scheme, dimensionFactor );
 }
 
 void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper * bkA,
@@ -674,7 +675,8 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
                                                   CTensorT *** states,
                                                   SyBookkeeper ** bookkeepers,
                                                   CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                                                  ConvergenceScheme * scheme ) {
+                                                  ConvergenceScheme * scheme,
+                                                  const double dimensionFactor ) {
 
    deleteAllBoundaryOperators();
    for ( int index = 0; index < L - 2; index++ ) {
@@ -787,7 +789,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
             applied->Add( 1.0, fromAdded );
 
             if ( scheme->get_noise_prefactor( inst ) > 0 ) { applied->addNoise( scheme->get_noise_prefactor( inst ) ); }
-            double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( inst ), scheme->get_cut_off( inst ), true, true );
+            double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 0.5 * scheme->get_D( inst ), scheme->get_cut_off( inst ), true, true );
 
             delete applied;
             delete in;
@@ -822,7 +824,8 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
 void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
                                           dcomplex * factors, CTensorT *** states, SyBookkeeper ** bookkeepers,
                                           CTensorT ** mpsOut, SyBookkeeper * bkOut,
-                                          ConvergenceScheme * scheme ) {
+                                          ConvergenceScheme * scheme,
+                                          const double dimensionFactor ) {
    deleteAllBoundaryOperators();
 
    for ( int index = 0; index < L - 1; index++ ) {
@@ -861,7 +864,7 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
                delete add;
             }
             if ( scheme->get_noise_prefactor( inst ) > 0 ) { added->addNoise( scheme->get_noise_prefactor( inst ) ); }
-            added->Split( mpsOut[ site ], mpsOut[ site + 1 ], 2 * scheme->get_D( inst ), scheme->get_cut_off( inst ), false, true );
+            added->Split( mpsOut[ site ], mpsOut[ site + 1 ], 0.5 * scheme->get_D( inst ), scheme->get_cut_off( inst ), false, true );
             delete added;
 
             // Otensors
@@ -889,7 +892,7 @@ void CheMPS2::HamiltonianOperator::DSSum( int statesToAdd,
             }
 
             if ( scheme->get_noise_prefactor( inst ) > 0 ) { added->addNoise( scheme->get_noise_prefactor( inst ) ); }
-            added->Split( mpsOut[ site ], mpsOut[ site + 1 ], 2 * scheme->get_D( inst ), scheme->get_cut_off( inst ), true, true );
+            added->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( inst ), scheme->get_cut_off( inst ), true, true );
             delete added;
 
             // Otensors

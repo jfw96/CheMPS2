@@ -170,7 +170,7 @@ void CheMPS2::TimeEvolution::doStep_euler( const double time_step, const int kry
 
    dcomplex step = backwards ? dcomplex( 0.0, 1.0 * time_step ) : dcomplex( 0.0, -1.0 * time_step );
 
-   HamiltonianOperator * op = new HamiltonianOperator( prob, 0.0*offset );
+   HamiltonianOperator * op = new HamiltonianOperator( prob, offset );
 
    SyBookkeeper * bkTemp = new SyBookkeeper( prob, scheme->get_D( 0 ) );
    CTensorT ** mpsTemp   = new CTensorT *[ L ];
@@ -181,8 +181,7 @@ void CheMPS2::TimeEvolution::doStep_euler( const double time_step, const int kry
    normalize( L, mpsTemp );
 
    op->DSApply( mpsIn, bkIn, mpsTemp, bkTemp, scheme );
-   scale( step, L, mpsTemp );
-
+   std::cout << overlap( mpsIn, mpsTemp ) << std::endl;
    CTensorT*** states = new CTensorT**[ 2 ];
    states[ 0 ] = mpsIn;
    states[ 1 ] = mpsTemp;
@@ -190,8 +189,11 @@ void CheMPS2::TimeEvolution::doStep_euler( const double time_step, const int kry
    bkers[ 0 ] = bkIn; 
    bkers[ 1 ] = bkTemp;
 
-   dcomplex coefs[] = { 1.0, 1.0 };
+   dcomplex * coefs = new dcomplex[ 2 ];
+   coefs[ 0 ] = 1.0;
+   coefs[ 1 ] = step;
    op->DSSum( 2, &coefs[0], states, bkers, mpsOut, bkOut, scheme );
+   std::cout << overlap( mpsIn, mpsOut ) << std::endl;
 
    for ( int site = 0; site < L; site++ ) {
       delete mpsTemp[ site ];
@@ -201,6 +203,7 @@ void CheMPS2::TimeEvolution::doStep_euler( const double time_step, const int kry
    delete[] states;
    delete[] bkers;
    delete op;
+   delete coefs;
 
 }
 
@@ -292,10 +295,10 @@ void CheMPS2::TimeEvolution::doStep_runge_kutta( const double time_step, const i
       normalize( L, mpsTemp );
 
       dcomplex coefs[] = { 1.0, 0.5 };
-      CTensorT*** states = new CTensorT**[ 3 ];
+      CTensorT*** states = new CTensorT**[ 2 ];
       states[ 0 ] = rungeKuttaVectors[ 0 ];
       states[ 1 ] = rungeKuttaVectors[ 2 ];
-      SyBookkeeper ** bkers = new SyBookkeeper * [ 3 ];
+      SyBookkeeper ** bkers = new SyBookkeeper * [ 2 ];
       bkers[ 0 ] = rungeKuttaSyBookkeepers[ 0 ]; 
       bkers[ 1 ] = rungeKuttaSyBookkeepers[ 2 ];
       op->DSSum( 2, &coefs[0], states, bkers, mpsTemp, bkTemp, scheme );
@@ -380,7 +383,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
 
    dcomplex step = backwards ? dcomplex( 0.0, 1.0 * time_step ) : dcomplex( 0.0, -1.0 * time_step );
 
-   HamiltonianOperator * op = new HamiltonianOperator( prob, 0.0 );
+   HamiltonianOperator * op = new HamiltonianOperator( prob, offset );
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
@@ -413,7 +416,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
       struct timeval start, end;
       gettimeofday( &start, NULL );
 
-      SyBookkeeper * bkTemp = new SyBookkeeper( prob, scheme->get_D ( 0 ) );
+      SyBookkeeper * bkTemp = new SyBookkeeper( prob, 0.5 * scheme->get_D ( 0 ) );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
       for ( int index = 0; index < L; index++ ) {
          mpsTemp[ index ] = new CTensorT( index, bkTemp );
@@ -434,7 +437,8 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
       op->DSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
                          kry, coefs, states, bookkeepers,
                          mpsTemp, bkTemp,
-                         scheme );
+                         scheme, 
+                         0.5 );
 
       normalize( L, mpsTemp );
 
@@ -874,7 +878,7 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
       if ( t + time_step_major < time_final ) {
          for( double t_minor = 0.0; (time_step_major - t_minor) > 1e-6; t_minor+=time_step_minor ) {
 
-            SyBookkeeper * MPSBKDT = new SyBookkeeper( prob, 2 * scheme->get_D( 0 ) );
+            SyBookkeeper * MPSBKDT = new SyBookkeeper( prob, scheme->get_D( 0 ) );
             CTensorT ** MPSDT      = new CTensorT *[ L ];
             for ( int index = 0; index < L; index++ ) {
                MPSDT[ index ] = new CTensorT( index, MPSBKDT );
@@ -883,9 +887,9 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
             normalize( L, MPSDT );
 
             if( time_type == 'K' ){
-               doStep_arnoldi( time_step_minor, kry_size, -0.0 * first_energy, backwards, doOrtho, MPS, MPSBK, MPSDT, MPSBKDT );
+               doStep_arnoldi( time_step_minor, kry_size, -1.0 * first_energy, backwards, doOrtho, MPS, MPSBK, MPSDT, MPSBKDT );
             } else if ( time_type == 'R' ){
-               doStep_runge_kutta( time_step_minor, kry_size, -0.0 * first_energy, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
+               doStep_runge_kutta( time_step_minor, kry_size, -1.0 * first_energy, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
             } else if ( time_type == 'E' ){
                doStep_euler( time_step_minor, kry_size, -1.0 * first_energy, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
             }
