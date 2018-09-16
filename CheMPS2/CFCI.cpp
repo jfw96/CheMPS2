@@ -2190,9 +2190,9 @@ void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_
          }
       }
 
-      // if( t == 0.0 ){
-      //    Econstant += -1.0 *  energy;
-      // }
+      if( t == 0.0 ){
+         Econstant += -1.0 *  energy;
+      }
 
       std::cout << hashline;
       std::cout                                                  << "\n";
