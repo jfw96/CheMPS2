@@ -416,7 +416,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
       struct timeval start, end;
       gettimeofday( &start, NULL );
 
-      SyBookkeeper * bkTemp = new SyBookkeeper( prob, 0.5 * scheme->get_D ( 0 ) );
+      SyBookkeeper * bkTemp = new SyBookkeeper( prob, scheme->get_D ( 0 ) );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
       for ( int index = 0; index < L; index++ ) {
          mpsTemp[ index ] = new CTensorT( index, bkTemp );
@@ -437,8 +437,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step, const int k
       op->DSApplyAndAdd( krylovBasisVectors[ kry - 1 ], krylovBasisSyBookkeepers[ kry - 1 ],
                          kry, coefs, states, bookkeepers,
                          mpsTemp, bkTemp,
-                         scheme, 
-                         0.5 );
+                         scheme );
 
       normalize( L, mpsTemp );
 
