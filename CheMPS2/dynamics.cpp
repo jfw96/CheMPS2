@@ -415,14 +415,14 @@ cout << "\n"
 "       TIME_BACKWARD = bool\n"
 "              Set if the time evolution is forward or backward (default FALSE).\n"
 "\n"
-"       TIME_ORTHO = bool\n"
-"              Set if the Krylov vector get orthogonalized (default FALSE).\n"
-"\n"
 "       TIME_DUMPFCI = bool\n"
 "              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_EVOLU = TRUE and TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
 "\n"
 "       TIME_DUMP2RDM = bool\n"
 "              Set if the 2RDM is dumped into the HDF5 file. Only has affect if TIME_EVOLU = TRUE and TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
+"\n"
+"       TIME_ENERGY_OFFSET = double\n"
+"              Set the energy offset used for the dynamics calculation. (default 0.0).\n"
 "\n"
 " " << endl;
 
@@ -467,6 +467,7 @@ int main( int argc, char ** argv ){
    bool   time_ortho      = false;
    bool   time_dumpfci    = false;
    bool   time_dump2rdm   = false;
+   double time_energy_offset = 0.0;
 
    struct option long_options[] =
    {
@@ -540,6 +541,8 @@ int main( int argc, char ** argv ){
       if ( find_boolean( &time_ortho,       line, "TIME_ORTHO"        ) == false ){ return -1; }
       if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"      ) == false ){ return -1; }
       if ( find_boolean( &time_dump2rdm,    line, "TIME_DUMP2RDM"     ) == false ){ return -1; }
+
+      if ( find_double( &time_energy_offset, line, "TIME_ENERGY_OFFSET", false, 0.0 ) == false ){ return -1; }
 
       if ( line.find( "SWEEP_STATES" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
@@ -1007,7 +1010,7 @@ int main( int argc, char ** argv ){
       }
       loadMPS( time_init, prob->gL(), mpsIn );
 
-      normalize( prob->gL(), mpsIn );
+      // normalize( prob->gL(), mpsIn );
    }
 
    /*************************
@@ -1020,7 +1023,7 @@ int main( int argc, char ** argv ){
 
       CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
       taylor->Propagate( time_type, time_step_major, time_step_minor, time_final, mpsIn, bkIn,
-                         time_krysize, time_backward, time_ortho, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
+                         time_krysize, time_backward, time_energy_offset, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
 
       if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
 

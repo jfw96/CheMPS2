@@ -735,7 +735,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
             delete fromAdded;
 
             if ( scheme->get_noise_prefactor( inst ) > 0 ) { applied->addNoise( scheme->get_noise_prefactor( inst ) ); }
-            double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], scheme->get_D( inst ), scheme->get_cut_off( inst ), false, true );
+            double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], dimensionFactor * scheme->get_D( inst ), scheme->get_cut_off( inst ), false, true );
 
             delete heff;
             delete applied;
@@ -789,7 +789,7 @@ void CheMPS2::HamiltonianOperator::DSApplyAndAdd( CTensorT ** mpsA, SyBookkeeper
             applied->Add( 1.0, fromAdded );
 
             if ( scheme->get_noise_prefactor( inst ) > 0 ) { applied->addNoise( scheme->get_noise_prefactor( inst ) ); }
-            double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], 0.5 * scheme->get_D( inst ), scheme->get_cut_off( inst ), true, true );
+            double disc = applied->Split( mpsOut[ site ], mpsOut[ site + 1 ], dimensionFactor * scheme->get_D( inst ), scheme->get_cut_off( inst ), true, true );
 
             delete applied;
             delete in;
