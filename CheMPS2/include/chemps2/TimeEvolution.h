@@ -25,7 +25,7 @@ namespace CheMPS2 {
                       CTensorT ** mpsIn, SyBookkeeper * bkIn, 
                       const int kry_size, 
                       const bool backwards, const double offset,
-                      const bool doDumpFCI, 
+                      const bool do_ortho, const bool doDumpFCI, 
                       const bool doDump2RDM, const int nWeights = 0,
                       const int * hfState = NULL );
 
@@ -44,7 +44,8 @@ namespace CheMPS2 {
                          CTensorT ** mpsOut, SyBookkeeper * bkOut );
 
       void doStep_arnoldi( const double time_step, const int kry_size,
-                           dcomplex offset, const bool backwards,
+                           dcomplex offset, const bool backwards, 
+                           const bool do_ortho,
                            CTensorT ** mpsIn, SyBookkeeper * bkIn,
                            CTensorT ** mpsOut, SyBookkeeper * bkOut );
 

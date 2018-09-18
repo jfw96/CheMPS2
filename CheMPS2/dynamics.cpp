@@ -899,9 +899,10 @@ int main( int argc, char ** argv ){
    cout << "   TIME_KRYSIZE       = " << time_krysize << endl;
    cout << "   TIME_HDF5OUTPUT    = " << time_hdf5output << endl;
    cout << "   TIME_BACKWARD      = " << (( time_backward   ) ? "TRUE" : "FALSE" ) << endl;
-   cout << "   TIME_ORTHO         = " << (( time_ortho      ) ? "TRUE" : "FALSE" ) << endl;   
+   cout << "   TIME_ORTHO         = " << (( time_ortho      ) ? "TRUE" : "FALSE" ) << endl;
    cout << "   TIME_DUMPFCI       = " << (( time_dumpfci    ) ? "TRUE" : "FALSE" ) << endl;
    cout << "   TIME_DUMP2RDM      = " << (( time_dump2rdm   ) ? "TRUE" : "FALSE" ) << endl;
+   cout << "   TIME_ENERGY_OFFSET = " << time_energy_offset                        << endl;
    cout << " " << endl;
 
    /********************************
@@ -1023,7 +1024,7 @@ int main( int argc, char ** argv ){
 
       CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
       taylor->Propagate( time_type, time_step_major, time_step_minor, time_final, mpsIn, bkIn,
-                         time_krysize, time_backward, time_energy_offset, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
+                         time_krysize, time_backward, time_energy_offset, time_ortho, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
 
       if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
 
