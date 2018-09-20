@@ -663,7 +663,9 @@ double CheMPS2::CSobject::Split( CTensorT * Tleft, CTensorT * Tright, const int 
          zgesdd_( &jobz, DimLtotal + iCenter, DimRtotal + iCenter, mem, DimLtotal + iCenter,
                   Lambdas[ iCenter ], Us[ iCenter ], DimLtotal + iCenter, VTs[ iCenter ],
                   CenterDims + iCenter, work, &lwork, rwork, iwork, &info );
-         assert( info == 0 );
+         if( info != 0 ){
+            std::cout << "   BIG WARNING!!! Problem with SVD in CTensor::Split. SCD exited with info=" << info << "\n";
+         }
          delete[] work;
          delete[] rwork;
          delete[] iwork;
