@@ -43,11 +43,27 @@ namespace CheMPS2 {
                          CTensorT ** mpsIn, SyBookkeeper * bkIn, 
                          CTensorT ** mpsOut, SyBookkeeper * bkOut );
 
-      void doStep_arnoldi( const double time_step, const int kry_size,
-                           dcomplex offset, const bool backwards, 
+      void createKrylovVectors( const int kry_size, 
+                                dcomplex offset,
+                                const bool do_ortho,
+                                CTensorT *** mpsS, 
+                                SyBookkeeper ** bkS, 
+                                dcomplex * hamiltonian,
+                                dcomplex * overlaps );
+
+      void doStep_arnoldi( const double time_step, 
+                           const int kry_size, 
+                           dcomplex offset, 
+                           const bool backwards, 
                            const bool do_ortho,
-                           CTensorT ** mpsIn, SyBookkeeper * bkIn,
-                           CTensorT ** mpsOut, SyBookkeeper * bkOut );
+                           CTensorT ** mpsIn, 
+                           SyBookkeeper * bkIn, 
+                           CTensorT ** mpsOut, 
+                           SyBookkeeper * bkOut,
+                           CTensorT *** mpsS, 
+                           SyBookkeeper ** bkS, 
+                           dcomplex * hamiltonian, 
+                           dcomplex * overlaps );
 
       void doStep_runge_kutta( const double time_step, const int kry_size, 
                                dcomplex offset, const bool backwards, 
