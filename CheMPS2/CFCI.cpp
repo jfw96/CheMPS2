@@ -2350,14 +2350,14 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, const bool dobackwards, un
 
    for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
       for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-         std::cout << std::real( krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] ) << " ";
+         std::cout << krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] << " ";
       }
       std::cout << std::endl;
    }
 
    for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
       for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-         std::cout << std::real( overlaps[ irow +  icol * krylovSpaceDimension ] ) << " ";
+         std::cout << overlaps[ irow +  icol * krylovSpaceDimension ] << " ";
       }
       std::cout << std::endl;
    }
@@ -2394,6 +2394,37 @@ void CheMPS2::CFCI::ArnoldiTimeStep( double timeStep, const bool dobackwards, un
    dcomplex oneC    = 1.0;
    zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
            &step, overlaps_inv, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zeroC, toExp, &krylovSpaceDimension );
+
+
+   //////////////////////////////////////////////////////////////////////////////////////
+   //
+   // Print out the eigen values of the matrix in the exponential
+   //
+   //////////////////////////////////////////////////////////////////////////////////////
+
+   char jobz = 'V';
+   char uplo = 'U';
+   int inc = 1;
+   int N = krylovSpaceDimension * krylovSpaceDimension;
+   int lwork = 2 * N - 1;
+   int infoE;
+
+   dcomplex * U = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   dcomplex* workE = new dcomplex[ lwork ];
+   double* evals = new double[ krylovSpaceDimension ];
+   double* rwork = new double[ 3 * N - 2 ];
+
+   zcopy_( &N, toExp, &inc, U, &inc );
+   zheev_( &jobz, &uplo, &krylovSpaceDimension, U, &krylovSpaceDimension, evals, workE, &lwork, rwork, &infoE );
+   assert( infoE == 0 );
+
+   for( int i = 0; i < krylovSpaceDimension; i++ ){
+      std::cout << evals[ i ] << std::endl;
+   }
+   delete[] workE;
+   delete[] evals;
+   delete[] rwork; 
+   delete[] U;
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////

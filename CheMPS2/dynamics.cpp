@@ -918,6 +918,7 @@ int main( int argc, char ** argv ){
                                           value_maxit [ count ],
                                           value_noise [ count ]);
    }
+
    delete [] value_states;
    delete [] value_cutoff;
    delete [] value_maxit;
@@ -992,6 +993,8 @@ int main( int argc, char ** argv ){
       hamOp->DSSum(2, &fac[ 0 ], &states[ 0 ], &bks[ 0 ], mpsIn, bkIn, opt_scheme );
       normalize( prob->gL(), mpsIn );
 
+      delete[] hamOp;
+
    } else if( time_ninit.length() > 0  ){
       bkIn = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
       mpsIn = new CheMPS2::CTensorT *[ prob->gL() ];
@@ -1034,15 +1037,17 @@ int main( int argc, char ** argv ){
       return -1;
    }
 
-   // for ( int site = 0; site < prob->gL(); site++ ) {
-   //    delete mpsIn[ site ];
-   // }
-   // delete[] bkIn;
+   for ( int site = 0; site < prob->gL(); site++ ) {
+      delete mpsIn[ site ];
+   }
+   delete bkIn;
+   delete[] mpsIn;
 
    delete prob;
    delete ham;
    delete opt_scheme;
-   delete [] time_ninit_parsed;
+   delete[] time_ninit_parsed;
+   delete[] time_2_ninit_parsed;
    delete[] time_hf_state_parsed;
 
    return 0;

@@ -388,6 +388,8 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step,
                                              SyBookkeeper * bkOut ) {
 
    int krylovSpaceDimension = kry_size;
+   char notrans = 'N';
+   char trans = 'C';
 
    dcomplex step = backwards ? dcomplex( 0.0, 1.0 * time_step ) : dcomplex( 0.0, -1.0 * time_step );
 
@@ -513,26 +515,33 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step,
       std::cout << std::endl;
    }
 
-   ////////////////////////////////////////////////////////////////////////////////////////
-   ////
-   //// Calculating the inverse
-   ////
-   ////////////////////////////////////////////////////////////////////////////////////////
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // ////
+   // //// Calculating the inverse
+   // ////
+   // ////////////////////////////////////////////////////////////////////////////////////////
 
-   int one                 = 1;
-   int sqr                 = krylovSpaceDimension * krylovSpaceDimension;
-   dcomplex * overlaps_inv = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
-   zcopy_( &sqr, overlaps, &one, overlaps_inv, &one );
+   // int one                 = 1;
+   // int sqr                 = krylovSpaceDimension * krylovSpaceDimension;
+   // dcomplex * overlaps_inv = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   // zcopy_( &sqr, overlaps, &one, overlaps_inv, &one );
 
-   int info_lu;
-   int * piv = new int[ krylovSpaceDimension ];
-   zgetrf_( &krylovSpaceDimension, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, &info_lu );
-   assert( info_lu == 0);
+   // int info_lu;
+   // int * piv = new int[ krylovSpaceDimension ];
+   // zgetrf_( &krylovSpaceDimension, &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, &info_lu );
+   // assert( info_lu == 0);
 
-   dcomplex * work = new dcomplex[ krylovSpaceDimension ];
-   int info_inve;
-   zgetri_( &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, work, &krylovSpaceDimension, &info_inve );
-   assert( info_inve == 0);
+   // dcomplex * work = new dcomplex[ krylovSpaceDimension ];
+   // int info_inve;
+   // zgetri_( &krylovSpaceDimension, overlaps_inv, &krylovSpaceDimension, piv, work, &krylovSpaceDimension, &info_inve );
+   // assert( info_inve == 0);
+
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << overlaps_inv[ irow +  icol * krylovSpaceDimension ] << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
 
    // ////////////////////////////////////////////////////////////////////////////////////////
    // ////
@@ -549,44 +558,232 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step,
 
    // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
    //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-   //       std::cout << std::real( tobeiden[ irow +  icol * krylovSpaceDimension ] ) << " ";
+   //       std::cout << tobeiden[ irow +  icol * krylovSpaceDimension ] << " ";
    //    }
    //    std::cout << std::endl;
    // }
    // delete[] tobeiden;
 
-   ////////////////////////////////////////////////////////////////////////////////////////
-   ////
-   //// Multiplying N^-1 and H
-   ////
-   ////////////////////////////////////////////////////////////////////////////////////////
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // ////
+   // //// Multiplying N^-1 and H
+   // ////
+   // ////////////////////////////////////////////////////////////////////////////////////////
 
-   dcomplex * toExp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
-   dcomplex zeroC   = 0.0;
-   dcomplex oneC    = 1.0;
-   char notrans     = 'N';
-   zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
-         &step, overlaps_inv, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zeroC, toExp, &krylovSpaceDimension );
+   // dcomplex * toExp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   // dcomplex zeroC   = 0.0;
+   // dcomplex oneC    = 1.0;
+   // char notrans     = 'N';
+   // zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension,
+   //       &step, overlaps_inv, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zeroC, toExp, &krylovSpaceDimension );
+
+   // //////////////////////////////////////////////////////////////////////////////////////
+   // //
+   // // Print out the eigen values of the matrix in the exponential
+   // //
+   // //////////////////////////////////////////////////////////////////////////////////////
+
+   // char jobz = 'V';
+   // char uplo = 'U';
+   // int inc = 1;
+   // int N = krylovSpaceDimension * krylovSpaceDimension;
+   // int lwork = 2 * N - 1;
+   // int infoE;
+
+   // dcomplex * U = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+   // dcomplex* workE = new dcomplex[ lwork ];
+   // double* evals = new double[ krylovSpaceDimension ];
+   // double* rwork = new double[ 3 * N - 2 ];
+
+   // zcopy_( &N, toExp, &inc, U, &inc );
+   // zheev_( &jobz, &uplo, &krylovSpaceDimension, U, &krylovSpaceDimension, evals, workE, &lwork, rwork, &infoE );
+   // assert( infoE == 0 );
+
+   // for( int i = 0; i < krylovSpaceDimension; i++ ){
+   //    std::cout << evals[ i ] << std::endl;
+   // }
+   // delete[] workE;
+   // delete[] evals;
+   // delete[] rwork; 
+   // delete[] U;
+
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // ////
+   // //// Calculate the matrix exponential
+   // ////
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // int deg        = 6;
+   // double bla     = 1.0;
+   // int lwsp       = 4 * krylovSpaceDimension * krylovSpaceDimension + deg + 1;
+   // dcomplex * wsp = new dcomplex[ lwsp ];
+   // int * ipiv     = new int[ krylovSpaceDimension ];
+   // int iexph      = 0;
+   // int ns         = 0;
+   // int info;
+
+   // zgpadm_( &deg, &krylovSpaceDimension, &bla, toExp, &krylovSpaceDimension,
+   //          wsp, &lwsp, ipiv, &iexph, &ns, &info );
+   // assert( info == 0 );
+
+   // dcomplex * theExp = &wsp[ iexph - 1 ];
+
+   // ////////////////////////////////////////////////////////////////////////////////////////
+   // ////
+   // //// Test new coefficients and sum MPS
+   // ////
+   // ////////////////////////////////////////////////////////////////////////////////////////
+
+   // dcomplex * result = new dcomplex[ krylovSpaceDimension ];
+   // for ( int i = 0; i < krylovSpaceDimension; i++ ) {
+   //    result[ i ] = 0;
+   //    // for( int j = 0; j < krylovSpaceDimension; j++ ){
+   //    //    result[ i ] += theExp[ i + krylovSpaceDimension * j ] * overlaps_inv[ j + 0 * krylovSpaceDimension ];
+   //    // }
+   //    result[ i ] = theExp[ i + krylovSpaceDimension * 0 ];
+   //    std::cout << result[ i ] << std::endl;
+   // }
+
+   // dcomplex tobeone = 0.0;
+   // for( int i = 0; i < krylovSpaceDimension; i++ ){
+   //    for( int j = 0; j < krylovSpaceDimension; j++ ){
+   //       tobeone += std::conj( result[ i ] ) * result[ j ] * overlaps[ i + krylovSpaceDimension * j ];
+   //    }   
+   // }
+
+   // if ( ( std::abs( tobeone - overlaps[ 0 ] ) > 1e-9 ) ) {
+   //    std::cout << "CHEMPS2::TIME WARNING: "
+   //              << " Numerical Problem with non-orthonormal Krylov basis. Is your state close to an energy eigenstate?\n";
+   //    std::cout << "CHEMPS2::TIME WARNING: "
+   //              << " Norm will be off by " << std::abs( tobeone - overlaps[ 0 ] ) << " due to Krylov evolution. Should be 0.0\n";
+   // }
+
+   // op->DSSum( krylovSpaceDimension, result, &krylovBasisVectors[ 0 ], &krylovBasisSyBookkeepers[ 0 ], mpsOut, bkOut, scheme );
+
+   // //////////////////////////////////////////////////////////////////////////////////////
+   // //
+   // // Delete all the allocated stuff
+   // //
+   // //////////////////////////////////////////////////////////////////////////////////////
+
+   // delete[] result;
+   // delete[] wsp;
+   // delete[] ipiv;
+   // delete[] overlaps;
+   // delete[] overlaps_inv;
+   // delete[] krylovHamiltonian;
+   // delete[] toExp;
+   // delete[] piv;
+   // delete[] work;
+
+   // for ( int cnt = 1; cnt < krylovSpaceDimension; cnt++ ) {
+   //    for ( int site = 0; site < L; site++ ) {
+   //       delete krylovBasisVectors[ cnt ][ site ];
+   //    }
+   //    delete[] krylovBasisVectors[ cnt ];
+   //    delete krylovBasisSyBookkeepers[ cnt ];
+   // }
+   // delete[] krylovBasisVectors;
+   // delete[] krylovBasisSyBookkeepers;
+
+   // delete op;
+
+   //////////////////////////////////////////////////////////////////////////////////////
+   //
+   // Calculate S^-0.5
+   //
+   //////////////////////////////////////////////////////////////////////////////////////
+
+   dcomplex* Oinvsqr = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+
+   {
+      char jobz = 'V';
+      char uplo = 'U';
+      int inc = 1;
+      int N = krylovSpaceDimension * krylovSpaceDimension;
+      int lwork = 2 * N - 1;
+      int info;
+
+      dcomplex * U = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+      dcomplex* work = new dcomplex[ lwork ];
+      double* evals = new double[ krylovSpaceDimension ];
+      double* rwork = new double[ 3 * N - 2 ];
+
+      zcopy_( &N, overlaps, &inc, U, &inc );
+      zheev_( &jobz, &uplo, &krylovSpaceDimension, U, &krylovSpaceDimension, evals, work, &lwork, rwork, &info );
+      assert( info == 0 );
+
+      dcomplex one = 1.0;
+      dcomplex zero = 0.0;
+      dcomplex* tmp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+      dcomplex* diag = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+
+      for( int i = 0; i < krylovSpaceDimension; i++ ){
+         for(int j = 0; j < krylovSpaceDimension; j++) {
+            diag[ i + j * krylovSpaceDimension ] = 0;   
+         }
+         diag[ i + i * krylovSpaceDimension ] = std::pow( evals[ i ], -0.5 );
+      }
+
+      delete[] work;
+      delete[] evals;
+      delete[] rwork;
+
+      zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension, &one, U, &krylovSpaceDimension, diag, &krylovSpaceDimension, &zero, tmp, &krylovSpaceDimension );
+      zgemm_( &notrans, &trans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension, &one, tmp, &krylovSpaceDimension, U, &krylovSpaceDimension, &zero, Oinvsqr, &krylovSpaceDimension );
+
+      delete[] tmp;
+      delete[] diag;
+      delete[] U;
+   }
+
+   //////////////////////////////////////////////////////////////////////////////////////
+   //
+   // Calculate S^-0.5 H S^-0.5
+   //
+   //////////////////////////////////////////////////////////////////////////////////////
+
+   dcomplex* Hortho = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
+
+   {
+      dcomplex one = 1.0;
+      dcomplex zero = 0.0;
+
+      dcomplex* tmp3 = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];   
+
+      zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension, &one, Oinvsqr, &krylovSpaceDimension, krylovHamiltonian, &krylovSpaceDimension, &zero, tmp3, &krylovSpaceDimension );
+      zgemm_( &notrans, &notrans, &krylovSpaceDimension, &krylovSpaceDimension, &krylovSpaceDimension, &step, tmp3, &krylovSpaceDimension, Oinvsqr, &krylovSpaceDimension, &zero, Hortho, &krylovSpaceDimension );
+
+      delete[] tmp3;
+   }
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
    //// Calculate the matrix exponential
    ////
    ////////////////////////////////////////////////////////////////////////////////////////
-   int deg        = 10;
-   double bla     = 1.0;
-   int lwsp       = 4 * krylovSpaceDimension * krylovSpaceDimension + deg + 1;
-   dcomplex * wsp = new dcomplex[ lwsp ];
-   int * ipiv     = new int[ krylovSpaceDimension ];
-   int iexph      = 0;
-   int ns         = 0;
-   int info;
 
-   zgpadm_( &deg, &krylovSpaceDimension, &bla, toExp, &krylovSpaceDimension,
-            wsp, &lwsp, ipiv, &iexph, &ns, &info );
-   assert( info == 0 );
+   dcomplex * theExp = new dcomplex[ krylovSpaceDimension * krylovSpaceDimension ];
 
-   dcomplex * theExp = &wsp[ iexph - 1 ];
+   {
+      int deg        = 10;
+      double bla     = 1.0;
+      int lwsp       = 4 * krylovSpaceDimension * krylovSpaceDimension + deg + 1;
+      dcomplex * wsp = new dcomplex[ lwsp ];
+      int * ipiv     = new int[ krylovSpaceDimension ];
+      int iexph      = 0;
+      int ns         = 0;
+      int info;
+      zgpadm_( &deg, &krylovSpaceDimension, &bla, Hortho, &krylovSpaceDimension,
+               wsp, &lwsp, ipiv, &iexph, &ns, &info );
+      assert( info == 0 );
+
+      int inc = 1;
+      int dim = krylovSpaceDimension * krylovSpaceDimension;
+      zcopy_( &dim, &wsp[ iexph - 1 ], &inc, theExp, &inc );
+
+      delete[] ipiv; 
+      delete[] wsp;
+   }
 
    ////////////////////////////////////////////////////////////////////////////////////////
    ////
@@ -595,8 +792,15 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step,
    ////////////////////////////////////////////////////////////////////////////////////////
 
    dcomplex * result = new dcomplex[ krylovSpaceDimension ];
-   for ( int i = 0; i < krylovSpaceDimension; i++ ) {
-      result[ i ] = theExp[ i + krylovSpaceDimension * 0 ];
+   for ( int beta = 0; beta < krylovSpaceDimension; beta++ ) {
+      result[ beta ] = 0.0;
+      for( int i = 0; i < krylovSpaceDimension; i++ ){
+         for( int j = 0; j < krylovSpaceDimension; j++ ){
+            for( int a = 0; a < krylovSpaceDimension; a++ ){
+               result[ beta ] += theExp[ i + krylovSpaceDimension * j ] * std::conj( Oinvsqr[ a + krylovSpaceDimension * j ] ) * Oinvsqr[ beta + krylovSpaceDimension * i ] * overlaps[ a + krylovSpaceDimension * 0 ];
+            }
+         }
+      }
    }
 
    dcomplex tobeone = 0.0;
@@ -622,14 +826,11 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step,
    ////////////////////////////////////////////////////////////////////////////////////////
 
    delete[] result;
-   delete[] wsp;
-   delete[] ipiv;
+   delete[] theExp;
    delete[] overlaps;
-   delete[] overlaps_inv;
+   delete[] Oinvsqr;
    delete[] krylovHamiltonian;
-   delete[] toExp;
-   delete[] piv;
-   delete[] work;
+   delete[] Hortho;
 
    for ( int cnt = 1; cnt < krylovSpaceDimension; cnt++ ) {
       for ( int site = 0; site < L; site++ ) {
