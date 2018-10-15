@@ -1014,7 +1014,7 @@ int main( int argc, char ** argv ){
       }
       loadMPS( time_init, prob->gL(), mpsIn );
 
-      // normalize( prob->gL(), mpsIn );
+      normalize( prob->gL(), mpsIn );
    }
 
    /*************************
