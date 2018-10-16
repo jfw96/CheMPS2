@@ -35,21 +35,10 @@ namespace CheMPS2 {
 
       double calcWieght( int nHoles, int nParticles, Problem * probState, CTensorT ** mpsState, SyBookkeeper * bkState, const int * hf_state );
 
-
-      // void doStep_krylov( const int currentInstruction, const bool backwards, const double offset, CTensorT ** mpsIn, SyBookkeeper * bkIn, CTensorT ** mpsOut, SyBookkeeper * bkOut );
-
       void doStep_euler( const double time_step, const int kry_size, 
                          dcomplex offset, const bool backwards, 
                          CTensorT ** mpsIn, SyBookkeeper * bkIn, 
                          CTensorT ** mpsOut, SyBookkeeper * bkOut );
-
-      void createKrylovVectors( const int kry_size, 
-                                dcomplex offset,
-                                const bool do_ortho,
-                                CTensorT *** mpsS, 
-                                SyBookkeeper ** bkS, 
-                                dcomplex * hamiltonian,
-                                dcomplex * overlaps );
 
       void doStep_arnoldi( const double time_step, 
                            const int kry_size, 
@@ -59,11 +48,7 @@ namespace CheMPS2 {
                            CTensorT ** mpsIn, 
                            SyBookkeeper * bkIn, 
                            CTensorT ** mpsOut, 
-                           SyBookkeeper * bkOut,
-                           CTensorT *** mpsS, 
-                           SyBookkeeper ** bkS, 
-                           dcomplex * hamiltonian, 
-                           dcomplex * overlaps );
+                           SyBookkeeper * bkOut );
 
       void doStep_runge_kutta( const double time_step, const int kry_size, 
                                dcomplex offset, const bool backwards, 
