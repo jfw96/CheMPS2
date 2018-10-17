@@ -427,7 +427,7 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step,
       struct timeval start, end;
       gettimeofday( &start, NULL );
 
-      SyBookkeeper * bkTemp = new SyBookkeeper( prob, scheme->get_D ( 0 ) );
+      SyBookkeeper * bkTemp = new SyBookkeeper( prob, 2 * scheme->get_D ( 0 ) );
       CTensorT ** mpsTemp   = new CTensorT *[ L ];
       for ( int index = 0; index < L; index++ ) {
          mpsTemp[ index ] = new CTensorT( index, bkTemp );
