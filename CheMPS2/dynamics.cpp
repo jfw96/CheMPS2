@@ -993,7 +993,7 @@ int main( int argc, char ** argv ){
       hamOp->DSSum(2, &fac[ 0 ], &states[ 0 ], &bks[ 0 ], mpsIn, bkIn, opt_scheme );
       normalize( prob->gL(), mpsIn );
 
-      delete[] hamOp;
+      delete hamOp;
 
    } else if( time_ninit.length() > 0  ){
       bkIn = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
