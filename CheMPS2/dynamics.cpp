@@ -962,13 +962,14 @@ int main( int argc, char ** argv ){
    CheMPS2::SyBookkeeper *  bkIn = NULL;
    CheMPS2::CTensorT    ** mpsIn = NULL;
    if( ( time_ninit.length() > 0  ) && ( time_2_ninit.length() > 0  ) ){
-      bkIn = new CheMPS2::SyBookkeeper( prob, 30 );
-      mpsIn = new CheMPS2::CTensorT *[ prob->gL() ];
       
       CheMPS2::SyBookkeeper *  bkA = new CheMPS2::SyBookkeeper( prob, time_ninit_parsed );
       CheMPS2::CTensorT    ** mpsA = new CheMPS2::CTensorT *[ prob->gL() ];
       CheMPS2::SyBookkeeper *  bkB = new CheMPS2::SyBookkeeper( prob, time_2_ninit_parsed );
       CheMPS2::CTensorT    ** mpsB = new CheMPS2::CTensorT *[ prob->gL() ];
+
+      bkIn = new CheMPS2::SyBookkeeper( *bkA );
+      mpsIn = new CheMPS2::CTensorT *[ prob->gL() ];
 
       for ( int index = 0; index < prob->gL(); index++ ) {
          mpsA[ index ] = new CheMPS2::CTensorT( index, bkA );
@@ -990,7 +991,7 @@ int main( int argc, char ** argv ){
       states[ 1 ] = mpsB;
       bks[ 0 ] = bkA;
       bks[ 1 ] = bkB;
-      hamOp->DSSum(2, &fac[ 0 ], &states[ 0 ], &bks[ 0 ], mpsIn, bkIn, opt_scheme );
+      hamOp->DSSum(1, &fac[ 1 ], &states[ 1 ], &bks[ 1 ], mpsIn, bkIn, opt_scheme );
       normalize( prob->gL(), mpsIn );
 
       delete hamOp;
@@ -1015,6 +1016,11 @@ int main( int argc, char ** argv ){
       loadMPS( time_init, prob->gL(), mpsIn );
 
       normalize( prob->gL(), mpsIn );
+   }
+
+   std::cout << "MPS dimensions:";
+   for (int i = 0; i <= prob->gL(); i++){
+      std::cout << " " << bkIn->gTotDimAtBound( i );
    }
 
    /*************************
