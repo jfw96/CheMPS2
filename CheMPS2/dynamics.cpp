@@ -991,7 +991,7 @@ int main( int argc, char ** argv ){
       states[ 1 ] = mpsB;
       bks[ 0 ] = bkA;
       bks[ 1 ] = bkB;
-      hamOp->DSSum(1, &fac[ 1 ], &states[ 1 ], &bks[ 1 ], mpsIn, bkIn, opt_scheme );
+      hamOp->DSSum( 2, &fac[ 0 ], &states[ 0 ], &bks[ 0 ], mpsIn, bkIn, opt_scheme );
       normalize( prob->gL(), mpsIn );
 
       delete hamOp;
