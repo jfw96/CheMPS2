@@ -365,7 +365,7 @@ cout << "\n"
 "              Set the noise prefactors for the successive sweep instructions (floats).\n"
 "\n"
 "       SWEEP_CUTOFF = flt, flt, flt\n"
-"              Set the cut off parameter for the Krylov space generation (positive integers).\n"
+"              Set the cut off parameter for the Krylov space generation (positive floats).\n"
 "\n"
 "       REORDER_FIEDLER = bool\n"
 "              When all orbitals are active orbitals, switch on orbital reordering based on the Fiedler vector of the exchange matrix (TRUE or FALSE; default FALSE).\n"
@@ -377,7 +377,7 @@ cout << "\n"
 "              Set the type of time evolution calculation to be performed. Options are (K) for Krylov (default), (R) for Runge-Kutta, (E) for Euler, and (F) for FCI.\n"
 "\n"
 "       TIME_STEP_MAJOR = flt\n"
-"              Set the time step (DT) for wave function anlysis (positive float).\n"
+"              Set the time step (DT) for wave function analysis (positive float).\n"
 "\n"
 "       TIME_STEP_MINOR = flt\n"
 "              Set the time step (DT) for the time evolution calculation (positive float).\n"
@@ -401,13 +401,13 @@ cout << "\n"
 "              Set the numbers of CI-weights to be calculated (default 0).\n"
 "\n"
 "       TIME_N_MAX = int, int, int, int\n"
-"              Set the maximum number of electrons for all sites in Hamiltonian order ( defailt 2, 2, 2, .... ).\n"
+"              Set the maximum number of electrons for all sites in Hamiltonian order ( default 2, 2, 2, .... ).\n"
 "\n"
 "       TIME_N_MIN = int, int, int, int\n"
-"              Set the minimum number of electrons for all sites in Hamiltonian order ( defailt 0, 0, 0, .... ).\n"
+"              Set the minimum number of electrons for all sites in Hamiltonian order ( default 0, 0, 0, .... ).\n"
 "\n"
 "       TIME_KRYSIZE = int\n"
-"              Set the maximum Krylov space dimension of a time propagation step. Required when TIME_EVOLU = TRUE (positive integer).\n"
+"              Set the maximum Krylov space dimension of a time propagation step.\n"
 "\n"
 "       TIME_HDF5OUTPUT = /path/to/hdf5/destination\n"
 "              Set the file path for the HDF5 output when specified (default unspecified).\n"
@@ -416,10 +416,10 @@ cout << "\n"
 "              Set if the time evolution is forward or backward (default FALSE).\n"
 "\n"
 "       TIME_DUMPFCI = bool\n"
-"              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_EVOLU = TRUE and TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
+"              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
 "\n"
 "       TIME_DUMP2RDM = bool\n"
-"              Set if the 2RDM is dumped into the HDF5 file. Only has affect if TIME_EVOLU = TRUE and TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
+"              Set if the 2RDM is dumped into the HDF5 file. Only has affect if TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
 "\n"
 "       TIME_ENERGY_OFFSET = double\n"
 "              Set the energy offset used for the dynamics calculation. (default 0.0).\n"
@@ -759,7 +759,7 @@ int main( int argc, char ** argv ){
       const bool init_ok = ( fcidump_norb == ni_ini );
 
       if ( init_ok == false ){
-         cerr << "There should be " << fcidump_norb << " numbers in TIME_NINIT when TIME_EVOLU = TRUE !" << endl;
+         cerr << "There should be " << fcidump_norb << " numbers in TIME_NINIT !" << endl;
          return -1;
       }
 
@@ -784,7 +784,7 @@ int main( int argc, char ** argv ){
       const bool init_ok = ( fcidump_norb == ni_ini );
 
       if ( init_ok == false ){
-         cerr << "There should be " << fcidump_norb << " numbers in TIME_2_NINIT when TIME_EVOLU = TRUE !" << endl;
+         cerr << "There should be " << fcidump_norb << " numbers in TIME_2_NINIT !" << endl;
          return -1;
       }
 
