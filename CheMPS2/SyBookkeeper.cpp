@@ -91,6 +91,7 @@ CheMPS2::SyBookkeeper::SyBookkeeper( const Problem * Prob, const int * occupatio
    CopyDim( FCIdim, CURdim );
 
    int Nelec = 0;
+   int irrep = 0;
    for ( int index = 0; index < gL(); index++ ) {
       int ni = occupation[ Prob->gReorder() ? Prob->gf2( index ) : index ];
       for ( int NL = gNmin( index ); NL <= gNmax( index ); NL++ ) {
@@ -103,9 +104,9 @@ CheMPS2::SyBookkeeper::SyBookkeeper( const Problem * Prob, const int * occupatio
                      const int TwoJ = ( ( NR == NL + 1 ) ? 1 : 0 );
                      for ( int TwoSR = TwoSL - TwoJ; TwoSR <= TwoSL + TwoJ; TwoSR += 2 ) {
                         if ( TwoSR >= 0 ) {
-                           int IR         = ( ( NR == NL + 1 ) ? Irreps::directProd( IL, gIrrep( index ) ) : IL );
+                           int IR         = ( NR == NL + 1 ) ? Irreps::directProd( IL, gIrrep( index ) ) : IL;
                            const int dimR = gFCIdim( index + 1, NR, TwoSR, IR );
-                           if ( ( dimR > 0 ) && ( NL == Nelec ) && ( NR == Nelec + ni ) && ( TwoSL == ( NL % 2 ) ) && ( TwoSR == ( NR % 2 ) ) ) {
+                           if ( ( dimR > 0 ) && ( NL == Nelec ) && ( NR == Nelec + ni ) && ( TwoSL == ( NL % 2 ) ) && ( TwoSR == ( NR % 2 ) ) && ( IL == irrep ) ) {
                               needBlock = true;
                            }
                         }
@@ -121,6 +122,7 @@ CheMPS2::SyBookkeeper::SyBookkeeper( const Problem * Prob, const int * occupatio
          }
       }
       Nelec += ni;
+      irrep = ( ni == 1 ) ? Irreps::directProd( irrep, gIrrep( index ) ) : irrep;
    }
 
    assert( IsPossible() );

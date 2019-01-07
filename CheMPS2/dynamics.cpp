@@ -1004,6 +1004,7 @@ int main( int argc, char ** argv ){
          mpsIn[ index ] = new CheMPS2::CTensorT( index, bkIn );
          mpsIn[ index ]->gStorage()[ 0 ] = 1.0;
       }
+
       normalize( prob->gL(),  mpsIn );
    } else {
       bkIn  = new CheMPS2::SyBookkeeper( prob, 1 );
@@ -1016,11 +1017,6 @@ int main( int argc, char ** argv ){
       loadMPS( time_init, prob->gL(), mpsIn );
 
       normalize( prob->gL(), mpsIn );
-   }
-
-   std::cout << "MPS dimensions:";
-   for (int i = 0; i <= prob->gL(); i++){
-      std::cout << " " << bkIn->gTotDimAtBound( i );
    }
 
    /*************************
