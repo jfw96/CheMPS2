@@ -121,6 +121,46 @@ double CheMPS2::TimeEvolution::calc1h0p( Problem * probState, CTensorT ** mpsSta
    const int L = prob->gL();
    double result = 0;
 
+// PARALLEL
+#pragma omp parallel
+   {
+      int* alphas = new int[ L ];
+      int* betas = new int[ L ];
+
+      for( int idx = 0; idx < L; idx++ ){
+         if( hf_state[ idx ] == 2 ){
+            betas[ idx ] = 1;
+            alphas[ idx ] = 1;
+         } else if ( hf_state[ idx ] == 0 ) {
+            betas[ idx ] = 0;
+            alphas[ idx ] = 0;
+         } else {
+            std::cerr << "CheMPS2::TimeEvolution::calc1h0p is implemented for closed shell molecules only. Exiting..." << std::endl;
+            abort();
+         }
+      }
+
+#pragma omp for schedule( dynamic )
+      for( int idx = 0; idx < L; idx++ ){
+         if( alphas[ idx ] == 1 ){
+            alphas[ idx ] = 0;
+            result += 2.0 * std::pow( std::abs( getFCICoefficient( probState, mpsState, alphas, betas ) ), 2.0 );
+            alphas[ idx ] = 1;
+         }
+      }
+   
+      delete[] alphas;
+      delete[] betas;
+   }
+
+   return result;
+}
+
+double CheMPS2::TimeEvolution::calc2h1p( Problem * probState, CTensorT ** mpsState, SyBookkeeper * bkState, const int * hf_state ){
+   
+   const int L = prob->gL();
+   double result = 0;
+
    int* alphas = new int[ L ];
    int* betas = new int[ L ];
 
@@ -132,16 +172,37 @@ double CheMPS2::TimeEvolution::calc1h0p( Problem * probState, CTensorT ** mpsSta
          betas[ idx ] = 0;
          alphas[ idx ] = 0;
       } else {
-         std::cerr << "CheMPS2::TimeEvolution::calc1h0p is implemented for closed shell molecules only. Exiting..." << std::endl;
+         std::cerr << "CheMPS2::TimeEvolution::calc2h1p is implemented for closed shell molecules only. Exiting..." << std::endl;
          abort();
       }
    }
 
-   for( int idx = 0; idx < L; idx++ ){
-      if( alphas[ idx ] == 1 ){
-         alphas[ idx ] = 0;
-         result += 2.0 * std::pow( std::abs( getFCICoefficient( probState, mpsState, alphas, betas ) ), 2.0 );
-         alphas[ idx ] = 1;
+   for( int a = 0; a < L; a++ ){
+      for( int i = 0; i < L; i++ ){
+         for( int j = 0; j < i; j++ ){
+            for( int twoKappa = -1; twoKappa <= 1; twoKappa+=2 ){
+               for( int twoTau = -1; twoTau <= 1; twoTau+=2 ){
+                  for( int twoSigma = -1; twoSigma <= 1; twoSigma+=2 ){
+                     int * toCreate = ( twoKappa == -1 ) ? alphas : betas;
+                     int * toAnniA = ( twoTau == -1 ) ? alphas : betas;
+                     int * toAnniB = ( twoSigma == -1 ) ? alphas : betas;
+
+                     toCreate[ a ]++;
+                     toAnniA[ i ]--;
+                     toAnniB[ j ]--;
+
+                     if( ( toAnniB[ j ] >= 0 ) && ( toAnniA[ i ] >= 0 ) && ( toCreate[ a ] <= 1 ) && ( i != j ) && ( i != a ) && ( j != a ) ){
+                        result += std::pow( std::abs( getFCICoefficient( probState, mpsState, alphas, betas ) ), 2.0 );
+                     }
+
+                     toCreate[ a ]--;
+                     toAnniA[ i ]++;
+                     toAnniB[ j ]++;
+
+                  }
+               }
+            }
+         }
       }
    }
 
@@ -153,6 +214,15 @@ double CheMPS2::TimeEvolution::calc1h0p( Problem * probState, CTensorT ** mpsSta
 
 
 double CheMPS2::TimeEvolution::calcWieght( int nHoles, int nParticles, Problem * probState, CTensorT ** mpsState, SyBookkeeper * bkState, const int * hf_state ){
+
+   if( ( nHoles == 1 ) && ( nParticles == 0 ) ){
+      return calc1h0p( probState, mpsState, bkState, hf_state );
+   }
+
+   if( ( nHoles == 2 ) && ( nParticles == 1 ) ){
+      return calc2h1p( probState, mpsState, bkState, hf_state );
+   }
+
 
    const int L = prob->gL();
    double result = 0;

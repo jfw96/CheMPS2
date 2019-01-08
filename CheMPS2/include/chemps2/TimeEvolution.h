@@ -37,6 +37,8 @@ namespace CheMPS2 {
 
       double calc1h0p( Problem * probState, CTensorT ** mpsState, SyBookkeeper * bkState, const int * hf_state );
 
+      double calc2h1p( Problem * probState, CTensorT ** mpsState, SyBookkeeper * bkState, const int * hf_state );
+
       void doStep_euler( const double time_step, const int kry_size, 
                          dcomplex offset, const bool backwards, 
                          CTensorT ** mpsIn, SyBookkeeper * bkIn, 
