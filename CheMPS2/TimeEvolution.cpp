@@ -116,6 +116,42 @@ void CheMPS2::TimeEvolution::HDF5_MAKE_DATASET( hid_t setID, const char * name, 
    }
 }
 
+double CheMPS2::TimeEvolution::calc1h0p( Problem * probState, CTensorT ** mpsState, SyBookkeeper * bkState, const int * hf_state ){
+   
+   const int L = prob->gL();
+   double result = 0;
+
+   int* alphas = new int[ L ];
+   int* betas = new int[ L ];
+
+   for( int idx = 0; idx < L; idx++ ){
+      if( hf_state[ idx ] == 2 ){
+         betas[ idx ] = 1;
+         alphas[ idx ] = 1;
+      } else if ( hf_state[ idx ] == 0 ) {
+         betas[ idx ] = 0;
+         alphas[ idx ] = 0;
+      } else {
+         std::cerr << "CheMPS2::TimeEvolution::calc1h0p is implemented for closed shell molecules only. Exiting..." << std::endl;
+         abort();
+      }
+   }
+
+   for( int idx = 0; idx < L; idx++ ){
+      if( alphas[ idx ] == 1 ){
+         alphas[ idx ] = 0;
+         result += 2.0 * std::pow( std::abs( getFCICoefficient( probState, mpsState, alphas, betas ) ), 2.0 );
+         alphas[ idx ] = 1;
+      }
+   }
+
+   delete[] alphas;
+   delete[] betas;
+
+   return result;
+}
+
+
 double CheMPS2::TimeEvolution::calcWieght( int nHoles, int nParticles, Problem * probState, CTensorT ** mpsState, SyBookkeeper * bkState, const int * hf_state ){
 
    const int L = prob->gL();
