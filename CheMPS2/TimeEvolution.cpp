@@ -701,11 +701,6 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
    }
 
    double first_energy;
-   int deltaN = 0;
-   if( nWeights > 0 ){
-      int nElecHF = 0; for ( int index = 0; index < prob->gL(); index++ ) { nElecHF += hfState[ index ]; }
-      deltaN = nElecHF - prob->gN();
-   }
 
    for ( double t = 0.0; t < time_final; t += time_step_major ) {
 
@@ -728,16 +723,6 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
       theodm->gOEDMImHamil( oedmim );
       theodm->gOEDMReDMRG( oedmdmrgre );
       theodm->gOEDMImDMRG( oedmdmrgim );
-
-      int*     nHoles = new int[ nWeights ];
-      int* nParticles = new int[ nWeights ];
-      double* weights = new double[ nWeights ];
-
-      for( int iWeight = 0; iWeight < nWeights; iWeight++ ){
-         nHoles[ iWeight ] = iWeight + deltaN;
-         nParticles[ iWeight ] = iWeight;
-         weights[ iWeight ] =  calcWieght( iWeight + deltaN, iWeight, prob, MPS, MPSBK, hfState );
-      }
 
       if ( t == 0.0 ){
          first_energy = energy;
@@ -786,10 +771,6 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
       std::cout << "   ";
       for ( int i = 0; i < L; i++ ) { std::cout << std::setw( 20 ) << std::fixed << std::setprecision( 15 ) << oedmre[ i + L * i ]; }
       std::cout                                                 << "\n";
-
-      for( int iWeight = 0; iWeight < nWeights; iWeight++ ){
-         std::cout << "  " << nHoles[ iWeight ] <<  "h" << nParticles[ iWeight] << "p-weight  = " << weights[ iWeight ] << "\n";
-      }
       std::cout                                                 << "\n";
 
       char dataPointname[ 1024 ];
@@ -816,9 +797,6 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
       HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG",      2, Lsq,        H5T_NATIVE_DOUBLE,  oedmim           );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_DMRG_REAL", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmdmrgre       );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_DMRG_IMAG", 2, Lsq,        H5T_NATIVE_DOUBLE,  oedmdmrgim       );
-      HDF5_MAKE_DATASET( dataPointID, "nHoles",         1, &weightSze, H5T_STD_I32LE,      nHoles           );
-      HDF5_MAKE_DATASET( dataPointID, "nParticles",     1, &weightSze, H5T_STD_I32LE,      nParticles       );
-      HDF5_MAKE_DATASET( dataPointID, "weights",        1, &weightSze, H5T_NATIVE_DOUBLE,  weights          );
 
       delete[] actdims;
       delete[] MaxMs;
@@ -828,12 +806,39 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
       delete[] oedmim;
       delete[] oedmdmrgre;
       delete[] oedmdmrgim;
-      delete[] nHoles;
-      delete[] nParticles;
-      delete[] weights;
 
       delete theodm;
-      
+
+      if ( nWeights > 0 ){
+         int deltaN  = 0;
+         int nElecHF = 0; for ( int index = 0; index < prob->gL(); index++ ) { nElecHF += hfState[ index ]; }
+         deltaN      = nElecHF - prob->gN();
+
+         int*     nHoles =    new int[ nWeights ];
+         int* nParticles =    new int[ nWeights ];
+         double* weights = new double[ nWeights ];
+
+         for( int iWeight = 0; iWeight < nWeights; iWeight++ ){
+            nHoles[ iWeight ]     = iWeight + deltaN;
+            nParticles[ iWeight ] = iWeight;
+            weights[ iWeight ]    =  calcWieght( iWeight + deltaN, iWeight, prob, MPS, MPSBK, hfState );
+         }
+
+         std::cout << "  The lowest " << nWeights << " CI weights are:\n";
+         for( int iWeight = 0; iWeight < nWeights; iWeight++ ){
+            std::cout << "  " << nHoles[ iWeight ] <<  "h" << nParticles[ iWeight] << "p-weight  = " << weights[ iWeight ] << "\n";
+         }
+         std::cout                                                 << "\n";
+
+         HDF5_MAKE_DATASET( dataPointID, "nHoles",     1, &weightSze, H5T_STD_I32LE,      nHoles     );
+         HDF5_MAKE_DATASET( dataPointID, "nParticles", 1, &weightSze, H5T_STD_I32LE,      nParticles );
+         HDF5_MAKE_DATASET( dataPointID, "weights",    1, &weightSze, H5T_NATIVE_DOUBLE,  weights    );
+
+         delete[] nHoles;
+         delete[] nParticles;
+         delete[] weights;
+      }
+
       if ( doDumpFCI ) {
          std::vector< std::vector< int > > alphasOut;
          std::vector< std::vector< int > > betasOut;
