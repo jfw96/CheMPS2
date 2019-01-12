@@ -351,7 +351,7 @@ cout << "\n"
 "       EXT_POTENTIAL_FCIDUMP = /path/to/external/potential\n"
 "              External potential in fcidump-format. Note that orbital irreps in the EXT_POTENTIAL_FCIDUMP file follow molpro convention! Only has affect if EXT_POTENTIAL_IS_TIME_DEPENDANT is TRUE (default FALSE).\n"
 "\n"
-"       EXT_POTENTIAL_IS_TIME_DEPENDANT = bool\n"
+"       HAM_IS_TIME_DEPENDANT = bool\n"
 "              Set if the external potential is time dependent. Only has affect if EXT_POTENTIAL_FCIDUMP is given (TRUE or FALSE; default FALSE).\n"
 "\n"
 "       GROUP = int\n"
@@ -480,6 +480,8 @@ int main( int argc, char ** argv ){
    bool   time_dump2rdm   = false;
    double time_energy_offset = 0.0;
 
+   bool   ham_is_time_dependant = false;
+
    struct option long_options[] =
    {
       {"file",    required_argument, 0, 'f'},
@@ -546,7 +548,8 @@ int main( int argc, char ** argv ){
 
       char options1[] = { 'K', 'R', 'E', 'F' };
       if ( find_character( &time_type,        line, "TIME_TYPE",        options1, 4 ) == false ){ return -1; }
-
+      
+      if ( find_boolean( &ham_is_time_dependant,  line, "HAM_IS_TIME_DEPENDANT"   ) == false ){ return -1; }
       if ( find_boolean( &reorder_fiedler,  line, "REORDER_FIEDLER"   ) == false ){ return -1; }
       if ( find_boolean( &time_backward,    line, "TIME_BACKWARD"     ) == false ){ return -1; }
       if ( find_boolean( &time_ortho,       line, "TIME_ORTHO"        ) == false ){ return -1; }
@@ -1062,6 +1065,9 @@ int main( int argc, char ** argv ){
    delete[] time_ninit_parsed;
    delete[] time_2_ninit_parsed;
    delete[] time_hf_state_parsed;
+
+   // testing: ham_is_time_dependant wird korrekt geparst
+   // std::cout << "\n" << "ham_is_time_dependant >>>>>>>>>>>> " << ham_is_time_dependant << "\n";
 
    return 0;
 
