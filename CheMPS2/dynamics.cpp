@@ -343,6 +343,17 @@ cout << "\n"
 "       FCIDUMP = /path/to/fcidump\n"
 "              Note that orbital irreps in the FCIDUMP file follow molpro convention!\n"
 "\n"
+// Commit-msg: Füge Erklärung zu zusätzliche Inputs an Hilfefunktion an
+//
+// - EXT_POTENTIAL_FCIDUMP: fcidump-file mit allen Infos zum zeitabhängigen Teil des physikalischen Hamiltonoperators.
+//
+// - EXT_POTENTIAL_IS_TIME_DEPENDANT: Fange Fehlerfall, dass EXT_POTENTIAL_FCIDUMP leer ist. Sodass Rechnung in diesem Fall nicht startet und mit zeitunabhängigem Algorithmus verwechselt wird.
+"       EXT_POTENTIAL_FCIDUMP = /path/to/external/potential\n"
+"              External potential in fcidump-format. Note that orbital irreps in the EXT_POTENTIAL_FCIDUMP file follow molpro convention! Only has affect if EXT_POTENTIAL_IS_TIME_DEPENDANT is TRUE (default FALSE).\n"
+"\n"
+"       EXT_POTENTIAL_IS_TIME_DEPENDANT = bool\n"
+"              Set if the external potential is time dependent. Only has affect if EXT_POTENTIAL_FCIDUMP is given (TRUE or FALSE; default FALSE).\n"
+"\n"
 "       GROUP = int\n"
 "              Set the psi4 symmetry group number [0-7] which corresponds to the FCIDUMP file.\n"
 "\n"
