@@ -132,7 +132,7 @@ bool file_exists( const string filename, const string tag ){
    struct stat file_info;
    const bool on_disk = (( filename.length() > 0 ) && ( stat( filename.c_str(), &file_info ) == 0 ));
    if (( on_disk == false ) && ( am_i_master )){
-      cerr << "Unable to retrieve file " << filename << "!" << endl; //BUG: couts "Unable to retrieve file " << filename << "!", "Invalid option for " << "FCIDUMP" << "!" when tag is set to "EXT_POTENTIAL_FCIDUMP"
+      cerr << "Unable to retrieve file " << filename << "!" << endl; //FIXME: couts "Unable to retrieve file " << filename << "!", "Invalid option for " << "FCIDUMP" << "!" when tag is set to "EXT_POTENTIAL_FCIDUMP"
       cerr << "Invalid option for " << tag << "!" << endl;
    }
    return on_disk;
@@ -514,8 +514,7 @@ int main( int argc, char ** argv ){
    if ( inputfile.length() == 0 ){
       cerr << "The input file should be specified!" << endl;
       return -1;
-   }
-
+   } 
    ifstream input( inputfile.c_str() );
    string line;
    while ( input.eof() == false ){
@@ -641,7 +640,8 @@ int main( int argc, char ** argv ){
   /*******************************
    *  Check the target symmetry  *
    *******************************/
-
+  //TODO: Mein Verständnis: group muss für zeitabhängige Probleme im allgemeinen 0 sein.  Soll Warnung geworfen werden, wenn Hamiltonoperator zeitabhängig und group nicht 0 ?
+  // Möglicher Problemfall: Wenn Symmetrie für externes potential und zeitunabhängigen Hamiltonoperator verschieden sind: Fehler werfen.
    if ( group == -1 ){
       cerr << "GROUP is a mandatory option!" << endl; 
       return -1;
@@ -658,11 +658,13 @@ int main( int argc, char ** argv ){
       string line;
       int pos, pos2;
       getline( thefcidump, line ); // &FCI NORB= X,NELEC= Y,MS2= Z,
+      // Check if file is an fcidump
       pos = line.find( "FCI" );
       if ( pos == string::npos ){
          cerr << "The file " << fcidump << " is not a fcidump file!" << endl; 
          return -1;
       }
+
       pos = line.find( "NORB"  ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
       fcidump_norb = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
       pos = line.find( "NELEC" ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
