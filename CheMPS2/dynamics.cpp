@@ -132,7 +132,7 @@ bool file_exists( const string filename, const string tag ){
    struct stat file_info;
    const bool on_disk = (( filename.length() > 0 ) && ( stat( filename.c_str(), &file_info ) == 0 ));
    if (( on_disk == false ) && ( am_i_master )){
-      cerr << "Unable to retrieve file " << filename << "!" << endl;
+      cerr << "Unable to retrieve file " << filename << "!" << endl; //BUG: couts "Unable to retrieve file " << filename << "!", "Invalid option for " << "FCIDUMP" << "!" when tag is set to "EXT_POTENTIAL_FCIDUMP"
       cerr << "Invalid option for " << tag << "!" << endl;
    }
    return on_disk;
@@ -447,6 +447,7 @@ int main( int argc, char ** argv ){
 
    string inputfile = "";
    string fcidump   = "";
+   string ext_pot_fcidump   = ""; // path to file
 
    int group        = -1;
    int multiplicity = -1;
@@ -526,6 +527,13 @@ int main( int argc, char ** argv ){
          fcidump = line.substr( pos, line.length() - pos );
          fcidump.erase( remove( fcidump.begin(), fcidump.end(), ' ' ), fcidump.end() );
          if ( file_exists( fcidump, "FCIDUMP" ) == false ){ return -1; }
+      }
+
+      if ( line.find( "EXT_POTENTIAL_FCIDUMP" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         ext_pot_fcidump = line.substr( pos, line.length() - pos );
+         ext_pot_fcidump.erase( remove( ext_pot_fcidump.begin(), ext_pot_fcidump.end(), ' ' ), ext_pot_fcidump.end() );
+         if ( file_exists( ext_pot_fcidump, "EXT_POTENTIAL_FCIDUMP" ) == false ){ return -1; }
       }
 
       if ( line.find( "TIME_INIT" ) != string::npos ){
@@ -1067,7 +1075,8 @@ int main( int argc, char ** argv ){
    delete[] time_hf_state_parsed;
 
    // testing: ham_is_time_dependant wird korrekt geparst
-   // std::cout << "\n" << "ham_is_time_dependant >>>>>>>>>>>> " << ham_is_time_dependant << "\n";
+   std::cout << "\n" << "ham_is_time_dependant >>>>>>>>>>>> " << ham_is_time_dependant << "\n";
+   std::cout << "\n" << "external-potential-fcidump path-to-file >>>>>>>>>>>" << ext_pot_fcidump << "\n";
 
    return 0;
 

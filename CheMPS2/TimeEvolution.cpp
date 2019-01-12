@@ -607,19 +607,21 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step,
    //    }
    // }
 
-   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-         std::cout << krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] << " ";
-      }
-      std::cout << std::endl;
-   }
 
-   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-         std::cout << overlaps[ irow +  icol * krylovSpaceDimension ] << " ";
-      }
-      std::cout << std::endl;
-   }
+   // // commented out for clarity in the terminal output
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
+   // // commented out for clarity in the terminal output
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << overlaps[ irow +  icol * krylovSpaceDimension ] << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
 
    //////////////////////////////////////////////////////////////////////////////////////
    //
