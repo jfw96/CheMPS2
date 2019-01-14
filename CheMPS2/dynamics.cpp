@@ -703,9 +703,6 @@ int main( int argc, char ** argv ){
    if ( nelectrons   == -1 ){   nelectrons = fcidump_nelec;     }
    if ( irrep        == -1 ){        irrep = fcidump_irrep;     }
 
-
-
-   /// TODO: Only do this, if the hamiltonian is timedependant
    
    if (ham_is_time_dependant)
    {     
@@ -1220,7 +1217,7 @@ int main( int argc, char ** argv ){
    std::cout << "Frequncy :"
              << frequency
              << "\n";
-             
+
    return 0;
 
 }
