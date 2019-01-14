@@ -1220,10 +1220,7 @@ int main( int argc, char ** argv ){
    std::cout << "Frequncy :"
              << frequency
              << "\n";
-
-
-
-   std::cout << "Hallo!\n";
+             
    return 0;
 
 }
