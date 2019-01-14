@@ -659,7 +659,6 @@ int main( int argc, char ** argv ){
 
 
   // Validiere Grou-Input vorhanden
-  // TODO: Fragen: wo wird group vor dem Einlesen auf -1 gesetzt?
    if ( group == -1 ){ 
       cerr << "GROUP is a mandatory option!" << endl; 
       return -1;
@@ -672,7 +671,7 @@ int main( int argc, char ** argv ){
    const int num_irreps = Symmhelper.getNumberOfIrreps();
 
   ///////////////////////////////////////////////////////////////////////////////////
-  // Begin: EINLESEN DES FCIDUMP-FILES - Nur für Check der Targetsymmetrie TODO: Auf die gleiche Weise Argumente Frequenz und Amplitude einlesen
+  // Begin: EINLESEN DES FCIDUMP-FILES - Nur für Check der Targetsymmetrie 
   ///////////////////////////////////////////////////////////////////////////////////
    int fcidump_norb  = -1;
    int fcidump_nelec = -1;
@@ -716,7 +715,6 @@ int main( int argc, char ** argv ){
    ///////////////////////////////////////////////////////////////////////////////////
   // Ende: EINLESEN DES FCIDUMP-FILES - Nur für Check der Targetsymmetrie
   ///////////////////////////////////////////////////////////////////////////////////
-  //TODO: gegen welchen Fall wird hier abgesichergt? Würde das Programm nicht schon in  "Read in the options" abbrechen (return(-1))?
    if ( multiplicity == -1 ){ multiplicity = fcidump_two_s + 1; }
    if ( nelectrons   == -1 ){   nelectrons = fcidump_nelec;     }
    if ( irrep        == -1 ){        irrep = fcidump_irrep;     }
