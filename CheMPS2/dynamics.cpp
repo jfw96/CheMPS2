@@ -349,7 +349,8 @@ cout << "\n"
 //
 // - EXT_POTENTIAL_IS_TIME_DEPENDANT: Fange Fehlerfall, dass EXT_POTENTIAL leer ist. Sodass Rechnung in diesem Fall nicht startet und mit zeitunabhängigem Algorithmus verwechselt wird.
 "       EXT_POTENTIAL = /path/to/external/potential\n"
-"              External potential in fcidump-ext-pot-format. Note that orbital irreps in the EXT_POTENTIAL file follow molpro convention! Only has affect if EXT_POTENTIAL_IS_TIME_DEPENDANT is TRUE (default FALSE).\n"
+"              External potential in fcidump-ext-pot-format. Note that orbital irreps in the EXT_POTENTIAL file follow molpro convention!\n"
+"              Only has affect if EXT_POTENTIAL_IS_TIME_DEPENDANT is TRUE (default FALSE).\n"
 "\n"
 "       HAM_IS_TIME_DEPENDANT = bool\n"
 "              Set if the external potential is time dependent. Only has affect if EXT_POTENTIAL is given (TRUE or FALSE; default FALSE).\n"
