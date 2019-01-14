@@ -691,6 +691,83 @@ int main( int argc, char ** argv ){
    if ( nelectrons   == -1 ){   nelectrons = fcidump_nelec;     }
    if ( irrep        == -1 ){        irrep = fcidump_irrep;     }
 
+
+
+   ///
+   /*******************************
+   *  Check the target symmetry - external potential *
+   *******************************/
+   // Vorgehen: wiederhole das Vorgehen zum Einlesen. Kommentiere die - für mich aktuell - nicht wichtigen Zeilen aus. Lasse sie jedoch stehen, um wenn später wichtig diese Änderungen schnell machen zu können.
+
+   // if ( group == -1 ){
+   //    cerr << "GROUP is a mandatory option!" << endl; 
+   //    return -1;
+   // }
+   // CheMPS2::Irreps Symmhelper( group );
+   // const int num_irreps = Symmhelper.getNumberOfIrreps();
+    
+   int ext_pot_fcidump_norb  = -1;
+   int ext_pot_fcidump_nelec = -1;
+   //int ext_pot_fcidump_irrep = -1;
+   {
+      ifstream theExtPotFcidump( ext_pot_fcidump.c_str() );
+      string line;
+      int pos, pos2;
+      getline( theExtPotFcidump, line ); // &FCI NORB= X,NELEC= Y,MS2= Z,
+      // Check if file is an fcidump
+      pos = line.find( "FCI" );
+      if ( pos == string::npos ){
+         cerr << "The file " << ext_pot_fcidump << " is not a fcidump file!" << endl; 
+         return -1;
+      }
+
+      pos = line.find( "NORB"  ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
+      ext_pot_fcidump_norb = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
+
+      pos = line.find( "NELEC" ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
+      ext_pot_fcidump_nelec = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
+
+      // TODO: Vermutung: multiplicity ist keine sinnvolle Größe für die Dipolmatrixeleemnte
+      // pos = line.find( "MS2"   ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
+      // ext_pot_fcidump_two_s = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
+
+      // do { getline( theExtPotFcidump, line ); } while ( line.find( "ISYM" ) == string::npos );
+      // pos = line.find( "ISYM"  ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
+      // const int ext_pot_fcidump_molpro_wfn_irrep = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
+      // theExtPotFcidump.close();
+
+      //TODO: Ask Lars about symmetries in the context of dipolmatrix elements. Auswirkungen auf den Gesamt Hamiltonoperator?
+      // TODO: Kläre Vermutung ab: Irrep ist für Dipolmatrixelemente keine sinnvolle Angabe. Genau so wenig, wie die Group.
+      // Erster Gedanke von mir: Sinnvoll die Gruppe (wahrscheinlich fast immer 0) aus dem Inputfile für den Hamiltonian einmal zentral zu setzen.
+      // int * psi2molpro = new int[ num_irreps ];
+      // Symmhelper.symm_psi2molpro( psi2molpro );
+      // for ( int cnt = 0; cnt < num_irreps; cnt++ ){
+      //    if ( ext_pot_fcidump_molpro_wfn_irrep == psi2molpro[ cnt ] ){ ext_pot_fcidump_irrep = cnt; }
+      // }
+      // if ( ext_pot_fcidump_irrep == -1 ){
+      //    cerr << "Could not find the molpro wavefunction symmetry (ISYM) in the fcidump file!" << endl; 
+      //    return -1;
+      // }
+      // delete [] psi2molpro;
+   }
+
+   // TODO: validiere Input der Files fcidump und ext_pot_fcidump gegeneiander: stimmen anzahl elektronen überein
+   // if ( nelectrons   != ext_pot_fcidump_nelec)
+   // {
+   //    cerr << "The number of electrons specified in the the file "
+   //         << fcidump
+   //         << "is " 
+   //         << nelectrons
+   //         << ".\n"
+   //         << "The number of electrons specified in the file "
+   //         << ext_pot_fcidump
+   //         << "is "
+   //         << ext_pot_fcidump_nelec
+   //         << "They must have the same sumber of electrons!"<< endl; 
+   //       return -1;
+   // }
+   ///
+
    /*********************************
    *  Check the sweep instructions  *
    **********************************/
@@ -1079,6 +1156,13 @@ int main( int argc, char ** argv ){
    // testing: ham_is_time_dependant wird korrekt geparst
    std::cout << "\n" << "ham_is_time_dependant >>>>>>>>>>>> " << ham_is_time_dependant << "\n";
    std::cout << "\n" << "external-potential-fcidump path-to-file >>>>>>>>>>>" << ext_pot_fcidump << "\n";
+
+   std::cout << "Number of electrons in the ext pot fcidump file :"
+             << ext_pot_fcidump_nelec
+             << "\n"
+             "Number of electrons in the fcidump file :"
+             << nelectrons
+             << "\n";
 
    return 0;
 
