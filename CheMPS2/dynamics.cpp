@@ -345,14 +345,14 @@ cout << "\n"
 "\n"
 // Commit-msg: Füge Erklärung zu zusätzliche Inputs an Hilfefunktion an
 //
-// - EXT_POTENTIAL_FCIDUMP: fcidump-file mit allen Infos zum zeitabhängigen Teil des physikalischen Hamiltonoperators.
+// - EXT_POTENTIAL: fcidump-file mit allen Infos zum zeitabhängigen Teil des physikalischen Hamiltonoperators.
 //
-// - EXT_POTENTIAL_IS_TIME_DEPENDANT: Fange Fehlerfall, dass EXT_POTENTIAL_FCIDUMP leer ist. Sodass Rechnung in diesem Fall nicht startet und mit zeitunabhängigem Algorithmus verwechselt wird.
-"       EXT_POTENTIAL_FCIDUMP = /path/to/external/potential\n"
-"              External potential in fcidump-format. Note that orbital irreps in the EXT_POTENTIAL_FCIDUMP file follow molpro convention! Only has affect if EXT_POTENTIAL_IS_TIME_DEPENDANT is TRUE (default FALSE).\n"
+// - EXT_POTENTIAL_IS_TIME_DEPENDANT: Fange Fehlerfall, dass EXT_POTENTIAL leer ist. Sodass Rechnung in diesem Fall nicht startet und mit zeitunabhängigem Algorithmus verwechselt wird.
+"       EXT_POTENTIAL = /path/to/external/potential\n"
+"              External potential in fcidump-ext-pot-format. Note that orbital irreps in the EXT_POTENTIAL file follow molpro convention! Only has affect if EXT_POTENTIAL_IS_TIME_DEPENDANT is TRUE (default FALSE).\n"
 "\n"
 "       HAM_IS_TIME_DEPENDANT = bool\n"
-"              Set if the external potential is time dependent. Only has affect if EXT_POTENTIAL_FCIDUMP is given (TRUE or FALSE; default FALSE).\n"
+"              Set if the external potential is time dependent. Only has affect if EXT_POTENTIAL is given (TRUE or FALSE; default FALSE).\n"
 "\n"
 "       GROUP = int\n"
 "              Set the psi4 symmetry group number [0-7] which corresponds to the FCIDUMP file.\n"
@@ -449,10 +449,19 @@ int main( int argc, char ** argv ){
    string fcidump   = "";
    string ext_pot_fcidump   = ""; // path to file
 
+   // std::cout << "fcidump1: " << fcidump <<std::endl;
+   // std::cout << "fcidump2: " << ext_pot_fcidump <<std::endl;
+
    int group        = -1;
    int multiplicity = -1;
    int nelectrons   = -1;
    int irrep        = -1;
+
+   // metainfos: ext_pot_fcidump
+   int frequency     = -1;
+   int amplitude     = -1;
+   int ext_pot_norb  = -1;
+   int ext_pot_nelec = -1;
 
    string sweep_states  = "";
    string sweep_maxit   = "";
@@ -523,18 +532,18 @@ int main( int argc, char ** argv ){
 
       getline( input, line );
 
+      if ( line.find( "EXT_POTENTIAL" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         ext_pot_fcidump = line.substr( pos, line.length() - pos );
+         ext_pot_fcidump.erase( remove( ext_pot_fcidump.begin(), ext_pot_fcidump.end(), ' ' ), ext_pot_fcidump.end() );
+         if ( file_exists( ext_pot_fcidump, "EXT_POTENTIAL" ) == false ){ return -1; }
+      }
+
       if ( line.find( "FCIDUMP" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
          fcidump = line.substr( pos, line.length() - pos );
          fcidump.erase( remove( fcidump.begin(), fcidump.end(), ' ' ), fcidump.end() );
          if ( file_exists( fcidump, "FCIDUMP" ) == false ){ return -1; }
-      }
-
-      if ( line.find( "EXT_POTENTIAL_FCIDUMP" ) != string::npos ){
-         const int pos = line.find( "=" ) + 1;
-         ext_pot_fcidump = line.substr( pos, line.length() - pos );
-         ext_pot_fcidump.erase( remove( ext_pot_fcidump.begin(), ext_pot_fcidump.end(), ' ' ), ext_pot_fcidump.end() );
-         if ( file_exists( ext_pot_fcidump, "EXT_POTENTIAL_FCIDUMP" ) == false ){ return -1; }
       }
 
       if ( line.find( "TIME_INIT" ) != string::npos ){
@@ -640,6 +649,9 @@ int main( int argc, char ** argv ){
    input.close();
    // Ende: Parse Argumente der Inputdatei in Variablen (hier erst stures Auslesen, noch keine physiklische Logik dahinter)
 
+   // std::cout << "2fcidump1: " << fcidump <<std::endl;
+   // std::cout << "2fcidump2: " << ext_pot_fcidump <<std::endl;
+
   /*******************************
    *  Check the target symmetry  *
    *******************************/
@@ -708,6 +720,118 @@ int main( int argc, char ** argv ){
    if ( nelectrons   == -1 ){   nelectrons = fcidump_nelec;     }
    if ( irrep        == -1 ){        irrep = fcidump_irrep;     }
 
+   
+   if (ham_is_time_dependant)
+   {     
+
+      /*******************************
+      *  external potential - read and parse metainfo from ext_pot_fcidump - Methoden von "Check the target symmetry"
+      *******************************/
+      // Vorgehen: wiederhole das Vorgehen zum Einlesen. Kommentiere die - für mich aktuell - nicht wichtigen Zeilen aus. Lasse sie jedoch stehen, um wenn später wichtig diese Änderungen schnell machen zu können.
+
+      // if ( group == -1 ){
+      //    cerr << "GROUP is a mandatory option!" << endl; 
+      //    return -1;
+      // }
+      // CheMPS2::Irreps Symmhelper( group );
+      // const int num_irreps = Symmhelper.getNumberOfIrreps();
+      
+      // properties to be read from the external potential
+      int ext_pot_fcidump_norb  = -1;
+      int ext_pot_fcidump_nelec = -1;
+      int ext_pot_fcidump_ampl  = -1; // Amplitude of the electrical field
+      int ext_pot_fcidump_freq  = -1; // frequency of the electrical field
+      //int ext_pot_fcidump_irrep = -1;
+
+      // read the external potential fcidump-file
+      {
+         ifstream theExtPotFcidump( ext_pot_fcidump.c_str() );
+         string line;
+         int pos, pos2;
+         getline( theExtPotFcidump, line ); // &FCI NORB= X,NELEC= Y,MS2= Z,
+         // Check if file is an fcidump
+         pos = line.find( "FCI-EXT-POT" );
+         if ( pos == string::npos ){
+            cerr << "The file " << ext_pot_fcidump << " is not a fcidump-ext-pot file!" << endl;
+            return -1;
+         }
+
+         pos = line.find( "AMPL" ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
+         ext_pot_fcidump_ampl = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
+
+         pos = line.find( "FREQ" ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
+         ext_pot_fcidump_freq = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
+
+         pos = line.find( "NORB"  ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
+         ext_pot_fcidump_norb = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
+
+         pos = line.find( "NELEC" ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
+         ext_pot_fcidump_nelec = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
+
+         // TODO: Vermutung: multiplicity ist keine sinnvolle Größe für die Dipolmatrixeleemnte
+         // pos = line.find( "MS2"   ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
+         // ext_pot_fcidump_two_s = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
+
+         // do { getline( theExtPotFcidump, line ); } while ( line.find( "ISYM" ) == string::npos );
+         // pos = line.find( "ISYM"  ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
+         // const int ext_pot_fcidump_molpro_wfn_irrep = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
+         // theExtPotFcidump.close();
+
+         //TODO: Ask Lars about symmetries in the context of dipolmatrix elements. Auswirkungen auf den Gesamt Hamiltonoperator?
+         // TODO: Kläre Vermutung ab: Irrep ist für Dipolmatrixelemente keine sinnvolle Angabe. Genau so wenig, wie die Group.
+         // Erster Gedanke von mir: Sinnvoll die Gruppe (wahrscheinlich fast immer 0) aus dem Inputfile für den Hamiltonian einmal zentral zu setzen.
+         // int * psi2molpro = new int[ num_irreps ];
+         // Symmhelper.symm_psi2molpro( psi2molpro );
+         // for ( int cnt = 0; cnt < num_irreps; cnt++ ){
+         //    if ( ext_pot_fcidump_molpro_wfn_irrep == psi2molpro[ cnt ] ){ ext_pot_fcidump_irrep = cnt; }
+         // }
+         // if ( ext_pot_fcidump_irrep == -1 ){
+         //    cerr << "Could not find the molpro wavefunction symmetry (ISYM) in the fcidump file!" << endl; 
+         //    return -1;
+         // }
+         // delete [] psi2molpro;
+      }
+      //put values into variables
+      if ( amplitude == -1 ){amplitude = ext_pot_fcidump_ampl;}
+      if ( frequency == -1 ){frequency = ext_pot_fcidump_freq;}
+
+      if ( ext_pot_norb  == -1 ){ext_pot_norb  = ext_pot_fcidump_norb;}
+      if ( ext_pot_nelec == -1 ){ext_pot_nelec = ext_pot_fcidump_nelec;}
+
+      // validiere Input der Files fcidump und ext_pot_fcidump gegeneiander: stimmen anzahl elektronen überein
+      if ( nelectrons   != ext_pot_fcidump_nelec)
+      {
+         cerr << "Inconsistent Input Execption!\n"
+            << "The number of electrons specified in the the file "
+            << fcidump
+            << "is " 
+            << nelectrons
+            << ".\n"
+            << "The number of electrons specified in the file "
+            << ext_pot_fcidump
+            << "is "
+            << ext_pot_fcidump_nelec
+            << "\nThese to files must have the same number of electrons!"<< endl; 
+            return -1;
+      }
+      if ( fcidump_norb != ext_pot_fcidump_norb)
+      {
+         cerr << "Inconsistent Input Execption!\n"
+            << "The number of orbitals specified in the the file "
+            << fcidump
+            << "is " 
+            << fcidump_norb
+            << ".\n"
+            << "The number of orbitals specified in the file "
+            << ext_pot_fcidump
+            << "is "
+            << ext_pot_fcidump_norb
+            << "\nThese to files must have the same number of orbitals!"<< endl; 
+            return -1;
+      }
+   }
+   ///
+   
    /*********************************
    *  Check the sweep instructions  *
    **********************************/
@@ -1096,7 +1220,21 @@ int main( int argc, char ** argv ){
    std::cout << "\nMake hat funktioniert!\n";
    // testing: ham_is_time_dependant wird korrekt geparst
    std::cout << "\n" << "ham_is_time_dependant >>>>>>>>>>>> " << ham_is_time_dependant << "\n";
-   std::cout << "\n" << "external-potential-fcidump path-to-file >>>>>>>>>>>" << ext_pot_fcidump << "\n";
+   std::cout << "fcidump1: " << fcidump <<std::endl;
+   std::cout << "fcidump2: " << ext_pot_fcidump <<std::endl;
+
+   std::cout << "Number of electrons in the ext pot fcidump file :"
+             << ext_pot_nelec
+             << "\n"
+             "Number of electrons in the fcidump file :"
+             << nelectrons
+             << "\n";
+   std::cout << "Amplitude :"
+             << amplitude
+             << "\n";
+   std::cout << "Frequncy :"
+             << frequency
+             << "\n";
 
    return 0;
 
