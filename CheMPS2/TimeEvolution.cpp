@@ -1016,6 +1016,7 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
             } else if ( time_type == 'E' ){
                doStep_euler( time_step_minor, kry_size, offset, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
             }
+            //TODO: updateHamiltonian(amplitude, frequency, time) an dieser Stelle. Evtl: genauer schauen bei RK4: dort zwischen Hamiltonians
 
             for ( int site = 0; site < L; site++ ) {
                delete MPS[ site ];

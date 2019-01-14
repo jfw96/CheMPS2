@@ -491,6 +491,7 @@ int main( int argc, char ** argv ){
       {0, 0, 0, 0}
    };
 
+   // Hole Argumente: Hilfefunktion, Version, oder Rechnung
    int option_index = 0;
    int c;
    while (( c = getopt_long( argc, argv, "hvf:", long_options, &option_index )) != -1 ){
@@ -510,11 +511,12 @@ int main( int argc, char ** argv ){
             break;
       }
    }
-
+   // Validiere Input vorhanden
    if ( inputfile.length() == 0 ){
       cerr << "The input file should be specified!" << endl;
       return -1;
-   } 
+   }
+   // Begin: Parse Argumente der Inputdatei in Variablen (hier erst stures Auslesen, noch keine physiklische Logik dahinter)
    ifstream input( inputfile.c_str() );
    string line;
    while ( input.eof() == false ){
@@ -556,12 +558,12 @@ int main( int argc, char ** argv ){
       char options1[] = { 'K', 'R', 'E', 'F' };
       if ( find_character( &time_type,        line, "TIME_TYPE",        options1, 4 ) == false ){ return -1; }
       
-      if ( find_boolean( &ham_is_time_dependant,  line, "HAM_IS_TIME_DEPENDANT"   ) == false ){ return -1; }
-      if ( find_boolean( &reorder_fiedler,  line, "REORDER_FIEDLER"   ) == false ){ return -1; }
-      if ( find_boolean( &time_backward,    line, "TIME_BACKWARD"     ) == false ){ return -1; }
-      if ( find_boolean( &time_ortho,       line, "TIME_ORTHO"        ) == false ){ return -1; }
-      if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"      ) == false ){ return -1; }
-      if ( find_boolean( &time_dump2rdm,    line, "TIME_DUMP2RDM"     ) == false ){ return -1; }
+      if ( find_boolean( &ham_is_time_dependant,  line, "HAM_IS_TIME_DEPENDANT" ) == false ){ return -1; }
+      if ( find_boolean( &reorder_fiedler,        line, "REORDER_FIEDLER"       ) == false ){ return -1; }
+      if ( find_boolean( &time_backward,          line, "TIME_BACKWARD"         ) == false ){ return -1; }
+      if ( find_boolean( &time_ortho,             line, "TIME_ORTHO"            ) == false ){ return -1; }
+      if ( find_boolean( &time_dumpfci,           line, "TIME_DUMPFCI"          ) == false ){ return -1; }
+      if ( find_boolean( &time_dump2rdm,          line, "TIME_DUMP2RDM"         ) == false ){ return -1; }
 
       if ( find_double( &time_energy_offset, line, "TIME_ENERGY_OFFSET", false, 0.0 ) == false ){ return -1; }
 
@@ -636,19 +638,29 @@ int main( int argc, char ** argv ){
       }
    }
    input.close();
+   // Ende: Parse Argumente der Inputdatei in Variablen (hier erst stures Auslesen, noch keine physiklische Logik dahinter)
 
   /*******************************
    *  Check the target symmetry  *
    *******************************/
-  //TODO: Mein Verständnis: group muss für zeitabhängige Probleme im allgemeinen 0 sein.  Soll Warnung geworfen werden, wenn Hamiltonoperator zeitabhängig und group nicht 0 ?
-  // Möglicher Problemfall: Wenn Symmetrie für externes potential und zeitunabhängigen Hamiltonoperator verschieden sind: Fehler werfen.
-   if ( group == -1 ){
+
+
+  // Validiere Grou-Input vorhanden
+  // TODO: Fragen: wo wird group vor dem Einlesen auf -1 gesetzt?
+   if ( group == -1 ){ 
       cerr << "GROUP is a mandatory option!" << endl; 
       return -1;
    }
+   //TODO: Mein Verständnis: group muss für zeitabhängige Probleme im allgemeinen 0 sein.  Soll Warnung geworfen werden, wenn Hamiltonoperator zeitabhängig und group nicht 0 ?
+  // Möglicher Problemfall: Wenn Symmetrie für externes potential und zeitunabhängigen Hamiltonoperator verschieden sind: Fehler werfen.
+  // beachte: Dipoloperator ist ungerader Operator
+
    CheMPS2::Irreps Symmhelper( group );
    const int num_irreps = Symmhelper.getNumberOfIrreps();
 
+  ///////////////////////////////////////////////////////////////////////////////////
+  // Begin: EINLESEN DES FCIDUMP-FILES - Nur für Check der Targetsymmetrie TODO: Auf die gleiche Weise Argumente Frequenz und Amplitude einlesen
+  ///////////////////////////////////////////////////////////////////////////////////
    int fcidump_norb  = -1;
    int fcidump_nelec = -1;
    int fcidump_two_s = -1;
@@ -665,6 +677,7 @@ int main( int argc, char ** argv ){
          return -1;
       }
 
+      // TODO: ORBSYM kommt in der gesamten Datei nicht vor. Wird ORBSYM gar nicht gebraucht?
       pos = line.find( "NORB"  ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
       fcidump_norb = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
       pos = line.find( "NELEC" ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
@@ -687,6 +700,10 @@ int main( int argc, char ** argv ){
       }
       delete [] psi2molpro;
    }
+   ///////////////////////////////////////////////////////////////////////////////////
+  // Ende: EINLESEN DES FCIDUMP-FILES - Nur für Check der Targetsymmetrie
+  ///////////////////////////////////////////////////////////////////////////////////
+  //TODO: gegen welchen Fall wird hier abgesichergt? Würde das Programm nicht schon in  "Read in the options" abbrechen (return(-1))?
    if ( multiplicity == -1 ){ multiplicity = fcidump_two_s + 1; }
    if ( nelectrons   == -1 ){   nelectrons = fcidump_nelec;     }
    if ( irrep        == -1 ){        irrep = fcidump_irrep;     }
@@ -934,7 +951,7 @@ int main( int argc, char ** argv ){
    ********************************/
 
    CheMPS2::Initialize::Init();
-   CheMPS2::Hamiltonian * ham = new CheMPS2::Hamiltonian( fcidump, group );
+   CheMPS2::Hamiltonian * ham = new CheMPS2::Hamiltonian( fcidump, group ); // Übergabe: fcidumpFile an Hamiltonian. Eiziges Mal, dass das fcidump-file übergeben wird und damit etwas tatsächlich ausgelesen wird.
    CheMPS2::ConvergenceScheme * opt_scheme = new CheMPS2::ConvergenceScheme( ni_d );
    for ( int count = 0; count < ni_d; count++ ){
       opt_scheme->set_instruction( count, value_states[ count ],
@@ -1076,6 +1093,7 @@ int main( int argc, char ** argv ){
    delete[] time_2_ninit_parsed;
    delete[] time_hf_state_parsed;
 
+   std::cout << "\nMake hat funktioniert!\n";
    // testing: ham_is_time_dependant wird korrekt geparst
    std::cout << "\n" << "ham_is_time_dependant >>>>>>>>>>>> " << ham_is_time_dependant << "\n";
    std::cout << "\n" << "external-potential-fcidump path-to-file >>>>>>>>>>>" << ext_pot_fcidump << "\n";
