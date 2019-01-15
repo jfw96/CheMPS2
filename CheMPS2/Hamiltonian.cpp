@@ -308,7 +308,7 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile ) 
    pos  = line.find( "=", pos ); //1
    pos2 = line.find( ",", pos ); //4
    part = line.substr( pos + 1, pos2 - pos - 1 );
-   L    = atoi( part.c_str() );
+   L    = atoi( part.c_str() ); //NORBS = Number of Orbitals = L
    if ( CheMPS2::HAMILTONIAN_debugPrint ) { cout << "The number of orbitals <<" << part << ">> or " << L << "." << endl; }
 
    // Get the orbital irreps in psi4 convention (XOR, see Irreps.h).

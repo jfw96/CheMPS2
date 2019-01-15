@@ -1075,6 +1075,7 @@ int main( int argc, char ** argv ){
    ********************************/
 
    CheMPS2::Initialize::Init();
+   // timeindependant part of the hamiltonian
    CheMPS2::Hamiltonian * ham = new CheMPS2::Hamiltonian( fcidump, group ); // Übergabe: fcidumpFile an Hamiltonian. Eiziges Mal, dass das fcidump-file übergeben wird und damit etwas tatsächlich ausgelesen wird.
    CheMPS2::ConvergenceScheme * opt_scheme = new CheMPS2::ConvergenceScheme( ni_d );
    for ( int count = 0; count < ni_d; count++ ){
@@ -1203,6 +1204,35 @@ int main( int argc, char ** argv ){
       cerr << " Your TIME_TYPE is not implemented yet" << std::endl;
       return -1;
    }
+
+   // understand Hamiltonian and Problem class
+   double test;
+
+   std::cout << "TMat:\n";
+   for(int i = 0; i < ext_pot_norb; i++)
+   {
+      for(int j = 0; j < ext_pot_norb; j++)
+      {
+         std::cout << i + 1<< j + 1 << "     " <<ham->getTmat(i,j) << "\n";
+      }  
+   }
+   std::cout << "TMat ende ----------- \n";
+
+   std::cout << "VMat:\n";
+   for(int i = 0; i < 5; i++)
+   {
+      for(int j = 0; j < 5; j++)
+      {
+         for(int k = 0; k < 5; k++)
+         {
+            for(int l = 0; l < 5; l++)
+            {
+               std::cout << i + 1 << j + 1 << k + 1 << l + 1 <<"     " <<ham->getVmat(i,j,k,l) << "\n";
+            }
+         }
+      }  
+   }
+   std::cout << "VMat ende ----------- \n";
 
    for ( int site = 0; site < prob->gL(); site++ ) {
       delete mpsIn[ site ];
