@@ -1234,6 +1234,9 @@ int main( int argc, char ** argv ){
    std::cout << "Frequncy :"
              << frequency
              << "\n";
+   std::cout << "Group :"
+             << group
+             << "\n";
 
    return 0;
 
