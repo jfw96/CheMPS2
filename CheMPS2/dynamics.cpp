@@ -1097,9 +1097,10 @@ int main( int argc, char ** argv ){
    {
       for(int j = 0; j < ext_pot_norb; j++)
       {
-         if (hamFcidump->getTmat(i,j) != extPotFcidump->getTmat(i,j)) {
-            std::cout << "FALSE\n";
-         }
+         // if (hamFcidump->getTmat(i,j) != extPotFcidump->getTmat(i,j)) {
+         //    std::cout << "FALSE\n";
+         // }
+         std::cout << extPotFcidump->getTmat(i,j) << "\n";
       }  
    }
    std::cout << "TMat ende ----------- \n";
@@ -1114,16 +1115,17 @@ int main( int argc, char ** argv ){
             for(int l = 0; l < 5; l++)
             {
                
-               if (hamFcidump->getVmat(i,j,k,l) != extPotFcidump->getVmat(i,j,k,l)) {
-                  std::cout << "FALSE\n";
-               }
-               
+               // if (hamFcidump->getVmat(i,j,k,l) != extPotFcidump->getVmat(i,j,k,l)) {
+               //    std::cout << "FALSE\n";
+               // }
+               std::cout << extPotFcidump->getVmat(i,j,k,l) << "\n";
                // std::cout << i + 1 << k + 1 << j + 1 << l + 1 <<"     " <<hamFcidump->getVmat(i,j,k,l) << "\n";
             }
          }
       }  
    }
    std::cout << "VMat ende ----------- \n";
+
    return -1;
    ////////////////////////////////////////////////////////////////////////////////////
    ///Testing - end
