@@ -1086,7 +1086,9 @@ int main( int argc, char ** argv ){
 
    CheMPS2::Problem * fcidumpProb = new CheMPS2::Problem(hamFcidump,multiplicity - 1, nelectrons, irrep); //TODO: multiplicity und irrep in diesem Kontext sinnvoll? Kann gerade nicht mehr denken
 
+   CheMPS2::Hamiltonian * extPotFcidump = new CheMPS2::Hamiltonian(ext_pot_fcidump,group);
 
+   CheMPS2::Problem * extPotFcidumpProb = new CheMPS2::Problem(extPotFcidump,multiplicity - 1, nelectrons, irrep); //TODO: multiplicity und irrep in diesem Kontext sinnvoll? Kann gerade nicht mehr denken
    // understand Hamiltonian and Problem class. Physiker -> Chemiker Notation: vertausche j und k. shifte alle physiker indizes um 1 hoch
    double test;
 
@@ -1095,7 +1097,9 @@ int main( int argc, char ** argv ){
    {
       for(int j = 0; j < ext_pot_norb; j++)
       {
-         std::cout << i + 1<< j + 1 << "     " <<hamFcidump->getTmat(i,j) << "\n";
+         if (hamFcidump->getTmat(i,j) != extPotFcidump->getTmat(i,j)) {
+            std::cout << "FALSE\n";
+         }
       }  
    }
    std::cout << "TMat ende ----------- \n";
@@ -1109,7 +1113,12 @@ int main( int argc, char ** argv ){
          {
             for(int l = 0; l < 5; l++)
             {
-               std::cout << i + 1 << k + 1 << j + 1 << l + 1 <<"     " <<hamFcidump->getVmat(i,j,k,l) << "\n";
+               
+               if (hamFcidump->getVmat(i,j,k,l) != extPotFcidump->getVmat(i,j,k,l)) {
+                  std::cout << "FALSE\n";
+               }
+               
+               // std::cout << i + 1 << k + 1 << j + 1 << l + 1 <<"     " <<hamFcidump->getVmat(i,j,k,l) << "\n";
             }
          }
       }  
