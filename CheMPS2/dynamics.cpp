@@ -840,6 +840,7 @@ int main( int argc, char ** argv ){
       return -1;
    }
 
+   //TODO: what is ni_d? Answer: according to the help page: the number of reduced renormalized basis states for the successive sweep instructions (positive integers)
    const int ni_d      = count( sweep_states.begin(), sweep_states.end(), ',' ) + 1;
    const int ni_maxit  = count( sweep_maxit.begin(),  sweep_maxit.end(),  ',' ) + 1;
    const int ni_noise  = count( sweep_noise.begin(),  sweep_noise.end(),  ',' ) + 1;
@@ -859,7 +860,7 @@ int main( int argc, char ** argv ){
 
 
    /*********************************
-   *  Parse reordering if required  *
+   *  Parse reordering if required  * => TODO: inwieweit soll ich diese Option erlauben?
    *********************************/
 
    int * dmrg2ham = NULL;
