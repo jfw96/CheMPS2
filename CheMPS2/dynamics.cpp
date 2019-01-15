@@ -357,6 +357,8 @@ cout << "\n"
 "\n"
 "       GROUP = int\n"
 "              Set the psi4 symmetry group number [0-7] which corresponds to the FCIDUMP file.\n"
+"              Only has affect if EXT_POTENTIAL_IS_TIME_DEPENDANT is FALSE (default FALSE).\n"
+"              If EXT_POTENTIAL_IS_TIME_DEPENDANT is FALSE it is treated like GROUP = 0.\n"
 "\n"
 "       MULTIPLICITY = int\n"
 "              Overwrite the spin multiplicity [2S+1] of the FCIDUMP file.\n"
@@ -728,10 +730,8 @@ int main( int argc, char ** argv ){
       *******************************/
       // Vorgehen: wiederhole das Vorgehen zum Einlesen. Kommentiere die - für mich aktuell - nicht wichtigen Zeilen aus. Lasse sie jedoch stehen, um wenn später wichtig diese Änderungen schnell machen zu können.
 
-      // if ( group == -1 ){
-      //    cerr << "GROUP is a mandatory option!" << endl; 
-      //    return -1;
-      // }
+      // Since the hamiltonian is timedependant, the system should not have a symmetrie in general
+      group = 0;
       // CheMPS2::Irreps Symmhelper( group );
       // const int num_irreps = Symmhelper.getNumberOfIrreps();
       
