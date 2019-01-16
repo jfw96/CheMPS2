@@ -65,7 +65,7 @@ CheMPS2::Hamiltonian::Hamiltonian( const int Norbitals, const int nGroup, const 
 CheMPS2::Hamiltonian::Hamiltonian( const string filename, const int psi4groupnumber ): timeDependent(false) {
 
    SymmInfo.setGroup( psi4groupnumber );
-   CreateAndFillFromFCIDUMP( filename );
+   CreateAndFillFromFCIDUMP( filename, false );
 }
 
 CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5, const string main_file, const string file_tmat, const string file_vmat ): timeDependent(false) {
@@ -81,8 +81,8 @@ CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5, const string main_file, co
 CheMPS2::Hamiltonian::Hamiltonian( const string fcidump, const string fcidumpTime, const int psi4groupnumber ): timeDependent(true) {
 
   SymmInfo.setGroup( psi4groupnumber );
-  CreateAndFillFromFCIDUMP( fcidump );
-  CreateAndFillFromFCIDUMP( fcidumpTime );
+  CreateAndFillFromFCIDUMP( fcidump, false );
+  CreateAndFillFromFCIDUMP( fcidumpTime, true );
 
   std::cout << "Hamiltonian( const string filenameA, const string filenameB, const int psi4groupnumber ): timeDependent(true) aufgerufen\n";
 }
@@ -293,8 +293,9 @@ void CheMPS2::Hamiltonian::CreateAndFillFromH5( const string file_parent, const 
    read( file_parent, file_tmat, file_vmat );
 }
 
-void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile) { //TODO: flag: bool is_dipole , const bool is_dipole 
+void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, const bool is_dipole ) { //TODO: flag: bool is_dipole , const bool is_dipole 
   
+   std::cout << "\nis_dipole >>>>>>>>>>>>> " << is_dipole << "\n";
 
    struct stat file_info;
    const bool on_disk = ( ( fcidumpfile.length() > 0 ) && ( stat( fcidumpfile.c_str(), &file_info ) == 0 ) );
@@ -363,9 +364,20 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile) {
       orb2indexSy[ cnt ] = irrep2num_orb[ orb2irrep[ cnt ] ];
       irrep2num_orb[ orb2irrep[ cnt ] ]++;
    }
-   // TODO: if dipole, dann erzeuge Tmat, sonst TMat und Vmat 
-   Tmat = new TwoIndex( SymmInfo.getGroupNumber(), irrep2num_orb );  // Constructor ends with Clear(); call
-   Vmat = new FourIndex( SymmInfo.getGroupNumber(), irrep2num_orb ); // Constructor ends with Clear(); call
+   // TODO: if dipole, dann erzeuge Tmat, sonst TMat und Vmat
+   
+   if ( !is_dipole )
+   {
+      Tmat = new TwoIndex( SymmInfo.getGroupNumber(), irrep2num_orb );  // Constructor ends with Clear(); call
+      Vmat = new FourIndex( SymmInfo.getGroupNumber(), irrep2num_orb ); // Constructor ends with Clear(); call
+   }
+   else
+   {
+      std::cout << "\nhey there! SymmInfo.getGroupNumber()>>>>>>>>>>>>>>>> " << SymmInfo.getGroupNumber() << "\n";
+      TmatDipole = new TwoIndex( SymmInfo.getGroupNumber(), irrep2num_orb );  // Constructor ends with Clear(); call
+   }
+   
+   
 
    // Read the Hamiltonian in
    bool stop = false;
@@ -416,10 +428,10 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile) {
       if ( index4 != 0 ) {
          setVmat( index1 - 1, index3 - 1, index2 - 1, index4 - 1, value ); // From chemists to physicist notation!
       } else {
-         if ( index2 != 0 ) {
+         if ( index2 != 0 ) { //TODO: if(is_dipole){setTmatDipole(gleiche Indizes)}
             setTmat( index1 - 1, index2 - 1, value );
-         } else {
-            Econst = value;
+         } else { //TODO: if(is_dipole){EconstDipole}
+            Econst = value; // TODO: verändert sich durch zusätzliche Dipolmatrixelemente nicht - korrekt?
             stop   = true;
          }
       }

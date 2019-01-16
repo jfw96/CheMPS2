@@ -188,8 +188,11 @@ namespace CheMPS2 {
       //index of an orbital within irrep block
       int * orb2indexSy;
 
-      //1-particle matrix elements
+      //1-particle matrix elements loaded from the fcidump-file "fcidump"
       TwoIndex * Tmat;
+
+      //1-particle matrix elements loaded from the fcidump-file "fcidump"
+      TwoIndex * TmatDipole;
 
       //2-particle matrix elements
       FourIndex * Vmat;
@@ -204,7 +207,8 @@ namespace CheMPS2 {
       void CreateAndFillFromH5( const string file_parent, const string file_tmat, const string file_vmat );
 
       //Load the FCIDUMP Hamiltonian (with molpro irreps!)
-      void CreateAndFillFromFCIDUMP( const string fcidumpfile );
+      // \param is_dipole: determs if fcidumpfile contains dipol matrix elements or not
+      void CreateAndFillFromFCIDUMP( const string fcidumpfile, const bool is_dipole );
    };
 }
 

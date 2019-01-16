@@ -58,7 +58,7 @@ namespace CheMPS2{
    const string DMRG_MPS_storage_prefix       = "CheMPS2_MPS";
    const string DMRG_OPERATOR_storage_prefix  = "CheMPS2_Operators_";
 
-   const bool   HAMILTONIAN_debugPrint        = false;
+   const bool   HAMILTONIAN_debugPrint        = true;  // was originally false
    const string HAMILTONIAN_TmatStorageName   = "CheMPS2_Ham_Tmat.h5";
    const string HAMILTONIAN_VmatStorageName   = "CheMPS2_Ham_Vmat.h5";
    const string HAMILTONIAN_ParentStorageName = "CheMPS2_Ham_parent.h5";
