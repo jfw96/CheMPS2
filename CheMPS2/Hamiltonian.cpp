@@ -291,7 +291,7 @@ void CheMPS2::Hamiltonian::CreateAndFillFromH5( const string file_parent, const 
    read( file_parent, file_tmat, file_vmat );
 }
 
-void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile ) {
+void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile ) { //TODO: flag: bool is_dipole
 
    struct stat file_info;
    const bool on_disk = ( ( fcidumpfile.length() > 0 ) && ( stat( fcidumpfile.c_str(), &file_info ) == 0 ) );
@@ -360,6 +360,7 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile ) 
       orb2indexSy[ cnt ] = irrep2num_orb[ orb2irrep[ cnt ] ];
       irrep2num_orb[ orb2irrep[ cnt ] ]++;
    }
+   // TODO: if dipole, dann erzeuge Tmat, sonst TMat und Vmat 
    Tmat = new TwoIndex( SymmInfo.getGroupNumber(), irrep2num_orb );  // Constructor ends with Clear(); call
    Vmat = new FourIndex( SymmInfo.getGroupNumber(), irrep2num_orb ); // Constructor ends with Clear(); call
 
