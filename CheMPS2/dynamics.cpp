@@ -1082,11 +1082,11 @@ int main( int argc, char ** argv ){
    ////////////////////////////////////////////////////////////////////////////////////
    ///Testing - begin
    ////////////////////////////////////////////////////////////////////////////////////
-   CheMPS2::Hamiltonian * hamFcidump = new CheMPS2::Hamiltonian(fcidump,group);
-   CheMPS2::Problem * fcidumpProb    = new CheMPS2::Problem(hamFcidump,multiplicity - 1, nelectrons, irrep); //TODO: multiplicity und irrep in diesem Kontext sinnvoll? Kann gerade nicht mehr denken
+   // CheMPS2::Hamiltonian * hamFcidump = new CheMPS2::Hamiltonian(fcidump,group);
+   // CheMPS2::Problem * fcidumpProb    = new CheMPS2::Problem(hamFcidump,multiplicity - 1, nelectrons, irrep); //TODO: multiplicity und irrep in diesem Kontext sinnvoll? Kann gerade nicht mehr denken
 
-   CheMPS2::Hamiltonian * extPotFcidump = new CheMPS2::Hamiltonian(ext_pot_fcidump,group);
-   CheMPS2::Problem * extPotFcidumpProb = new CheMPS2::Problem(extPotFcidump,multiplicity - 1, nelectrons, irrep); //TODO: multiplicity und irrep in diesem Kontext sinnvoll? Kann gerade nicht mehr denken
+   // CheMPS2::Hamiltonian * extPotFcidump = new CheMPS2::Hamiltonian(ext_pot_fcidump,group);
+   // CheMPS2::Problem * extPotFcidumpProb = new CheMPS2::Problem(extPotFcidump,multiplicity - 1, nelectrons, irrep); //TODO: multiplicity und irrep in diesem Kontext sinnvoll? Kann gerade nicht mehr denken
 
    // outcommented: read in fcidumps, cout them (undestanding hamiltonian and problem class)
    {
@@ -1154,7 +1154,7 @@ int main( int argc, char ** argv ){
    
    CheMPS2::Hamiltonian * ham; // Übergabe: fcidumpFile an Hamiltonian. Eiziges Mal, dass das fcidump-file übergeben wird und damit etwas tatsächlich ausgelesen wird.
    if( ham_is_time_dependant ){
-      ham = new CheMPS2::Hamiltonian( fcidump, fcidump, group );
+      ham = new CheMPS2::Hamiltonian( fcidump, ext_pot_fcidump, group );
    } else {
       ham = new CheMPS2::Hamiltonian( fcidump, group );
    }

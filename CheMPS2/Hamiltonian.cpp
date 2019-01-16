@@ -78,11 +78,13 @@ CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5, const string main_file, co
    }
 }
 
-CheMPS2::Hamiltonian::Hamiltonian( const string filenameA, const string filenameB, const int psi4groupnumber ): timeDependent(true) {
+CheMPS2::Hamiltonian::Hamiltonian( const string fcidump, const string fcidumpTime, const int psi4groupnumber ): timeDependent(true) {
 
-//   SymmInfo.setGroup( psi4groupnumber );
-//   CreateAndFillFromFCIDUMP( filename );
-   std::cerr << "Not implemented Exception:\nHamiltonian( const string filenameA, const string filenameB, const int psi4groupnumber ): timeDependent(true)";
+  SymmInfo.setGroup( psi4groupnumber );
+  CreateAndFillFromFCIDUMP( fcidump );
+  CreateAndFillFromFCIDUMP( fcidumpTime );
+
+  std::cout << "Hamiltonian( const string filenameA, const string filenameB, const int psi4groupnumber ): timeDependent(true) aufgerufen\n";
 }
 
 
@@ -291,7 +293,8 @@ void CheMPS2::Hamiltonian::CreateAndFillFromH5( const string file_parent, const 
    read( file_parent, file_tmat, file_vmat );
 }
 
-void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile ) { //TODO: flag: bool is_dipole
+void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile) { //TODO: flag: bool is_dipole , const bool is_dipole 
+  
 
    struct stat file_info;
    const bool on_disk = ( ( fcidumpfile.length() > 0 ) && ( stat( fcidumpfile.c_str(), &file_info ) == 0 ) );

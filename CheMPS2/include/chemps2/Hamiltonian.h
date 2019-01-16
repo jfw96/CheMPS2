@@ -74,7 +74,7 @@ namespace CheMPS2 {
       //! Constructor which loads two FCIDUMP from disk (which can be generated with the plugin psi4plugins/fcidump.cc and has Molpro orbital symmetries!)
       /** \param filenameA The filename of the FCIDUMP 
           \param psi4groupnumber The group number according to psi4's conventions */
-      Hamiltonian( const string filenameA, const string filenameB, const int psi4groupnumber );
+      Hamiltonian( const string fcidump, const string fcidumpTime, const int psi4groupnumber );
 
       //! Destructor
       virtual ~Hamiltonian();
