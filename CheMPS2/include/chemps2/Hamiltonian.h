@@ -71,6 +71,11 @@ namespace CheMPS2 {
              \param file_vmat The HDF5 Hamiltonian Vmat filename */
       Hamiltonian( const bool fileh5, const string main_file = HAMILTONIAN_ParentStorageName, const string file_tmat = HAMILTONIAN_TmatStorageName, const string file_vmat = HAMILTONIAN_VmatStorageName );
 
+      //! Constructor which loads two FCIDUMP from disk (which can be generated with the plugin psi4plugins/fcidump.cc and has Molpro orbital symmetries!)
+      /** \param filenameA The filename of the FCIDUMP 
+          \param psi4groupnumber The group number according to psi4's conventions */
+      Hamiltonian( const string filenameA, const string filenameB, const int psi4groupnumber );
+
       //! Destructor
       virtual ~Hamiltonian();
 
@@ -191,6 +196,9 @@ namespace CheMPS2 {
 
       //Constant part of the Hamiltonian
       double Econst;
+
+      //Flag for beeing time dependent
+      const bool timeDependent;
 
       //If filename=="LOADH5" in Hamiltonian::Hamiltonian then the HDF5 Hamiltonian is loaded
       void CreateAndFillFromH5( const string file_parent, const string file_tmat, const string file_vmat );

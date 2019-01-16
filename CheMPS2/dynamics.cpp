@@ -1083,57 +1083,82 @@ int main( int argc, char ** argv ){
    ///Testing - begin
    ////////////////////////////////////////////////////////////////////////////////////
    CheMPS2::Hamiltonian * hamFcidump = new CheMPS2::Hamiltonian(fcidump,group);
-
-   CheMPS2::Problem * fcidumpProb = new CheMPS2::Problem(hamFcidump,multiplicity - 1, nelectrons, irrep); //TODO: multiplicity und irrep in diesem Kontext sinnvoll? Kann gerade nicht mehr denken
+   CheMPS2::Problem * fcidumpProb    = new CheMPS2::Problem(hamFcidump,multiplicity - 1, nelectrons, irrep); //TODO: multiplicity und irrep in diesem Kontext sinnvoll? Kann gerade nicht mehr denken
 
    CheMPS2::Hamiltonian * extPotFcidump = new CheMPS2::Hamiltonian(ext_pot_fcidump,group);
-
    CheMPS2::Problem * extPotFcidumpProb = new CheMPS2::Problem(extPotFcidump,multiplicity - 1, nelectrons, irrep); //TODO: multiplicity und irrep in diesem Kontext sinnvoll? Kann gerade nicht mehr denken
-   // understand Hamiltonian and Problem class. Physiker -> Chemiker Notation: vertausche j und k. shifte alle physiker indizes um 1 hoch
-   double test;
 
-   // std::cout << "TMat:\n";
-   // for(int i = 0; i < ext_pot_norb; i++)
-   // {
-   //    for(int j = 0; j < ext_pot_norb; j++)
-   //    {
-   //       // if (hamFcidump->getTmat(i,j) != extPotFcidump->getTmat(i,j)) {
-   //       //    std::cout << "FALSE\n";
-   //       // }
-   //       std::cout << extPotFcidump->getTmat(i,j) << "\n";
-   //    }  
-   // }
-   // std::cout << "TMat ende ----------- \n";
+   // outcommented: read in fcidumps, cout them (undestanding hamiltonian and problem class)
+   {
 
-   // std::cout << "VMat:\n";
-   // for(int i = 0; i < 5; i++)
-   // {
-   //    for(int j = 0; j < 5; j++)
-   //    {
-   //       for(int k = 0; k < 5; k++)
-   //       {
-   //          for(int l = 0; l < 5; l++)
-   //          {
-               
-   //             // if (hamFcidump->getVmat(i,j,k,l) != extPotFcidump->getVmat(i,j,k,l)) {
-   //             //    std::cout << "FALSE\n";
-   //             // }
-   //             std::cout << extPotFcidump->getVmat(i,j,k,l) << "\n";
-   //             // std::cout << i + 1 << k + 1 << j + 1 << l + 1 <<"     " <<hamFcidump->getVmat(i,j,k,l) << "\n";
-   //          }
-   //       }
-   //    }  
-   // }
-   // std::cout << "VMat ende ----------- \n";
-   //return -1;
+      // understand Hamiltonian and Problem class. Physiker -> Chemiker Notation: vertausche j und k. shifte alle physiker indizes um 1 hoch
+
+      //double test;
+      // std::cout << "TMat:\n";
+      // for(int i = 0; i < ext_pot_norb; i++)
+      // {
+      //    for(int j = 0; j < ext_pot_norb; j++)
+      //    {
+      //       // if (hamFcidump->getTmat(i,j) != extPotFcidump->getTmat(i,j)) {
+      //       //    std::cout << "FALSE\n";
+      //       // }
+      //       std::cout << extPotFcidump->getTmat(i,j) << "\n";
+      //    }  
+      // }
+      // std::cout << "TMat ende ----------- \n";
+
+      // std::cout << "VMat:\n";
+      // for(int i = 0; i < 5; i++)
+      // {
+      //    for(int j = 0; j < 5; j++)
+      //    {
+      //       for(int k = 0; k < 5; k++)
+      //       {
+      //          for(int l = 0; l < 5; l++)
+      //          {
+                  
+      //             // if (hamFcidump->getVmat(i,j,k,l) != extPotFcidump->getVmat(i,j,k,l)) {
+      //             //    std::cout << "FALSE\n";
+      //             // }
+      //             std::cout << extPotFcidump->getVmat(i,j,k,l) << "\n";
+      //             // std::cout << i + 1 << k + 1 << j + 1 << l + 1 <<"     " <<hamFcidump->getVmat(i,j,k,l) << "\n";
+      //          }
+      //       }
+      //    }  
+      // }
+      // std::cout << "VMat ende ----------- \n";
+      //return -1;
+
+      ////////////////////////////////////////////////////////////////////////////////////
+      ///Testing - end
+      ////////////////////////////////////////////////////////////////////////////////////
+      ///
+   }
+
+   ////
+   ////////////////////////////////////////////////////////////////////////////////////
+   /// Get timedepenant hamiltonian - begin
+   ////////////////////////////////////////////////////////////////////////////////////
+
+   // CheMPS2::Hamiltonian * hamTimedep = new CheMPS2::Hamiltonian(fcidump,
+   //                                                              ext_pot_fcidump,
+   //                                                              amplitude,
+   //                                                              frequency,
+   //                                                              group)
 
    ////////////////////////////////////////////////////////////////////////////////////
-   ///Testing - end
+   /// Get timedepenant hamiltonian - end
    ////////////////////////////////////////////////////////////////////////////////////
-   ///
+   ////
 
    
-   CheMPS2::Hamiltonian * ham = new CheMPS2::Hamiltonian( fcidump, group ); // Übergabe: fcidumpFile an Hamiltonian. Eiziges Mal, dass das fcidump-file übergeben wird und damit etwas tatsächlich ausgelesen wird.
+   CheMPS2::Hamiltonian * ham; // Übergabe: fcidumpFile an Hamiltonian. Eiziges Mal, dass das fcidump-file übergeben wird und damit etwas tatsächlich ausgelesen wird.
+   if( ham_is_time_dependant ){
+      ham = new CheMPS2::Hamiltonian( fcidump, fcidump, group );
+   } else {
+      ham = new CheMPS2::Hamiltonian( fcidump, group );
+   }
+   
    CheMPS2::ConvergenceScheme * opt_scheme = new CheMPS2::ConvergenceScheme( ni_d );
    for ( int count = 0; count < ni_d; count++ ){
       opt_scheme->set_instruction( count, value_states[ count ],
