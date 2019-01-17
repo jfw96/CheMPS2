@@ -1172,13 +1172,13 @@ int main( int argc, char ** argv ){
    delete [] value_maxit;
    delete [] value_noise;
 
-   //TODO: Idea: cange problem-classes ctor in the following way: CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep, is_time_dependant );
+   //TODO: Hamiltonian knows whether it is timedependant or not. Therefore the ctor does not need to be changed
    CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
    if( time_n_max.length() > 0 ) { prob->setup_occu_max( time_n_max_parsed ); }
    if( time_n_min.length() > 0 ) { prob->setup_occu_min( time_n_min_parsed ); }
 
    /***********************************
-   *  Reorder the orbitals if desired *
+   *  Reorder the orbitals if desired * TODO: This might be a little bit tricky. Skip this and come back when the main feature is working. reordering is disabled by default
    ***********************************/
 
    if (( group == 7 ) && ( reorder_fiedler == false ) && ( reorder_order.length() == 0 )){ prob->SetupReorderD2h(); }

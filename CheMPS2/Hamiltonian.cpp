@@ -80,6 +80,7 @@ CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5, const string main_file, co
 
 CheMPS2::Hamiltonian::Hamiltonian( const string fcidump, const string fcidumpTime, const int psi4groupnumber ): timeDependent(true) {
 
+  // Spin etc will not be changed due to the dipol matrix elements => no changes needed
   SymmInfo.setGroup( psi4groupnumber );
   CreateAndFillFromFCIDUMP( fcidump, false );
   CreateAndFillFromFCIDUMP( fcidumpTime, true );

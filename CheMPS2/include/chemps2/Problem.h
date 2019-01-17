@@ -82,7 +82,7 @@ namespace CheMPS2 {
       /** \return The maximum time */
       int gInitial() const { return Initial; }
 
-      //! Get the constant part of the Hamiltonian
+      //! Get the constant part of the Hamiltonian // TODO: damit ist wahrscheinlich die Energie der Kernbstoßung gemeint
       /** \return The constant part of the Hamiltonian */
       double gEconst() const { return Ham->getEconst(); }
 

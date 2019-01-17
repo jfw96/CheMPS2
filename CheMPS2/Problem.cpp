@@ -49,7 +49,7 @@ CheMPS2::Problem::~Problem() {
    if ( min_occu != NULL ) { delete[] min_occu; }
 }
 
-void CheMPS2::Problem::SetupReorderD2h() {
+void CheMPS2::Problem::SetupReorderD2h() { //TODO: look at this in detail. What needs to be changed, if reordering is requiered...
 
    if ( bReorder ) {
       delete[] f1;
