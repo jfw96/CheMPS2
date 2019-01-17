@@ -132,13 +132,13 @@ void CheMPS2::Hamiltonian::setEconst( const double val ) { Econst = val; } //TOD
 
 double CheMPS2::Hamiltonian::getEconst() const { return Econst; }
 
-void CheMPS2::Hamiltonian::setTmat( const int index1, const int index2, const double val ) {
+void CheMPS2::Hamiltonian::setTmat( const int index1, const int index2, const double val ) { //TODO: nichts zu ändern
 
    assert( orb2irrep[ index1 ] == orb2irrep[ index2 ] );
    Tmat->set( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ], val );
 }
 ///
-void CheMPS2::Hamiltonian::setTmatDipole( const int index1, const int index2, const double val ) {
+void CheMPS2::Hamiltonian::setTmatDipole( const int index1, const int index2, const double val ) { //TODO: soll nur in die Variable TmatDipole schreiben. => nichts zu ändern
 
    assert( orb2irrep[ index1 ] == orb2irrep[ index2 ] );
    TmatDipole->set( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ], val );
@@ -491,7 +491,7 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, c
             }
             else
             {               
-               setTmat( index1 - 1, index2 - 1, value );
+               setTmat( index1 - 1, index2 - 1, value );   // TODO: muss zu TmatInternal geändert werden
             }
             
             
