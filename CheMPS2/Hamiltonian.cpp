@@ -112,6 +112,13 @@ void CheMPS2::Hamiltonian::setTmat( const int index1, const int index2, const do
    assert( orb2irrep[ index1 ] == orb2irrep[ index2 ] );
    Tmat->set( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ], val );
 }
+///
+void CheMPS2::Hamiltonian::setTmatDipole( const int index1, const int index2, const double val ) {
+
+   assert( orb2irrep[ index1 ] == orb2irrep[ index2 ] );
+   TmatDipole->set( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ], val );
+}
+///
 
 double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2 ) const {
 
@@ -324,7 +331,7 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, c
    if ( CheMPS2::HAMILTONIAN_debugPrint ) { cout << "The number of orbitals <<" << part << ">> or " << L << "." << endl; }
 
    // Get the orbital irreps in psi4 convention (XOR, see Irreps.h).
-   orb2irrep = new int[ L ];
+   orb2irrep = new int[ L ]; //TODO: Vermutung, Richtigkeit abklären: orb2irrep, kann für Dipol-Matrix-Elemente ohne Änderungen verwendet werden. Irrep: gegeben durch Group => alles fest gelegt
    getline( thefcidump, line ); //  ORBSYM=A,B,C,D,
    getline( thefcidump, part );
    while ( part.find( "ISYM" ) == string::npos ) {
@@ -364,7 +371,8 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, c
       orb2indexSy[ cnt ] = irrep2num_orb[ orb2irrep[ cnt ] ];
       irrep2num_orb[ orb2irrep[ cnt ] ]++;
    }
-   
+
+   // initialize one- and two-particle integrals
    if ( !is_dipole )
    {
       Tmat = new TwoIndex( SymmInfo.getGroupNumber(), irrep2num_orb );  // Constructor ends with Clear(); call
@@ -424,13 +432,39 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, c
          cout << "Same line: " << value << " " << index1 << " " << index2 << " " << index3 << " " << index4 << endl;
       }
 
-      if ( index4 != 0 ) {
-         setVmat( index1 - 1, index3 - 1, index2 - 1, index4 - 1, value ); // From chemists to physicist notation!
-      } else {
-         if ( index2 != 0 ) { //TODO: if(is_dipole){setTmatDipole(gleiche Indizes)}
-            setTmat( index1 - 1, index2 - 1, value );
-         } else { //TODO: if(is_dipole){EconstDipole}
-            Econst = value; // TODO: verändert sich durch zusätzliche Dipolmatrixelemente nicht - korrekt?
+      if ( index4 != 0 ) { 
+         
+         if (!is_dipole) // two particle integrals are not necessary in the case of dipole matrix elements. For the same reason there is is not "VmatDipole" declared to store them
+         {
+            setVmat( index1 - 1, index3 - 1, index2 - 1, index4 - 1, value ); // From chemists to physicist notation!
+         }
+         
+      }
+      else
+      {
+
+         if ( index2 != 0 )
+         { //TODO: if(is_dipole){setTmatDipole(gleiche Indizes)}
+            
+            if (is_dipole)
+            {
+               setTmatDipole( index1 - 1, index2 - 1, value );
+            }
+            else
+            {               
+               setTmat( index1 - 1, index2 - 1, value );
+            }
+            
+            
+         }
+         else
+         { //TODO: if(is_dipole){EconstDipole}
+            
+            if ( !is_dipole )
+            {
+               Econst = value; // TODO: verändert sich durch zusätzliche Dipolmatrixelemente nicht - korrekt?
+            }
+            
             stop   = true;
          }
       }

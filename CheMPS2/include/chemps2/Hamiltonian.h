@@ -72,9 +72,11 @@ namespace CheMPS2 {
       Hamiltonian( const bool fileh5, const string main_file = HAMILTONIAN_ParentStorageName, const string file_tmat = HAMILTONIAN_TmatStorageName, const string file_vmat = HAMILTONIAN_VmatStorageName );
 
       //! Constructor which loads two FCIDUMP from disk (which can be generated with the plugin psi4plugins/fcidump.cc and has Molpro orbital symmetries!)
-      /** \param filenameA The filename of the FCIDUMP 
+      /** \param fcidump : The filename of the FCIDUMP that contains the internal part pof the hamiltonian
+      /** \param fcidumpTime : The filename of the FCIDUMP that contains the dipole matrix elements
+       * 
           \param psi4groupnumber The group number according to psi4's conventions */
-      Hamiltonian( const string fcidump, const string fcidumpTime, const int psi4groupnumber );
+      Hamiltonian( const string fcidump, const string fcidumpDipole, const int psi4groupnumber );
 
       //! Destructor
       virtual ~Hamiltonian();
@@ -101,6 +103,13 @@ namespace CheMPS2 {
              \param index2 The second index
              \param val The new Tmat element */
       void setTmat( const int index1, const int index2, const double val );
+
+      //! Set a TmatDipole  element
+      /** \param index1 The first index
+             \param index2 The second index
+             \param val The new TmatDipole element */
+      void setTmatDipole( const int index1, const int index2, const double val );
+
 
       //! Set a Vmat element
       /** \param index1 The first index
