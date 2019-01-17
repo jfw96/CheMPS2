@@ -84,7 +84,31 @@ CheMPS2::Hamiltonian::Hamiltonian( const string fcidump, const string fcidumpTim
   CreateAndFillFromFCIDUMP( fcidump, false );
   CreateAndFillFromFCIDUMP( fcidumpTime, true );
 
-  std::cout << "Hamiltonian( const string filenameA, const string filenameB, const int psi4groupnumber ): timeDependent(true) aufgerufen\n";
+  // test: compare all entrys of one-electron integrals in Tmat and TmatDipole. Usage: (unput = two fcidumps with different names but same values) => (should: no difference between Tmat and TmatDipole)
+  
+//   double elFcidump      = 0.0;
+//   double elFcidumpTime  = 0.0;
+//   for(size_t i = 0; i < L; i++)
+//   {
+//       for(size_t j = 0; j < L; j++)
+//       {
+//          elFcidump     = getTmat(i,j);
+//          elFcidumpTime = getTmatDipole(i,j);
+
+         
+//          if (elFcidump != elFcidumpTime) {
+//             std::cout<< "\n" << elFcidump - elFcidumpTime << "    " << i << " " << j << "\n";
+//          }
+         
+//       }  
+//   }
+  
+  
+  
+  
+  
+
+  //std::cout << "Hamiltonian( const string filenameA, const string filenameB, const int psi4groupnumber ): timeDependent(true) aufgerufen\n";
 }
 
 
@@ -130,6 +154,20 @@ double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2 ) const
 }
 
 const CheMPS2::TwoIndex * CheMPS2::Hamiltonian::getTmat() { return Tmat; }
+
+
+///
+double CheMPS2::Hamiltonian::getTmatDipole( const int index1, const int index2 ) const {
+
+   if ( orb2irrep[ index1 ] == orb2irrep[ index2 ] ) {
+      return TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
+   }
+
+   return 0.0;
+}
+
+const CheMPS2::TwoIndex * CheMPS2::Hamiltonian::getTmatDipole() { return TmatDipole; }
+///
 
 void CheMPS2::Hamiltonian::setVmat( const int index1, const int index2, const int index3, const int index4, const double val ) {
 

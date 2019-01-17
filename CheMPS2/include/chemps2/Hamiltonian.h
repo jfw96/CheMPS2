@@ -137,6 +137,15 @@ namespace CheMPS2 {
              \return \f$T_{index1,index2}\f$ */
       double getTmat( const int index1, const int index2 ) const;
 
+
+      ///
+      //! Get a Tmat element
+      /** \param index1 The first index
+             \param index2 The second index
+             \return \f$T_{index1,index2}\f$ */
+      double getTmatDipole( const int index1, const int index2 ) const;
+      ///
+
       //! Get a Vmat element
       /** \param index1 The first index
              \param index2 The second index
@@ -148,6 +157,13 @@ namespace CheMPS2 {
       //! Get the pointer to the one-electron integrals
       /** \return The pointer to the one-electron integrals */
       const TwoIndex * getTmat();
+
+
+      ///
+      //! Get the pointer to the dipole-one-electron integrals
+      /** \return The pointer to the dipole-one-electron integrals */
+      const TwoIndex * getTmatDipole(); 
+      ///
 
       //! Get the pointer to the two-electron integrals
       /** \return The pointer to the two-electron integrals */
