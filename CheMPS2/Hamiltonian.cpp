@@ -293,7 +293,7 @@ void CheMPS2::Hamiltonian::CreateAndFillFromH5( const string file_parent, const 
    read( file_parent, file_tmat, file_vmat );
 }
 
-void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, const bool is_dipole ) { //TODO: flag: bool is_dipole , const bool is_dipole 
+void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, const bool is_dipole ) {
   
    std::cout << "\nis_dipole >>>>>>>>>>>>> " << is_dipole << "\n";
 
@@ -364,7 +364,6 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, c
       orb2indexSy[ cnt ] = irrep2num_orb[ orb2irrep[ cnt ] ];
       irrep2num_orb[ orb2irrep[ cnt ] ]++;
    }
-   // TODO: if dipole, dann erzeuge Tmat, sonst TMat und Vmat
    
    if ( !is_dipole )
    {
