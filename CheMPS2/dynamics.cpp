@@ -1151,7 +1151,7 @@ int main( int argc, char ** argv ){
    ////////////////////////////////////////////////////////////////////////////////////
    ////
 
-   
+   // create hamiltonian based on the given fcidump-files
    CheMPS2::Hamiltonian * ham; // Übergabe: fcidumpFile an Hamiltonian. Eiziges Mal, dass das fcidump-file übergeben wird und damit etwas tatsächlich ausgelesen wird.
    if( ham_is_time_dependant ){
       ham = new CheMPS2::Hamiltonian( fcidump, ext_pot_fcidump, group );
@@ -1159,7 +1159,7 @@ int main( int argc, char ** argv ){
       ham = new CheMPS2::Hamiltonian( fcidump, group );
    }
    
-   CheMPS2::ConvergenceScheme * opt_scheme = new CheMPS2::ConvergenceScheme( ni_d );
+   CheMPS2::ConvergenceScheme * opt_scheme = new CheMPS2::ConvergenceScheme( ni_d ); // TODO: everything should be fine here. Timedependant hamiltonian does not influence the convergenceScheme
    for ( int count = 0; count < ni_d; count++ ){
       opt_scheme->set_instruction( count, value_states[ count ],
                                           value_cutoff[ count ],
@@ -1172,6 +1172,7 @@ int main( int argc, char ** argv ){
    delete [] value_maxit;
    delete [] value_noise;
 
+   //TODO: Idea: overload problem-classes ctor in the following way: CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep, is_time_dependant );
    CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
    if( time_n_max.length() > 0 ) { prob->setup_occu_max( time_n_max_parsed ); }
    if( time_n_min.length() > 0 ) { prob->setup_occu_min( time_n_min_parsed ); }

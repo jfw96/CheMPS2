@@ -127,7 +127,7 @@ int CheMPS2::Hamiltonian::getNGroup() const { return SymmInfo.getGroupNumber(); 
 
 int CheMPS2::Hamiltonian::getOrbitalIrrep( const int nOrb ) const { return orb2irrep[ nOrb ]; }
 
-void CheMPS2::Hamiltonian::setEconst( const double val ) { Econst = val; }
+void CheMPS2::Hamiltonian::setEconst( const double val ) { Econst = val; } //TODO: dipol matrix elemente sollten daran doch eigentlich nichts verändern, oder übersehe ich etwas? Argumentation aus Formal.
 
 double CheMPS2::Hamiltonian::getEconst() const { return Econst; }
 
