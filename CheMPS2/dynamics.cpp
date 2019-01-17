@@ -1172,7 +1172,7 @@ int main( int argc, char ** argv ){
    delete [] value_maxit;
    delete [] value_noise;
 
-   //TODO: Idea: overload problem-classes ctor in the following way: CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep, is_time_dependant );
+   //TODO: Idea: cange problem-classes ctor in the following way: CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep, is_time_dependant );
    CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
    if( time_n_max.length() > 0 ) { prob->setup_occu_max( time_n_max_parsed ); }
    if( time_n_min.length() > 0 ) { prob->setup_occu_min( time_n_min_parsed ); }
