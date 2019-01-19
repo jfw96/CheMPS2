@@ -1172,7 +1172,6 @@ int main( int argc, char ** argv ){
    delete [] value_maxit;
    delete [] value_noise;
 
-   //TODO: Hamiltonian knows whether it is timedependant or not. Therefore the ctor does not need to be changed
    CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
    if( time_n_max.length() > 0 ) { prob->setup_occu_max( time_n_max_parsed ); }
    if( time_n_min.length() > 0 ) { prob->setup_occu_min( time_n_min_parsed ); }

@@ -49,7 +49,7 @@ CheMPS2::Problem::~Problem() {
    if ( min_occu != NULL ) { delete[] min_occu; }
 }
 
-void CheMPS2::Problem::SetupReorderD2h() { //TODO: look at this in detail. What needs to be changed, if reordering is requiered...
+void CheMPS2::Problem::SetupReorderD2h() { //TODO: should be ok. doesnt need to be changed. (do be discussed)
 
    if ( bReorder ) {
       delete[] f1;
@@ -185,7 +185,7 @@ void CheMPS2::Problem::setup_reorder_dinfh( int * docc, const double sp_threshol
    int * dmrg2ham       = new int[ Ham->getL() ];
    int * partners       = new int[ Ham->getL() ];
 
-   // Get the single particle energies
+   // Get the single particle energies //TODO: needs full one particle energies => Tmat --> Tmat + prefactor*TmatDipol, if ham_is_time_dependant
    for ( int ham_orb = 0; ham_orb < Ham->getL(); ham_orb++ ) {
       double value = Ham->getTmat( ham_orb, ham_orb );
       for ( int irrep = 0; irrep < num_irreps; irrep++ ) {
@@ -436,7 +436,7 @@ bool CheMPS2::Problem::check_rohf_occ( int * occupancies ){
 }
 
 
-void CheMPS2::Problem::setup_occu_max( int * max_occupations ){
+void CheMPS2::Problem::setup_occu_max( int * max_occupations ){ //TODO: kann unverändert bleiben
    max_occu = new int[ gL() + 1];
    
    for(int i = 0; i <= gL(); i++){
