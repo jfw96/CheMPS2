@@ -1049,6 +1049,7 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
 void CheMPS2::TimeEvolution::updateHamiltonian( const double currentTime, const double timeStep ) {
    
    double nextTime = currentTime + timeStep;
+   
    std::cout << "\nUpdate Hamiltonian\n"
              << " ( t = " << currentTime << " ) --> ( t = " << nextTime << " )\n" << std::endl;
    

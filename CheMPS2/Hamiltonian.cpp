@@ -196,20 +196,21 @@ double CheMPS2::Hamiltonian::calcDipolePrefactor( const double time ) const {
 
 double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2, const double time ) const {
 
+   double result = 0.0;
+
    if ( orb2irrep[ index1 ] == orb2irrep[ index2 ] ) {
       
-      double result = 0.0;
 
       if ( applyPulse ) {
 
-         const double preFactor = calcDipolePrefactor( time );
-
          // std::cout << "\ngetTmat( const int index1, const int index2, const double time ) is invoked\n";
          // strange: if this is invoked, then Econst changes! Why?! Because it is not Econst :D it was the expectation value of the energy!
+         
+         const double preFactor = calcDipolePrefactor( time );
+
          result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] )
                   + preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
 
-         
          // testing.
          if ( result != 0 ) {
             std::cout << "\n\n" << orb2irrep[ index1 ]                                                                        << "      "
@@ -225,11 +226,10 @@ double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2, const 
          result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
       }
       
-      return result;
       //return Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
    }
 
-   return 0.0;
+   return result;
 }
 
 const CheMPS2::TwoIndex * CheMPS2::Hamiltonian::getTmat() { return Tmat; }

@@ -1365,7 +1365,6 @@ int main( int argc, char ** argv ){
    delete[] time_2_ninit_parsed;
    delete[] time_hf_state_parsed;
 
-   std::cout << "\nMake hat funktioniert!\n";
    // testing: ham_is_time_dependant wird korrekt geparst
    std::cout << "\n" << "ham_is_time_dependant >>>>>>>>>>>> " << ham_is_time_dependant << "\n";
    std::cout << "fcidump1: " << fcidump <<std::endl;
