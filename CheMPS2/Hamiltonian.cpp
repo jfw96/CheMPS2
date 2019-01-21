@@ -36,7 +36,7 @@ using std::endl;
 using std::string;
 using std::ifstream;
 
-CheMPS2::Hamiltonian::Hamiltonian( const int Norbitals, const int nGroup, const int * OrbIrreps ): timeDependent(false) {
+CheMPS2::Hamiltonian::Hamiltonian( const int Norbitals, const int nGroup, const int * OrbIrreps ): applyPulse(false) {
 
    L = Norbitals;
    assert( nGroup >= 0 );
@@ -62,13 +62,13 @@ CheMPS2::Hamiltonian::Hamiltonian( const int Norbitals, const int nGroup, const 
    Vmat   = new FourIndex( SymmInfo.getGroupNumber(), irrep2num_orb );
 }
 
-CheMPS2::Hamiltonian::Hamiltonian( const string filename, const int psi4groupnumber ): timeDependent(false) {
+CheMPS2::Hamiltonian::Hamiltonian( const string filename, const int psi4groupnumber ): applyPulse(false) {
 
    SymmInfo.setGroup( psi4groupnumber );
    CreateAndFillFromFCIDUMP( filename, false );
 }
 
-CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5, const string main_file, const string file_tmat, const string file_vmat ): timeDependent(false) {
+CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5, const string main_file, const string file_tmat, const string file_vmat ): applyPulse(false) {
 
    if ( fileh5 ) {
       CreateAndFillFromH5( main_file, file_tmat, file_vmat );
@@ -78,7 +78,7 @@ CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5, const string main_file, co
    }
 }
 
-CheMPS2::Hamiltonian::Hamiltonian( const string fcidump, const string fcidumpTime, const int psi4groupnumber ): timeDependent(true) {
+CheMPS2::Hamiltonian::Hamiltonian( const string fcidump, const string fcidumpTime, const int psi4groupnumber ): applyPulse(true) {
 
   // Spin etc will not be changed due to the dipol matrix elements => no changes needed
   SymmInfo.setGroup( psi4groupnumber );
@@ -109,7 +109,7 @@ CheMPS2::Hamiltonian::Hamiltonian( const string fcidump, const string fcidumpTim
   
   
 
-  //std::cout << "Hamiltonian( const string filenameA, const string filenameB, const int psi4groupnumber ): timeDependent(true) aufgerufen\n";
+  //std::cout << "Hamiltonian( const string filenameA, const string filenameB, const int psi4groupnumber ): applyPulse(true) aufgerufen\n";
 }
 
 

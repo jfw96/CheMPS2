@@ -226,7 +226,7 @@ namespace CheMPS2 {
       double Econst;
 
       //Flag for beeing time dependent
-      const bool timeDependent;
+      const bool applyPulse;
 
       //If filename=="LOADH5" in Hamiltonian::Hamiltonian then the HDF5 Hamiltonian is loaded
       void CreateAndFillFromH5( const string file_parent, const string file_tmat, const string file_vmat );
