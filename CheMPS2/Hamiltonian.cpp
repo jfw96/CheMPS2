@@ -145,9 +145,18 @@ void CheMPS2::Hamiltonian::setTmatDipole( const int index1, const int index2, co
 }
 ///
 
-double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2 ) const {
+double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2, const double time ) const {
 
    if ( orb2irrep[ index1 ] == orb2irrep[ index2 ] ) {
+      
+      
+      if ( applyPulse ) {
+         std::cout << "\n''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''\n"
+                   << "\ngetTmat( const int index1, const int index2, const double time ) is invoked\n"
+                   << "\n''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''\n";
+      }
+      
+
       return Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
    }
 

@@ -136,8 +136,9 @@ namespace CheMPS2 {
       //! Get a Tmat element
       /** \param index1 The first index
              \param index2 The second index
+             \param time The physical time at which the one electron integrals are queried. Note: if a short electrical pulse is applied, then the one electron integrals include the dipol matrix elements as well.
              \return \f$T_{index1,index2}\f$ */
-      double getTmat( const int index1, const int index2 ) const;
+      double getTmat( const int index1, const int index2, const double time = 0 ) const;
 
 
       ///

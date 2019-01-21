@@ -1052,5 +1052,5 @@ void CheMPS2::TimeEvolution::updateHamiltonian( const double currentTime, const 
    std::cout << "\nUpdate Hamiltonian\n"
              << " ( t = " << currentTime << " ) --> ( t = " << nextTime << " )\n" << std::endl;
    
-   prob->construct_mxelem();
+   prob->construct_mxelem( nextTime );
 }
