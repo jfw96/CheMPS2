@@ -350,7 +350,7 @@ void CheMPS2::Problem::setMxElement( const int alpha, const int beta, const int 
    mx_elem[ alpha + L * ( beta + L * ( gamma + L * delta ) ) ] = value;
 }
 
-void CheMPS2::Problem::construct_mxelem() {
+void CheMPS2::Problem::construct_mxelem( const double time ) {
 
    if ( mx_elem == NULL ) { mx_elem = new double[ L * L * L * L ]; }
    const double prefact = 1.0 / ( N - 1 );
