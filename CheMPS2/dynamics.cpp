@@ -1062,14 +1062,16 @@ int main( int argc, char ** argv ){
       cerr << "PULSE_FREQUENCY should be greater than zero !" << endl;
       return -1;
    }
+   
+   if ( pulse_frequency <= (1 / time_step_minor ) ) {
+      cerr << "PULSE_FREQUENCY should be at least greater than 1 / time_step_minor !" << endl;
+      return -1;
+   }
 
    if ( pulse_duration < 0.0 ){
       cerr << "PULSE_DURATION should be greater or equal to zero !" << endl;
       return -1;
    }
-
-
-   
 
    /**********************
    *  Print the options  *
@@ -1093,8 +1095,8 @@ int main( int argc, char ** argv ){
    
    if ( ham_is_time_dependant ) {
       cout << "\nExpose the molecule to a short electrical pulse with the following properties\n" << endl;
-      cout << "   PULSE_AMPLITUDE = " << pulse_amplitude     << "\n";
       cout << "   PULSE_ENVELOP   = " << pulse_envelop       << "\n";
+      cout << "   PULSE_AMPLITUDE = " << pulse_amplitude     << "\n";
       cout << "   PULSE_FREQUENCY = " << pulse_frequency     << "\n";
       cout << "   PULSE_DURATION  = " << pulse_duration      << "\n";
       cout << "\n";
