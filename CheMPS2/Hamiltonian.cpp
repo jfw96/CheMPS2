@@ -36,7 +36,14 @@ using std::endl;
 using std::string;
 using std::ifstream;
 
-CheMPS2::Hamiltonian::Hamiltonian( const int Norbitals, const int nGroup, const int * OrbIrreps ): applyPulse(false) {
+CheMPS2::Hamiltonian::Hamiltonian( const int Norbitals,
+                                   const int nGroup,
+                                   const int * OrbIrreps )
+                                   : applyPulse    ( false )
+                                   , pulseAmplitude( 0.0 )
+                                   , pulseFrequency( 0.0 )
+                                   , pulseDuration ( 0.0 )
+                                   , pulseEnvelop  ( 'Z' ) {
 
    L = Norbitals;
    assert( nGroup >= 0 );
@@ -62,13 +69,27 @@ CheMPS2::Hamiltonian::Hamiltonian( const int Norbitals, const int nGroup, const 
    Vmat   = new FourIndex( SymmInfo.getGroupNumber(), irrep2num_orb );
 }
 
-CheMPS2::Hamiltonian::Hamiltonian( const string filename, const int psi4groupnumber ): applyPulse(false) {
+CheMPS2::Hamiltonian::Hamiltonian( const string filename,
+                                   const int psi4groupnumber )
+                                   : applyPulse    ( false )
+                                   , pulseAmplitude( 0.0 )
+                                   , pulseFrequency( 0.0 )
+                                   , pulseDuration ( 0.0 )
+                                   , pulseEnvelop  ( 'Z' )  {
 
    SymmInfo.setGroup( psi4groupnumber );
    CreateAndFillFromFCIDUMP( filename, false );
 }
 
-CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5, const string main_file, const string file_tmat, const string file_vmat ): applyPulse(false) {
+CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5,
+                                   const string main_file,
+                                   const string file_tmat,
+                                   const string file_vmat )
+                                   : applyPulse      (false) 
+                                   , pulseAmplitude  ( 0.0 )
+                                   , pulseFrequency  ( 0.0 )
+                                   , pulseDuration   ( 0.0 )
+                                   , pulseEnvelop    ( 'Z' ) {
 
    if ( fileh5 ) {
       CreateAndFillFromH5( main_file, file_tmat, file_vmat );
@@ -78,7 +99,18 @@ CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5, const string main_file, co
    }
 }
 
-CheMPS2::Hamiltonian::Hamiltonian( const string fcidump, const string fcidumpTime, const int psi4groupnumber ): applyPulse(true) {
+CheMPS2::Hamiltonian::Hamiltonian( const string fcidump,
+                                   const string fcidumpTime,
+                                   const int psi4groupnumber,
+                                   const char envelop,
+                                   const double amplitude,
+                                   const double frequency,
+                                   const double duration )
+                                   : applyPulse      ( true )
+                                   , pulseAmplitude  ( amplitude )
+                                   , pulseDuration   ( duration )
+                                   , pulseEnvelop    ( envelop )
+                                   , pulseFrequency  ( frequency ) {
 
   // Spin etc will not be changed due to the dipol matrix elements => no changes needed
   SymmInfo.setGroup( psi4groupnumber );
@@ -145,12 +177,21 @@ void CheMPS2::Hamiltonian::setTmatDipole( const int index1, const int index2, co
 }
 ///
 
-double CheMPS2::Hamiltonian::calcDipolePrefactor( const double time,
-                                                  const char envelop,
-                                                  const double amplitude,
-                                                  const double frequency,
-                                                  const double duration ) const {
-   return 0.0;
+double CheMPS2::Hamiltonian::calcDipolePrefactor( const double time ) const {
+   
+   double result = 0.0;
+
+   switch ( pulseEnvelop )
+   {
+      case 'A':
+         result = 1;
+         break;   
+      default:
+         result = 0;
+         break;
+   }
+
+   return result;
 }
 
 double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2, const double time ) const {
@@ -161,12 +202,24 @@ double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2, const 
 
       if ( applyPulse ) {
 
-         const double preFactor = calcDipolePrefactor();
+         const double preFactor = calcDipolePrefactor( time );
 
-         std::cout << "\ngetTmat( const int index1, const int index2, const double time ) is invoked\n";
+         // std::cout << "\ngetTmat( const int index1, const int index2, const double time ) is invoked\n";
          // strange: if this is invoked, then Econst changes! Why?! Because it is not Econst :D it was the expectation value of the energy!
          result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] )
                   + preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
+
+         
+         // testing.
+         if ( result != 0 ) {
+            std::cout << "\n\n" << orb2irrep[ index1 ]                                                                        << "      "
+                     << orb2indexSy[ index1 ]                                                                                 << "      "
+                     << orb2indexSy[ index2 ]                                                                                 << "      "
+                     << result                                                                                                << "      "
+                     << Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] )                        << "      "
+                     << preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) )  << "\n";
+         }
+         
       }
       else {
          result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );

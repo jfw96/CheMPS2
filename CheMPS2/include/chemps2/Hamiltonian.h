@@ -74,9 +74,18 @@ namespace CheMPS2 {
       //! Constructor which loads two FCIDUMP from disk (which can be generated with the plugin psi4plugins/fcidump.cc and has Molpro orbital symmetries!)
       /** \param fcidump : The filename of the FCIDUMP that contains the internal part pof the hamiltonian
       /** \param fcidumpTime : The filename of the FCIDUMP that contains the dipole matrix elements
-       * 
-          \param psi4groupnumber The group number according to psi4's conventions */
-      Hamiltonian( const string fcidump, const string fcidumpDipole, const int psi4groupnumber );
+          \param psi4groupnumber The group number according to psi4's conventions
+          \param envelop The amplitude of the electric field of the pulse
+          \param envelop The frequency of the electric field of the pulse
+          \param envelop The duration of the electric field of the pulse
+          \param envelop The envelop type of the electric field of the pulse */
+      Hamiltonian( const string fcidump,
+                   const string fcidumpDipole,
+                   const int psi4groupnumber,
+                   const char envelop,
+                   const double amplitude,
+                   const double frequency,
+                   const double duration );
 
       //! Destructor
       virtual ~Hamiltonian();
@@ -202,13 +211,21 @@ namespace CheMPS2 {
       void readfock( const string fockfile, double * fockmx, const bool printinfo ) const;
 
       private:
+      
+      // Time of exposure in the electrical field of the pulse
+      const char pulseEnvelop;
+      
+      // Amplitude of the electrical field of the pulse
+      const double pulseAmplitude;
+
+      // Frequency of the electrical field of the pulse
+      const double pulseFrequency;
+
+      // Duration of the electrical field of the pulse
+      const double pulseDuration;
 
       // Calculate the time dependant prefactor for the dipole one electron integrals
-      double calcDipolePrefactor( const double time = 0,
-                                  const char envelop = 'A',
-                                  const double amplitude = 0,
-                                  const double frequency = 0,
-                                  const double duration = 0 ) const;
+      double calcDipolePrefactor( const double time ) const;
 
       //number of orbitals
       int L;

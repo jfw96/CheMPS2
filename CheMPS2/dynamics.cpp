@@ -1209,7 +1209,13 @@ int main( int argc, char ** argv ){
    // create hamiltonian based on the given fcidump-files
    CheMPS2::Hamiltonian * ham; // Übergabe: fcidumpFile an Hamiltonian. Eiziges Mal, dass das fcidump-file übergeben wird und damit etwas tatsächlich ausgelesen wird.
    if( ham_is_time_dependant ){
-      ham = new CheMPS2::Hamiltonian( fcidump, ext_pot_fcidump, group );
+      ham = new CheMPS2::Hamiltonian( fcidump,
+                                      ext_pot_fcidump,
+                                      group,
+                                      pulse_envelop,
+                                      pulse_amplitude,
+                                      pulse_frequency,
+                                      pulse_duration );
    } else {
       ham = new CheMPS2::Hamiltonian( fcidump, group );
    }
