@@ -493,7 +493,11 @@ int main( int argc, char ** argv ){
    bool   time_dump2rdm   = false;
    double time_energy_offset = 0.0;
 
-   bool   ham_is_time_dependant = false;
+   bool ham_is_time_dependant = false;
+   char pulse_envelop         = 'Z';
+   double pulse_amplitude     = 0.0;
+   double pulse_frequency     = 0.0;
+   double pulse_duration      = 0.0;
 
    struct option long_options[] =
    {
@@ -568,7 +572,9 @@ int main( int argc, char ** argv ){
       if ( find_integer( &irrep,        line, "IRREP",        true, 0, true,   7 ) == false ){ return -1; }
 
       char options1[] = { 'K', 'R', 'E', 'F' };
-      if ( find_character( &time_type,        line, "TIME_TYPE",        options1, 4 ) == false ){ return -1; }
+      if ( find_character( &time_type,     line, "TIME_TYPE",     options1, 4 ) == false ){ return -1; }
+      char options2[] = { 'A', 'B', 'C', 'D' };
+      if ( find_character( &pulse_envelop, line, "PULSE_ENVELOP", options2, 4 ) == false ){            }
       
       if ( find_boolean( &ham_is_time_dependant,  line, "HAM_IS_TIME_DEPENDANT" ) == false ){ return -1; }
       if ( find_boolean( &reorder_fiedler,        line, "REORDER_FIEDLER"       ) == false ){ return -1; }
@@ -647,6 +653,18 @@ int main( int argc, char ** argv ){
 
       if ( line.find( "TIME_N_WEIGHTS" ) != string::npos ){
          find_integer( &time_n_weights, line, "TIME_N_WEIGHTS", true, 1, false, -1 );
+      }
+
+      if ( line.find( "PULSE_AMPLITUDE" ) != string::npos ){
+         find_double( &pulse_amplitude, line, "PULSE_AMPLITUDE", true, 0.0 );
+      }
+
+      if ( line.find( "PULSE_FREQUENCY" ) != string::npos ){
+         find_double( &pulse_frequency, line, "PULSE_FREQUENCY", true, 0.0 );
+      }
+
+      if ( line.find( "PULSE_DURATION" ) != string::npos ){
+         find_double( &pulse_duration, line, "PULSE_DURATION", true, 0.0 );
       }
    }
    input.close();
@@ -1029,6 +1047,30 @@ int main( int argc, char ** argv ){
       }
    }
 
+
+
+   /**************************
+   *  Parse pulse properties *
+   ***************************/
+   
+   if ( pulse_amplitude < 0.0 ){
+      cerr << "PULSE_AMPLITUDE should be greater or equal to zero !" << endl;
+      return -1;
+   }
+
+   if ( pulse_frequency <= 0.0 ){
+      cerr << "PULSE_FREQUENCY should be greater than zero !" << endl;
+      return -1;
+   }
+
+   if ( pulse_duration < 0.0 ){
+      cerr << "PULSE_DURATION should be greater or equal to zero !" << endl;
+      return -1;
+   }
+
+
+   
+
    /**********************
    *  Print the options  *
    ***********************/
@@ -1047,7 +1089,18 @@ int main( int argc, char ** argv ){
       cout << "   REORDER_ORDER      = [ " << dmrg2ham[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << dmrg2ham[ cnt ]; } cout << " ]" << endl;
    } else {
       cout << "   REORDER_FIEDLER    = " << (( reorder_fiedler ) ? "TRUE" : "FALSE" ) << endl;
-   }   
+   }
+   
+   if ( ham_is_time_dependant ) {
+      cout << "\nExpose the molecule to a short electrical pulse with the following properties\n" << endl;
+      cout << "   PULSE_AMPLITUDE = " << pulse_amplitude     << "\n";
+      cout << "   PULSE_ENVELOP   = " << pulse_envelop       << "\n";
+      cout << "   PULSE_FREQUENCY = " << pulse_frequency     << "\n";
+      cout << "   PULSE_DURATION  = " << pulse_duration      << "\n";
+      cout << "\n";
+      
+   }
+   
    cout << "   TIME_TYPE          = " << time_type << endl;
    cout << "   TIME_STEP_MAJOR    = " << time_step_major << endl;
    cout << "   TIME_STEP_MINOR    = " << time_step_minor << endl;
