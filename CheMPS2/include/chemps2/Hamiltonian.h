@@ -80,7 +80,8 @@ namespace CheMPS2 {
 
       //! Destructor
       virtual ~Hamiltonian();
-
+      
+      // return true if a short electrical pulse is applied to the system
       bool getApplyPulse() const;
 
       //! Get the number of orbitals
@@ -201,6 +202,14 @@ namespace CheMPS2 {
       void readfock( const string fockfile, double * fockmx, const bool printinfo ) const;
 
       private:
+
+      // Calculate the time dependant prefactor for the dipole one electron integrals
+      double calcDipolePrefactor( const double time = 0,
+                                  const char envelop = 'A',
+                                  const double amplitude = 0,
+                                  const double frequency = 0,
+                                  const double duration = 0 ) const;
+
       //number of orbitals
       int L;
 
