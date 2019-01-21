@@ -53,6 +53,9 @@ namespace CheMPS2 {
       //! Destructor
       virtual ~Problem();
 
+      // returs true if a short electrical pulse is applied to the system
+      bool getApplyPulse() const;
+
       //! Get the number of orbitals
       /** \return The number of orbitals */
       int gL() const { return L; }

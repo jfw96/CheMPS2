@@ -1281,6 +1281,8 @@ int main( int argc, char ** argv ){
 
       if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
 
+      std::cout << "\n\nProblem says: apply pulse = " << prob->getApplyPulse() << " \n";
+
       delete taylor;
    } else {
       cerr << " Your TIME_TYPE is not implemented yet" << std::endl;

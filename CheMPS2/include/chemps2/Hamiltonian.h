@@ -81,6 +81,8 @@ namespace CheMPS2 {
       //! Destructor
       virtual ~Hamiltonian();
 
+      bool getApplyPulse() const;
+
       //! Get the number of orbitals
       /** \return The number of orbitals */
       int getL() const;

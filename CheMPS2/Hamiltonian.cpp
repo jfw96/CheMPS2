@@ -715,3 +715,7 @@ void CheMPS2::Hamiltonian::debugcheck() const {
    cout << "2-electron integrals: Sum over all elements          : " << test << endl;
    cout << "2-electron integrals: Sum over Vijkl with i<=j<=k<=l : " << test2 << endl;
 }
+
+bool CheMPS2::Hamiltonian::getApplyPulse() const {
+   return applyPulse;
+}

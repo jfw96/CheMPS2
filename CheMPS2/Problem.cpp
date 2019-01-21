@@ -469,3 +469,7 @@ int CheMPS2::Problem::gNmin ( int boundary ) const {
       return std::max( std::max( 0, gN() + 2 * ( boundary - gL() ) ), boundary - gL() + ( gN() + gTwoS() ) / 2 );
    }
 }
+
+bool CheMPS2::Problem::getApplyPulse() const {
+   return Ham->getApplyPulse();
+}
