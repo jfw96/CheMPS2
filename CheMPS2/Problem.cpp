@@ -365,8 +365,8 @@ void CheMPS2::Problem::construct_mxelem( const double time ) {
                const int map4 = ( ( !bReorder ) ? orb4 : f2[ orb4 ] );
                setMxElement( orb1, orb2, orb3, orb4,
                               Ham->getVmat( map1, map2, map3, map4 )
-                              + prefact * ( ( orb1 == orb3 ) ? Ham->getTmat( map2, map4 ) : 0 )
-                              + prefact * ( ( orb2 == orb4 ) ? Ham->getTmat( map1, map3 ) : 0 ) );
+                              + prefact * ( ( orb1 == orb3 ) ? Ham->getTmat( map2, map4, time ) : 0 )
+                              + prefact * ( ( orb2 == orb4 ) ? Ham->getTmat( map1, map3, time ) : 0 ) );
             }
          }
       }

@@ -185,7 +185,12 @@ double CheMPS2::Hamiltonian::calcDipolePrefactor( const double time ) const {
    {
       case 'A':
          result = 1;
-         break;   
+         break;
+      
+      case 'B':
+         result = pulseAmplitude * ( ( time < pulseDuration ) ? 1 : 0 ) ; 
+         break;
+      
       default:
          result = 0;
          break;
@@ -211,15 +216,15 @@ double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2, const 
          result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] )
                   + preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
 
-         // testing.
-         if ( result != 0 ) {
-            std::cout << "\n\n" << orb2irrep[ index1 ]                                                                        << "      "
-                     << orb2indexSy[ index1 ]                                                                                 << "      "
-                     << orb2indexSy[ index2 ]                                                                                 << "      "
-                     << result                                                                                                << "      "
-                     << Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] )                        << "      "
-                     << preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) )  << "\n";
-         }
+         // // testing.
+         // if ( result != 0 ) {
+         //    std::cout << "\n\n" << orb2irrep[ index1 ]                                                                        << "      "
+         //             << orb2indexSy[ index1 ]                                                                                 << "      "
+         //             << orb2indexSy[ index2 ]                                                                                 << "      "
+         //             << result                                                                                                << "      "
+         //             << Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] )                        << "      "
+         //             << preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) )  << "\n";
+         // }
          
       }
       else {

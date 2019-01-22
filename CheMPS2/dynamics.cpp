@@ -732,7 +732,7 @@ int main( int argc, char ** argv ){
       }
       delete [] psi2molpro;
    }
-   ///////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////////
   // Ende: EINLESEN DES FCIDUMP-FILES - Nur für Check der Targetsymmetrie
   ///////////////////////////////////////////////////////////////////////////////////
    if ( multiplicity == -1 ){ multiplicity = fcidump_two_s + 1; }
@@ -746,7 +746,6 @@ int main( int argc, char ** argv ){
       /*******************************
       *  external potential - read and parse metainfo from ext_pot_fcidump - Methoden von "Check the target symmetry"
       *******************************/
-      // Vorgehen: wiederhole das Vorgehen zum Einlesen. Kommentiere die - für mich aktuell - nicht wichtigen Zeilen aus. Lasse sie jedoch stehen, um wenn später wichtig diese Änderungen schnell machen zu können.
 
       // Since the hamiltonian is timedependant, the system should not have a symmetrie in general
       group = 0;
