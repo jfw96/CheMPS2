@@ -450,7 +450,6 @@ int main( int argc, char ** argv ){
 
    string inputfile = "";
    string fcidump   = "";
-   string ext_pot_fcidump   = ""; // path to file
 
    // std::cout << "fcidump1: " << fcidump <<std::endl;
    // std::cout << "fcidump2: " << ext_pot_fcidump <<std::endl;
@@ -494,6 +493,7 @@ int main( int argc, char ** argv ){
    double time_energy_offset = 0.0;
 
    bool ham_is_time_dependant = false;
+   string ext_pot_fcidump   = ""; // path to file
    char pulse_envelop         = 'Z';
    double pulse_amplitude     = 0.0;
    double pulse_frequency     = 0.0;
@@ -507,7 +507,6 @@ int main( int argc, char ** argv ){
       {0, 0, 0, 0}
    };
 
-   // Hole Argumente: Hilfefunktion, Version, oder Rechnung
    int option_index = 0;
    int c;
    while (( c = getopt_long( argc, argv, "hvf:", long_options, &option_index )) != -1 ){
@@ -527,12 +526,11 @@ int main( int argc, char ** argv ){
             break;
       }
    }
-   // Validiere Input vorhanden
    if ( inputfile.length() == 0 ){
       cerr << "The input file should be specified!" << endl;
       return -1;
    }
-   // Begin: Parse Argumente der Inputdatei in Variablen (hier erst stures Auslesen, noch keine physiklische Logik dahinter)
+
    ifstream input( inputfile.c_str() );
    string line;
    while ( input.eof() == false ){
@@ -668,7 +666,6 @@ int main( int argc, char ** argv ){
       }
    }
    input.close();
-   // Ende: Parse Argumente der Inputdatei in Variablen (hier erst stures Auslesen, noch keine physiklische Logik dahinter)
 
    // std::cout << "2fcidump1: " << fcidump <<std::endl;
    // std::cout << "2fcidump2: " << ext_pot_fcidump <<std::endl;
@@ -678,7 +675,6 @@ int main( int argc, char ** argv ){
    *******************************/
 
 
-  // Validiere Grou-Input vorhanden
    if ( group == -1 ){ 
       cerr << "GROUP is a mandatory option!" << endl; 
       return -1;
@@ -690,9 +686,6 @@ int main( int argc, char ** argv ){
    CheMPS2::Irreps Symmhelper( group );
    const int num_irreps = Symmhelper.getNumberOfIrreps();
 
-  ///////////////////////////////////////////////////////////////////////////////////
-  // Begin: EINLESEN DES FCIDUMP-FILES - Nur für Check der Targetsymmetrie 
-  ///////////////////////////////////////////////////////////////////////////////////
    int fcidump_norb  = -1;
    int fcidump_nelec = -1;
    int fcidump_two_s = -1;
@@ -732,9 +725,7 @@ int main( int argc, char ** argv ){
       }
       delete [] psi2molpro;
    }
-  ///////////////////////////////////////////////////////////////////////////////////
-  // Ende: EINLESEN DES FCIDUMP-FILES - Nur für Check der Targetsymmetrie
-  ///////////////////////////////////////////////////////////////////////////////////
+
    if ( multiplicity == -1 ){ multiplicity = fcidump_two_s + 1; }
    if ( nelectrons   == -1 ){   nelectrons = fcidump_nelec;     }
    if ( irrep        == -1 ){        irrep = fcidump_irrep;     }
@@ -744,7 +735,7 @@ int main( int argc, char ** argv ){
    {     
 
       /*******************************
-      *  external potential - read and parse metainfo from ext_pot_fcidump - Methoden von "Check the target symmetry"
+      *  external potential - read and parse metainfo from ext_pot_fcidump
       *******************************/
 
       // Since the hamiltonian is timedependant, the system should not have a symmetrie in general
@@ -784,17 +775,11 @@ int main( int argc, char ** argv ){
          pos = line.find( "NELEC" ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
          ext_pot_fcidump_nelec = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
 
-         // TODO: Vermutung: multiplicity ist keine sinnvolle Größe für die Dipolmatrixeleemnte
-         // pos = line.find( "MS2"   ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
-         // ext_pot_fcidump_two_s = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
-
          // do { getline( theExtPotFcidump, line ); } while ( line.find( "ISYM" ) == string::npos );
          // pos = line.find( "ISYM"  ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
          // const int ext_pot_fcidump_molpro_wfn_irrep = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
-         // theExtPotFcidump.close();
+         theExtPotFcidump.close();
 
-         //TODO: Ask Lars about symmetries in the context of dipolmatrix elements. Auswirkungen auf den Gesamt Hamiltonoperator?
-         // TODO: Kläre Vermutung ab: Irrep ist für Dipolmatrixelemente keine sinnvolle Angabe. Genau so wenig, wie die Group.
          // Erster Gedanke von mir: Sinnvoll die Gruppe (wahrscheinlich fast immer 0) aus dem Inputfile für den Hamiltonian einmal zentral zu setzen.
          // int * psi2molpro = new int[ num_irreps ];
          // Symmhelper.symm_psi2molpro( psi2molpro );
@@ -814,7 +799,7 @@ int main( int argc, char ** argv ){
       if ( ext_pot_norb  == -1 ){ext_pot_norb  = ext_pot_fcidump_norb;}
       if ( ext_pot_nelec == -1 ){ext_pot_nelec = ext_pot_fcidump_nelec;}
 
-      // validiere Input der Files fcidump und ext_pot_fcidump gegeneiander: stimmen anzahl elektronen überein
+      // validiere Input der Files fcidump und ext_pot_fcidump gegeneiander
       if ( nelectrons   != ext_pot_fcidump_nelec)
       {
          cerr << "Inconsistent Input Execption!\n"
@@ -1145,7 +1130,7 @@ int main( int argc, char ** argv ){
    // outcommented: read in fcidumps, cout them (undestanding hamiltonian and problem class)
    {
 
-      // understand Hamiltonian and Problem class. Physiker -> Chemiker Notation: vertausche j und k. shifte alle physiker indizes um 1 hoch
+      // understand Hamiltonian and Problem class. Physiker -> Chemiker Notation: vertausche "j" und "k". shifte alle physiker indizes um 1 hoch
 
       //double test;
       // std::cout << "TMat:\n";
