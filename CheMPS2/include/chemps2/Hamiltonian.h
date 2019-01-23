@@ -211,6 +211,8 @@ namespace CheMPS2 {
       void readfock( const string fockfile, double * fockmx, const bool printinfo ) const;
 
       private:
+
+      double gaussian( const double variable, const double mean, const double std ) const;
       
       // Time of exposure in the electrical field of the pulse
       const char pulseEnvelop;

@@ -31,6 +31,10 @@
 #include "MyHDF5.h"
 #include "TwoIndex.h"
 
+#define _USE_MATH_DEFINES
+ 
+#include <cmath>
+
 using std::cout;
 using std::endl;
 using std::string;
@@ -177,7 +181,19 @@ void CheMPS2::Hamiltonian::setTmatDipole( const int index1, const int index2, co
 }
 ///
 
-double CheMPS2::Hamiltonian::calcDipolePrefactor( const double time ) const {
+double CheMPS2::Hamiltonian::gaussian( const double variable, const double mean, const double std ) const {
+
+   double result = 0.0;
+
+   double pre = sqrt( 2 * M_PI ) * std;
+   double exponent = - pow( variable - mean, 2 )  /  ( 2 * pow( std, 2 ) );
+
+   result = exp( exponent ) / pre;
+   return result;
+
+}
+
+double CheMPS2::Hamiltonian::calcDipolePrefactor( const double phyTime ) const {
    
    double result = 0.0;
 
@@ -188,9 +204,17 @@ double CheMPS2::Hamiltonian::calcDipolePrefactor( const double time ) const {
          break;
       
       case 'B':
-         result = pulseAmplitude * ( ( time < pulseDuration ) ? 1 : 0 ) ; 
+         result = pulseAmplitude * ( ( phyTime < pulseDuration ) ? 1 : 0 ) ;
          break;
-      
+
+      case 'C':
+         result = pulseAmplitude * sin( phyTime * ( M_PI / pulseDuration ) ) * ( ( phyTime < pulseDuration ) ? 1 : 0 ) ;
+         break;
+
+      case 'D':
+         result = gaussian( phyTime, pulseDuration / 2, pulseDuration / 6 )  ; // * ( ( time < pulseDuration ) ? 1 : 0 )
+         break;
+
       default:
          result = 0;
          break;
@@ -199,22 +223,42 @@ double CheMPS2::Hamiltonian::calcDipolePrefactor( const double time ) const {
    return result;
 }
 
-double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2, const double time ) const {
+double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2, const double phyTime ) const {
 
    double result = 0.0;
 
    if ( orb2irrep[ index1 ] == orb2irrep[ index2 ] ) {
+
+      
+      if ( phyTime == 0.0) {
+         std::cout << "getTmat mit t = 0 aufgerufen" << "dabei ist applyPulse = " << applyPulse << "  \n";
+      }
+      
       
 
-      if ( applyPulse ) {
-
+      if ( applyPulse ) { // TODO: ACHTUNG! && time != 0.0 nur zum testen! bewirkt, dass erster zurückgegebener Wert der unveränderte dipoleintrag ist, sofern fcidumpDipole == fcidump verwendet wird
+         
          // std::cout << "\ngetTmat( const int index1, const int index2, const double time ) is invoked\n";
          // strange: if this is invoked, then Econst changes! Why?! Because it is not Econst :D it was the expectation value of the energy!
          
-         const double preFactor = calcDipolePrefactor( time );
+         const double preFactor = calcDipolePrefactor( phyTime );
 
          result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] )
                   + preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
+
+         
+         
+         
+         // // testing: prefactor * dipolmatrix elements == quantitative expectation
+         // double value = preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
+         // if(value != 0) {
+         //    std::cout << "\ntime :   " << time << "    "
+         //                << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
+         //                << "         dipole :   " << value //preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) )
+         //                << std::endl;
+         // }
+
+            
 
          // // testing.
          // if ( result != 0 ) {

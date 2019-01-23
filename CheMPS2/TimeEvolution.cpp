@@ -29,7 +29,10 @@ CheMPS2::TimeEvolution::TimeEvolution( Problem * probIn, ConvergenceScheme * sch
    std::cout << hashline;
 
    assert( probIn->checkConsistency() );
+
+   std::cout << "\n Constructor von TimeEvolution ruft construct_mxelem() auf\n";
    prob->construct_mxelem();
+   std::cout << "\n Constructor von TimeEvolution ruft construct_mxelem() auf ENDE\n";
 
    const int Sy        = prob->gSy();
    const int N         = prob->gN();
