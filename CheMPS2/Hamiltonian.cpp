@@ -228,54 +228,42 @@ double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2, const 
    double result = 0.0;
 
    if ( orb2irrep[ index1 ] == orb2irrep[ index2 ] ) {
+      
+      if ( applyPulse ) {
 
-      
-      if ( phyTime == 0.0) {
-         std::cout << "getTmat mit t = 0 aufgerufen" << "dabei ist applyPulse = " << applyPulse << "  \n";
-      }
-      
-      
-
-      if ( applyPulse ) { // TODO: ACHTUNG! && time != 0.0 nur zum testen! bewirkt, dass erster zurückgegebener Wert der unveränderte dipoleintrag ist, sofern fcidumpDipole == fcidump verwendet wird
-         
-         // std::cout << "\ngetTmat( const int index1, const int index2, const double time ) is invoked\n";
-         // strange: if this is invoked, then Econst changes! Why?! Because it is not Econst :D it was the expectation value of the energy!
-         
          const double preFactor = calcDipolePrefactor( phyTime );
 
          result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] )
                   + preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
 
-         
-         
-         
-         // // testing: prefactor * dipolmatrix elements == quantitative expectation
-         // double value = preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
-         // if(value != 0) {
-         //    std::cout << "\ntime :   " << time << "    "
-         //                << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
-         //                << "         dipole :   " << value //preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) )
-         //                << std::endl;
-         // }
+         // testing:
+         {
+            // testing: prefactor * dipolmatrix elements == quantitative expectation  // TODO: ACHTUNG! && time != 0.0 nur zum testen! bewirkt, dass erster zurückgegebener Wert der unveränderte dipoleintrag ist, sofern fcidumpDipole == fcidump verwendet wird
+            double value = preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
 
-            
+            // testing gebe wert der fcidump datei bei t = 0 aus
+            if ( phyTime == 0.0 ) {
 
-         // // testing.
-         // if ( result != 0 ) {
-         //    std::cout << "\n\n" << orb2irrep[ index1 ]                                                                        << "      "
-         //             << orb2indexSy[ index1 ]                                                                                 << "      "
-         //             << orb2indexSy[ index2 ]                                                                                 << "      "
-         //             << result                                                                                                << "      "
-         //             << Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] )                        << "      "
-         //             << preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) )  << "\n";
-         // }
+               double value0 = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
+               std::cout << "\ntime :   " << phyTime  << "    "
+                        << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
+                        << "         dipole :   " << value0 
+                        << std::endl;
+            } 
+            else
+            {
+               std::cout << "\ntime :   " << phyTime  << "    "
+                           << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
+                           << "         dipole :   " << value
+                           << std::endl;
+            }
+         }
          
       }
       else {
          result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
       }
       
-      //return Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
    }
 
    return result;
