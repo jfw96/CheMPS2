@@ -451,19 +451,10 @@ int main( int argc, char ** argv ){
    string inputfile = "";
    string fcidump   = "";
 
-   // std::cout << "fcidump1: " << fcidump <<std::endl;
-   // std::cout << "fcidump2: " << pulse_fcidump <<std::endl;
-
    int group        = -1;
    int multiplicity = -1;
    int nelectrons   = -1;
    int irrep        = -1;
-
-   // metainfos: pulse_fcidump
-   int frequency     = -1;
-   int amplitude     = -1;
-   int ext_pot_norb  = -1;
-   int ext_pot_nelec = -1;
 
    string sweep_states  = "";
    string sweep_maxit   = "";
@@ -498,6 +489,12 @@ int main( int argc, char ** argv ){
    double pulse_amplitude     = 0.0;
    double pulse_frequency     = 0.0;
    double pulse_duration      = 0.0;
+
+   // metainfos: pulse_fcidump
+   int frequency     = -1;
+   int amplitude     = -1;
+   int ext_pot_norb  = -1;
+   int ext_pot_nelec = -1;
 
    struct option long_options[] =
    {
@@ -667,13 +664,9 @@ int main( int argc, char ** argv ){
    }
    input.close();
 
-   // std::cout << "2fcidump1: " << fcidump <<std::endl;
-   // std::cout << "2fcidump2: " << pulse_fcidump <<std::endl;
-
   /*******************************
    *  Check the target symmetry  *
    *******************************/
-
 
    if ( group == -1 ){ 
       cerr << "GROUP is a mandatory option!" << endl; 
@@ -736,22 +729,20 @@ int main( int argc, char ** argv ){
 
       // Since the hamiltonian is timedependant, the system should not have a symmetrie in general
       group = 0;
-      // CheMPS2::Irreps Symmhelper( group );
-      // const int num_irreps = Symmhelper.getNumberOfIrreps();
       
       // properties to be read from the external potential
       int ext_pot_fcidump_norb  = -1;
       int ext_pot_fcidump_nelec = -1;
       int ext_pot_fcidump_ampl  = -1; // Amplitude of the electrical field
       int ext_pot_fcidump_freq  = -1; // frequency of the electrical field
-      //int ext_pot_fcidump_irrep = -1;
 
-      // read the external potential fcidump-file
+      // read fcidump-file that contains the one electron dipole matrix elements 
       {
          ifstream thePulseFcidump( pulse_fcidump.c_str() );
          string line;
          int pos, pos2;
          getline( thePulseFcidump, line ); // &FCI NORB= X,NELEC= Y,MS2= Z,
+         
          // Check if file is an fcidump
          pos = line.find( "FCI" );
          if ( pos == string::npos ){
@@ -771,22 +762,7 @@ int main( int argc, char ** argv ){
          pos = line.find( "NELEC" ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
          ext_pot_fcidump_nelec = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
 
-         // do { getline( thePulseFcidump, line ); } while ( line.find( "ISYM" ) == string::npos );
-         // pos = line.find( "ISYM"  ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
-         // const int ext_pot_fcidump_molpro_wfn_irrep = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
          thePulseFcidump.close();
-
-         // Erster Gedanke von mir: Sinnvoll die Gruppe (wahrscheinlich fast immer 0) aus dem Inputfile für den Hamiltonian einmal zentral zu setzen.
-         // int * psi2molpro = new int[ num_irreps ];
-         // Symmhelper.symm_psi2molpro( psi2molpro );
-         // for ( int cnt = 0; cnt < num_irreps; cnt++ ){
-         //    if ( ext_pot_fcidump_molpro_wfn_irrep == psi2molpro[ cnt ] ){ ext_pot_fcidump_irrep = cnt; }
-         // }
-         // if ( ext_pot_fcidump_irrep == -1 ){
-         //    cerr << "Could not find the molpro wavefunction symmetry (ISYM) in the fcidump file!" << endl; 
-         //    return -1;
-         // }
-         // delete [] psi2molpro;
       }
       //put values into variables
       if ( amplitude == -1 ){amplitude = ext_pot_fcidump_ampl;}
