@@ -345,15 +345,15 @@ cout << "\n"
 "\n"
 // Commit-msg: Füge Erklärung zu zusätzliche Inputs an Hilfefunktion an
 //
-// - EXT_POTENTIAL: fcidump-file mit allen Infos zum zeitabhängigen Teil des physikalischen Hamiltonoperators.
+// - PULSE_1E_MX_EL: fcidump-file mit allen Infos zum zeitabhängigen Teil des physikalischen Hamiltonoperators.
 //
-// - EXT_POTENTIAL_IS_TIME_DEPENDANT: Fange Fehlerfall, dass EXT_POTENTIAL leer ist. Sodass Rechnung in diesem Fall nicht startet und mit zeitunabhängigem Algorithmus verwechselt wird.
-"       EXT_POTENTIAL = /path/to/external/potential\n"
-"              External potential in fcidump-ext-pot-format. Note that orbital irreps in the EXT_POTENTIAL file follow molpro convention!\n"
+// - EXT_POTENTIAL_IS_TIME_DEPENDANT: Fange Fehlerfall, dass PULSE_1E_MX_EL leer ist. Sodass Rechnung in diesem Fall nicht startet und mit zeitunabhängigem Algorithmus verwechselt wird.
+"       PULSE_1E_MX_EL = /path/to/external/potential\n"
+"              External potential in fcidump-ext-pot-format. Note that orbital irreps in the PULSE_1E_MX_EL file follow molpro convention!\n"
 "              Only has affect if EXT_POTENTIAL_IS_TIME_DEPENDANT is TRUE (default FALSE).\n"
 "\n"
-"       HAM_IS_TIME_DEPENDANT = bool\n"
-"              Set if the external potential is time dependent. Only has affect if EXT_POTENTIAL is given (TRUE or FALSE; default FALSE).\n"
+"       PULSE_APPLY = bool\n"
+"              Set if the external potential is time dependent. Only has affect if PULSE_1E_MX_EL is given (TRUE or FALSE; default FALSE).\n"
 "\n"
 "       GROUP = int\n"
 "              Set the psi4 symmetry group number [0-7] which corresponds to the FCIDUMP file.\n"
@@ -452,14 +452,14 @@ int main( int argc, char ** argv ){
    string fcidump   = "";
 
    // std::cout << "fcidump1: " << fcidump <<std::endl;
-   // std::cout << "fcidump2: " << ext_pot_fcidump <<std::endl;
+   // std::cout << "fcidump2: " << pulse_fcidump <<std::endl;
 
    int group        = -1;
    int multiplicity = -1;
    int nelectrons   = -1;
    int irrep        = -1;
 
-   // metainfos: ext_pot_fcidump
+   // metainfos: pulse_fcidump
    int frequency     = -1;
    int amplitude     = -1;
    int ext_pot_norb  = -1;
@@ -492,8 +492,8 @@ int main( int argc, char ** argv ){
    bool   time_dump2rdm   = false;
    double time_energy_offset = 0.0;
 
-   bool apply_pulse = false;
-   string ext_pot_fcidump   = ""; // path to file
+   bool apply_pulse           = false;
+   string pulse_fcidump       = ""; // path to file
    char pulse_envelop         = 'Z';
    double pulse_amplitude     = 0.0;
    double pulse_frequency     = 0.0;
@@ -537,11 +537,11 @@ int main( int argc, char ** argv ){
 
       getline( input, line );
 
-      if ( line.find( "EXT_POTENTIAL" ) != string::npos ){
+      if ( line.find( "PULSE_1E_MX_EL" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
-         ext_pot_fcidump = line.substr( pos, line.length() - pos );
-         ext_pot_fcidump.erase( remove( ext_pot_fcidump.begin(), ext_pot_fcidump.end(), ' ' ), ext_pot_fcidump.end() );
-         if ( file_exists( ext_pot_fcidump, "EXT_POTENTIAL" ) == false ){ return -1; }
+         pulse_fcidump = line.substr( pos, line.length() - pos );
+         pulse_fcidump.erase( remove( pulse_fcidump.begin(), pulse_fcidump.end(), ' ' ), pulse_fcidump.end() );
+         if ( file_exists( pulse_fcidump, "PULSE_1E_MX_EL" ) == false ){ return -1; }
       }
 
       if ( line.find( "FCIDUMP" ) != string::npos ){
@@ -571,15 +571,15 @@ int main( int argc, char ** argv ){
 
       char options1[] = { 'K', 'R', 'E', 'F' };
       if ( find_character( &time_type,     line, "TIME_TYPE",     options1, 4 ) == false ){ return -1; }
-      char options2[] = { 'A', 'B', 'C', 'D' };
-      if ( find_character( &pulse_envelop, line, "PULSE_ENVELOP", options2, 4 ) == false ){            }
+      char options2[] = { 'A', 'B', 'C', 'D', 'Z' };
+      if ( find_character( &pulse_envelop, line, "PULSE_ENVELOP", options2, 5 ) == false ){            }
       
-      if ( find_boolean( &apply_pulse,  line, "HAM_IS_TIME_DEPENDANT" ) == false ){ return -1; }
-      if ( find_boolean( &reorder_fiedler,        line, "REORDER_FIEDLER"       ) == false ){ return -1; }
-      if ( find_boolean( &time_backward,          line, "TIME_BACKWARD"         ) == false ){ return -1; }
-      if ( find_boolean( &time_ortho,             line, "TIME_ORTHO"            ) == false ){ return -1; }
-      if ( find_boolean( &time_dumpfci,           line, "TIME_DUMPFCI"          ) == false ){ return -1; }
-      if ( find_boolean( &time_dump2rdm,          line, "TIME_DUMP2RDM"         ) == false ){ return -1; }
+      if ( find_boolean( &apply_pulse,            line, "PULSE_APPLY" ) == false ){ return -1; }
+      if ( find_boolean( &reorder_fiedler,        line, "REORDER_FIEDLER"        ) == false ){ return -1; }
+      if ( find_boolean( &time_backward,          line, "TIME_BACKWARD"          ) == false ){ return -1; }
+      if ( find_boolean( &time_ortho,             line, "TIME_ORTHO"             ) == false ){ return -1; }
+      if ( find_boolean( &time_dumpfci,           line, "TIME_DUMPFCI"           ) == false ){ return -1; }
+      if ( find_boolean( &time_dump2rdm,          line, "TIME_DUMP2RDM"          ) == false ){ return -1; }
 
       if ( find_double( &time_energy_offset, line, "TIME_ENERGY_OFFSET", false, 0.0 ) == false ){ return -1; }
 
@@ -668,7 +668,7 @@ int main( int argc, char ** argv ){
    input.close();
 
    // std::cout << "2fcidump1: " << fcidump <<std::endl;
-   // std::cout << "2fcidump2: " << ext_pot_fcidump <<std::endl;
+   // std::cout << "2fcidump2: " << pulse_fcidump <<std::endl;
 
   /*******************************
    *  Check the target symmetry  *
@@ -731,7 +731,7 @@ int main( int argc, char ** argv ){
    {     
 
       /*******************************
-      *  external potential - read and parse metainfo from ext_pot_fcidump
+      *  external potential - read and parse metainfo from pulse_fcidump
       *******************************/
 
       // Since the hamiltonian is timedependant, the system should not have a symmetrie in general
@@ -748,14 +748,14 @@ int main( int argc, char ** argv ){
 
       // read the external potential fcidump-file
       {
-         ifstream theExtPotFcidump( ext_pot_fcidump.c_str() );
+         ifstream thePulseFcidump( pulse_fcidump.c_str() );
          string line;
          int pos, pos2;
-         getline( theExtPotFcidump, line ); // &FCI NORB= X,NELEC= Y,MS2= Z,
+         getline( thePulseFcidump, line ); // &FCI NORB= X,NELEC= Y,MS2= Z,
          // Check if file is an fcidump
-         pos = line.find( "FCI-EXT-POT" );
+         pos = line.find( "FCI" );
          if ( pos == string::npos ){
-            cerr << "The file " << ext_pot_fcidump << " is not a fcidump-ext-pot file!" << endl;
+            cerr << "The file " << pulse_fcidump << " is not a fcidump file!" << endl;
             return -1;
          }
 
@@ -771,10 +771,10 @@ int main( int argc, char ** argv ){
          pos = line.find( "NELEC" ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
          ext_pot_fcidump_nelec = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
 
-         // do { getline( theExtPotFcidump, line ); } while ( line.find( "ISYM" ) == string::npos );
+         // do { getline( thePulseFcidump, line ); } while ( line.find( "ISYM" ) == string::npos );
          // pos = line.find( "ISYM"  ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
          // const int ext_pot_fcidump_molpro_wfn_irrep = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
-         theExtPotFcidump.close();
+         thePulseFcidump.close();
 
          // Erster Gedanke von mir: Sinnvoll die Gruppe (wahrscheinlich fast immer 0) aus dem Inputfile für den Hamiltonian einmal zentral zu setzen.
          // int * psi2molpro = new int[ num_irreps ];
@@ -795,7 +795,7 @@ int main( int argc, char ** argv ){
       if ( ext_pot_norb  == -1 ){ext_pot_norb  = ext_pot_fcidump_norb;}
       if ( ext_pot_nelec == -1 ){ext_pot_nelec = ext_pot_fcidump_nelec;}
 
-      // validiere Input der Files fcidump und ext_pot_fcidump gegeneiander
+      // validiere Input der Files fcidump und pulse_fcidump gegeneiander
       if ( nelectrons   != ext_pot_fcidump_nelec)
       {
          cerr << "Inconsistent Input Execption!\n"
@@ -805,7 +805,7 @@ int main( int argc, char ** argv ){
             << nelectrons
             << ".\n"
             << "The number of electrons specified in the file "
-            << ext_pot_fcidump
+            << pulse_fcidump
             << "is "
             << ext_pot_fcidump_nelec
             << "\nThese to files must have the same number of electrons!"<< endl; 
@@ -820,7 +820,7 @@ int main( int argc, char ** argv ){
             << fcidump_norb
             << ".\n"
             << "The number of orbitals specified in the file "
-            << ext_pot_fcidump
+            << pulse_fcidump
             << "is "
             << ext_pot_fcidump_norb
             << "\nThese to files must have the same number of orbitals!"<< endl; 
@@ -1107,7 +1107,7 @@ int main( int argc, char ** argv ){
 
 
    /********************************
-   *  Running the DMRG calculation *    // timeindependant part of the hamiltonian
+   *  Running the DMRG calculation *
    ********************************/
 
    CheMPS2::Initialize::Init();
@@ -1116,7 +1116,7 @@ int main( int argc, char ** argv ){
    CheMPS2::Hamiltonian * ham;
    if( apply_pulse ){
       ham = new CheMPS2::Hamiltonian( fcidump,
-                                      ext_pot_fcidump,
+                                      pulse_fcidump,
                                       group,
                                       pulse_envelop,
                                       pulse_amplitude,
@@ -1274,8 +1274,8 @@ int main( int argc, char ** argv ){
    // testing: apply_pulse wird korrekt geparst
    std::cout << "\nJA ICH BIN DIE VERSION DIE DU GLAUBST\n";
    std::cout << "\n" << "apply_pulse >>>>>>>>>>>> " << apply_pulse << "\n";
-   std::cout << "fcidump1: " << fcidump <<std::endl;
-   std::cout << "fcidump2: " << ext_pot_fcidump <<std::endl;
+   std::cout << "fcidump       : " << fcidump <<std::endl;
+   std::cout << "pulse_fcidump : " << pulse_fcidump <<std::endl;
 
    std::cout << "Number of electrons in the ext pot fcidump file :"
              << ext_pot_nelec

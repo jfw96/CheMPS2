@@ -354,7 +354,7 @@ void CheMPS2::Problem::construct_mxelem( const double phyTime ) {
 
    
    if ( phyTime == 0.0 ) {
-      std::cout << "\n construct_mxelem( t = 0.0 )" << "t = " << phyTime <<  "   \n";
+      std::cout << "\n construct_mxelem( t = 0.0 )" << "\n";
    }
    
 
