@@ -209,28 +209,28 @@ double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2, const 
          result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] )
                   + preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
 
-         // testing:
-         {
-            // testing: prefactor * dipolmatrix elements == quantitative expectation  // TODO: ACHTUNG! && time != 0.0 nur zum testen! bewirkt, dass erster zurückgegebener Wert der unveränderte dipoleintrag ist, sofern fcidumpDipole == fcidump verwendet wird
-            double value = preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
+         // // testing:
+         // {
+         //    // testing: prefactor * dipolmatrix elements == quantitative expectation  // TODO: ACHTUNG! && time != 0.0 nur zum testen! bewirkt, dass erster zurückgegebener Wert der unveränderte dipoleintrag ist, sofern fcidumpDipole == fcidump verwendet wird
+         //    double value = preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
 
-            // testing gebe wert der fcidump datei bei t = 0 aus
-            if ( phyTime == 0.0 ) {
+         //    // testing gebe wert der fcidump datei bei t = 0 aus
+         //    if ( phyTime == 0.0 ) {
 
-               double value0 = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
-               std::cout << "\ntime :   " << phyTime  << "    "
-                        << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
-                        << "         dipole :   " << value0 
-                        << std::endl;
-            } 
-            else
-            {
-               std::cout << "\ntime :   " << phyTime  << "    "
-                           << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
-                           << "         dipole :   " << value
-                           << std::endl;
-            }
-         }
+         //       double value0 = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
+         //       std::cout << "\ntime :   " << phyTime  << "    "
+         //                << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
+         //                << "         dipole :   " << value0 
+         //                << std::endl;
+         //    } 
+         //    else
+         //    {
+         //       std::cout << "\ntime :   " << phyTime  << "    "
+         //                   << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
+         //                   << "         dipole :   " << value
+         //                   << std::endl;
+         //    }
+         // }
          
       }
       else {
