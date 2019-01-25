@@ -1350,6 +1350,7 @@ int main( int argc, char ** argv ){
    delete[] time_hf_state_parsed;
 
    // testing: ham_is_time_dependant wird korrekt geparst
+   std::cout << "\nJA ICH BIN DIE VERSION DIE DU GLAUBST\n";
    std::cout << "\n" << "ham_is_time_dependant >>>>>>>>>>>> " << ham_is_time_dependant << "\n";
    std::cout << "fcidump1: " << fcidump <<std::endl;
    std::cout << "fcidump2: " << ext_pot_fcidump <<std::endl;
