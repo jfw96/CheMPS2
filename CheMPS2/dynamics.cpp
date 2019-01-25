@@ -492,7 +492,7 @@ int main( int argc, char ** argv ){
    bool   time_dump2rdm   = false;
    double time_energy_offset = 0.0;
 
-   bool ham_is_time_dependant = false;
+   bool apply_pulse = false;
    string ext_pot_fcidump   = ""; // path to file
    char pulse_envelop         = 'Z';
    double pulse_amplitude     = 0.0;
@@ -574,7 +574,7 @@ int main( int argc, char ** argv ){
       char options2[] = { 'A', 'B', 'C', 'D' };
       if ( find_character( &pulse_envelop, line, "PULSE_ENVELOP", options2, 4 ) == false ){            }
       
-      if ( find_boolean( &ham_is_time_dependant,  line, "HAM_IS_TIME_DEPENDANT" ) == false ){ return -1; }
+      if ( find_boolean( &apply_pulse,  line, "HAM_IS_TIME_DEPENDANT" ) == false ){ return -1; }
       if ( find_boolean( &reorder_fiedler,        line, "REORDER_FIEDLER"       ) == false ){ return -1; }
       if ( find_boolean( &time_backward,          line, "TIME_BACKWARD"         ) == false ){ return -1; }
       if ( find_boolean( &time_ortho,             line, "TIME_ORTHO"            ) == false ){ return -1; }
@@ -727,7 +727,7 @@ int main( int argc, char ** argv ){
    if ( irrep        == -1 ){        irrep = fcidump_irrep;     }
 
    
-   if (ham_is_time_dependant)
+   if (apply_pulse)
    {     
 
       /*******************************
@@ -1072,7 +1072,7 @@ int main( int argc, char ** argv ){
       cout << "   REORDER_FIEDLER    = " << (( reorder_fiedler ) ? "TRUE" : "FALSE" ) << endl;
    }
    
-   if ( ham_is_time_dependant ) {
+   if ( apply_pulse ) {
       cout << "\nExpose the molecule to a short electrical pulse with the following properties\n" << endl;
       cout << "   PULSE_ENVELOP   = " << pulse_envelop       << "\n";
       cout << "   PULSE_AMPLITUDE = " << pulse_amplitude     << "\n";
@@ -1114,7 +1114,7 @@ int main( int argc, char ** argv ){
 
    // create hamiltonian based on the given fcidump-files
    CheMPS2::Hamiltonian * ham;
-   if( ham_is_time_dependant ){
+   if( apply_pulse ){
       ham = new CheMPS2::Hamiltonian( fcidump,
                                       ext_pot_fcidump,
                                       group,
@@ -1271,9 +1271,9 @@ int main( int argc, char ** argv ){
    delete[] time_2_ninit_parsed;
    delete[] time_hf_state_parsed;
 
-   // testing: ham_is_time_dependant wird korrekt geparst
+   // testing: apply_pulse wird korrekt geparst
    std::cout << "\nJA ICH BIN DIE VERSION DIE DU GLAUBST\n";
-   std::cout << "\n" << "ham_is_time_dependant >>>>>>>>>>>> " << ham_is_time_dependant << "\n";
+   std::cout << "\n" << "apply_pulse >>>>>>>>>>>> " << apply_pulse << "\n";
    std::cout << "fcidump1: " << fcidump <<std::endl;
    std::cout << "fcidump2: " << ext_pot_fcidump <<std::endl;
 
