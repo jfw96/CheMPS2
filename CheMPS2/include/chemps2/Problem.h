@@ -85,7 +85,7 @@ namespace CheMPS2 {
       /** \return The maximum time */
       int gInitial() const { return Initial; }
 
-      //! Get the constant part of the Hamiltonian // TODO: damit ist die Energie der Kernbstoßung gemeint
+      //! Get the constant part of the Hamiltonian 
       /** \return The constant part of the Hamiltonian */
       double gEconst() const { return Ham->getEconst(); }
 
@@ -108,7 +108,7 @@ namespace CheMPS2 {
       void setMxElement( const int alpha, const int beta, const int gamma, const int delta, const double value );
 
       //! Construct a table with the h-matrix elements (two-body augmented with one-body). Remember to recall this function each time you change the Hamiltonian!
-      // /param time The time at which the hamiltonian is constructed
+      // /param time The time at which the hamiltonian is constructed. To be used if a electrical pulse is applied to the system ( applyPulse = true from Hamiltonian class ). 
       void construct_mxelem( const double time = 0.0 );
 
       //! Check whether the given parameters L, N, and TwoS are not inconsistent and whether 0<=Irrep<nIrreps. A more thorough test will be done when the FCI virtual dimensions are constructed.

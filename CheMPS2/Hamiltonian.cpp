@@ -44,10 +44,10 @@ CheMPS2::Hamiltonian::Hamiltonian( const int Norbitals,
                                    const int nGroup,
                                    const int * OrbIrreps )
                                    : applyPulse    ( false )
-                                   , pulseAmplitude( 0.0 )
-                                   , pulseFrequency( 0.0 )
-                                   , pulseDuration ( 0.0 )
-                                   , pulseEnvelop  ( 'Z' ) {
+                                   , pulseAmplitude( 0.0   )
+                                   , pulseFrequency( 0.0   )
+                                   , pulseDuration ( 0.0   )
+                                   , pulseEnvelop  ( 'Z'   ) {
 
    L = Norbitals;
    assert( nGroup >= 0 );
@@ -76,10 +76,10 @@ CheMPS2::Hamiltonian::Hamiltonian( const int Norbitals,
 CheMPS2::Hamiltonian::Hamiltonian( const string filename,
                                    const int psi4groupnumber )
                                    : applyPulse    ( false )
-                                   , pulseAmplitude( 0.0 )
-                                   , pulseFrequency( 0.0 )
-                                   , pulseDuration ( 0.0 )
-                                   , pulseEnvelop  ( 'Z' )  {
+                                   , pulseAmplitude( 0.0   )
+                                   , pulseFrequency( 0.0   )
+                                   , pulseDuration ( 0.0   )
+                                   , pulseEnvelop  ( 'Z'   )  {
 
    SymmInfo.setGroup( psi4groupnumber );
    CreateAndFillFromFCIDUMP( filename, false );
@@ -110,42 +110,15 @@ CheMPS2::Hamiltonian::Hamiltonian( const string fcidump,
                                    const double amplitude,
                                    const double frequency,
                                    const double duration )
-                                   : applyPulse      ( true )
+                                   : applyPulse      ( true      )
                                    , pulseAmplitude  ( amplitude )
-                                   , pulseDuration   ( duration )
-                                   , pulseEnvelop    ( envelop )
+                                   , pulseDuration   ( duration  )
+                                   , pulseEnvelop    ( envelop   )
                                    , pulseFrequency  ( frequency ) {
 
-  // Spin etc will not be changed due to the dipol matrix elements => no changes needed
   SymmInfo.setGroup( psi4groupnumber );
   CreateAndFillFromFCIDUMP( fcidump, false );
   CreateAndFillFromFCIDUMP( fcidumpTime, true );
-
-  // test: compare all entrys of one-electron integrals in Tmat and TmatDipole. Usage: (unput = two fcidumps with different names but same values) => (should: no difference between Tmat and TmatDipole)
-  
-//   double elFcidump      = 0.0;
-//   double elFcidumpTime  = 0.0;
-//   for(size_t i = 0; i < L; i++)
-//   {
-//       for(size_t j = 0; j < L; j++)
-//       {
-//          elFcidump     = getTmat(i,j);
-//          elFcidumpTime = getTmatDipole(i,j);
-
-         
-//          if (elFcidump != elFcidumpTime) {
-//             std::cout<< "\n" << elFcidump - elFcidumpTime << "    " << i << " " << j << "\n";
-//          }
-         
-//       }  
-//   }
-  
-  
-  
-  
-  
-
-  //std::cout << "Hamiltonian( const string filenameA, const string filenameB, const int psi4groupnumber ): applyPulse(true) aufgerufen\n";
 }
 
 
@@ -164,22 +137,21 @@ int CheMPS2::Hamiltonian::getNGroup() const { return SymmInfo.getGroupNumber(); 
 
 int CheMPS2::Hamiltonian::getOrbitalIrrep( const int nOrb ) const { return orb2irrep[ nOrb ]; }
 
-void CheMPS2::Hamiltonian::setEconst( const double val ) { Econst = val; } //TODO: dipol matrix elemente sollten daran doch eigentlich nichts verändern, oder übersehe ich etwas? Argumentation aus Formal.
+void CheMPS2::Hamiltonian::setEconst( const double val ) { Econst = val; }
 
 double CheMPS2::Hamiltonian::getEconst() const { return Econst; }
 
-void CheMPS2::Hamiltonian::setTmat( const int index1, const int index2, const double val ) { //TODO: nichts zu ändern
+void CheMPS2::Hamiltonian::setTmat( const int index1, const int index2, const double val ) {
 
    assert( orb2irrep[ index1 ] == orb2irrep[ index2 ] );
    Tmat->set( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ], val );
 }
-///
-void CheMPS2::Hamiltonian::setTmatDipole( const int index1, const int index2, const double val ) { //TODO: soll nur in die Variable TmatDipole schreiben. => nichts zu ändern
+
+void CheMPS2::Hamiltonian::setTmatDipole( const int index1, const int index2, const double val ) {
 
    assert( orb2irrep[ index1 ] == orb2irrep[ index2 ] );
    TmatDipole->set( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ], val );
 }
-///
 
 double CheMPS2::Hamiltonian::gaussian( const double variable, const double mean, const double std ) const {
 
@@ -197,6 +169,7 @@ double CheMPS2::Hamiltonian::calcDipolePrefactor( const double phyTime ) const {
    
    double result = 0.0;
 
+   //FIXME: insert exact formulas as soon as dipole matrix elements have been calculated with pyscf. => Units etc. Should return something like: {envelop(duration)} * pulse_amplitude * exp( - i pulse_frequency * phyTime )
    switch ( pulseEnvelop )
    {
       case 'A':
@@ -204,15 +177,15 @@ double CheMPS2::Hamiltonian::calcDipolePrefactor( const double phyTime ) const {
          break;
       
       case 'B':
-         result = pulseAmplitude * ( ( phyTime < pulseDuration ) ? 1 : 0 ) ;
+         result = pulseAmplitude * ( ( phyTime <= pulseDuration ) ? 1 : 0 ) ;
          break;
 
       case 'C':
-         result = pulseAmplitude * sin( phyTime * ( M_PI / pulseDuration ) ) * ( ( phyTime < pulseDuration ) ? 1 : 0 ) ;
+         result = pulseAmplitude * sin( phyTime * ( M_PI / pulseDuration ) ) * ( ( phyTime <= pulseDuration ) ? 1 : 0 ) ;
          break;
 
       case 'D':
-         result = gaussian( phyTime, pulseDuration / 2, pulseDuration / 6 )  ; // * ( ( time < pulseDuration ) ? 1 : 0 )
+         result = gaussian( phyTime, pulseDuration / 2, pulseDuration / 6 ) * ( ( phyTime <= pulseDuration ) ? 1 : 0 ) ; // * ( ( time < pulseDuration ) ? 1 : 0 )
          break;
 
       default:
@@ -236,34 +209,33 @@ double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2, const 
          result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] )
                   + preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
 
-         // // testing:
-         // {
-         //    // testing: prefactor * dipolmatrix elements == quantitative expectation  // TODO: ACHTUNG! && time != 0.0 nur zum testen! bewirkt, dass erster zurückgegebener Wert der unveränderte dipoleintrag ist, sofern fcidumpDipole == fcidump verwendet wird
-         //    double value = preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
+         // testing:
+         {
+            // testing: prefactor * dipolmatrix elements == quantitative expectation  // TODO: ACHTUNG! && time != 0.0 nur zum testen! bewirkt, dass erster zurückgegebener Wert der unveränderte dipoleintrag ist, sofern fcidumpDipole == fcidump verwendet wird
+            double value = preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
 
-         //    // testing gebe wert der fcidump datei bei t = 0 aus
-         //    if ( phyTime == 0.0 ) {
+            // testing gebe wert der fcidump datei bei t = 0 aus
+            if ( phyTime == 0.0 ) {
 
-         //       double value0 = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
-         //       std::cout << "\ntime :   " << phyTime  << "    "
-         //                << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
-         //                << "         dipole :   " << value0 
-         //                << std::endl;
-         //    } 
-         //    else
-         //    {
-         //       std::cout << "\ntime :   " << phyTime  << "    "
-         //                   << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
-         //                   << "         dipole :   " << value
-         //                   << std::endl;
-         //    }
-         // }
+               double value0 = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
+               std::cout << "\ntime :   " << phyTime  << "    "
+                        << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
+                        << "         dipole :   " << value0 
+                        << std::endl;
+            } 
+            else
+            {
+               std::cout << "\ntime :   " << phyTime  << "    "
+                           << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
+                           << "         dipole :   " << value
+                           << std::endl;
+            }
+         }
          
       }
       else {
          result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
       }
-      
    }
 
    return result;
@@ -271,8 +243,6 @@ double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2, const 
 
 const CheMPS2::TwoIndex * CheMPS2::Hamiltonian::getTmat() { return Tmat; }
 
-
-///
 double CheMPS2::Hamiltonian::getTmatDipole( const int index1, const int index2 ) const {
 
    if ( orb2irrep[ index1 ] == orb2irrep[ index2 ] ) {
@@ -283,7 +253,6 @@ double CheMPS2::Hamiltonian::getTmatDipole( const int index1, const int index2 )
 }
 
 const CheMPS2::TwoIndex * CheMPS2::Hamiltonian::getTmatDipole() { return TmatDipole; }
-///
 
 void CheMPS2::Hamiltonian::setVmat( const int index1, const int index2, const int index3, const int index4, const double val ) {
 
@@ -485,7 +454,7 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, c
    if ( CheMPS2::HAMILTONIAN_debugPrint ) { cout << "The number of orbitals <<" << part << ">> or " << L << "." << endl; }
 
    // Get the orbital irreps in psi4 convention (XOR, see Irreps.h).
-   orb2irrep = new int[ L ]; //TODO: Vermutung, Richtigkeit abklären: orb2irrep, kann für Dipol-Matrix-Elemente ohne Änderungen verwendet werden. Irrep: gegeben durch Group => alles fest gelegt
+   orb2irrep = new int[ L ];
    getline( thefcidump, line ); //  ORBSYM=A,B,C,D,
    getline( thefcidump, part );
    while ( part.find( "ISYM" ) == string::npos ) {
@@ -513,7 +482,7 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, c
       pos = pos2;
    }
 
-   getline( thefcidump, line ); // /
+   getline( thefcidump, line );
    assert( line.size() < 16 );
 
    orb2indexSy   = new int[ L ];
@@ -534,7 +503,6 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, c
    }
    else
    {
-      std::cout << "\nhey there! SymmInfo.getGroupNumber()>>>>>>>>>>>>>>>> " << SymmInfo.getGroupNumber() << "\n";
       TmatDipole = new TwoIndex( SymmInfo.getGroupNumber(), irrep2num_orb );  // Constructor ends with Clear(); call
    }
    
@@ -588,7 +556,7 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, c
 
       if ( index4 != 0 ) { 
          
-         if (!is_dipole) // two particle integrals are not necessary in the case of dipole matrix elements. For the same reason there is is not "VmatDipole" declared to store them
+         if ( !is_dipole )
          {
             setVmat( index1 - 1, index3 - 1, index2 - 1, index4 - 1, value ); // From chemists to physicist notation!
          }
@@ -598,7 +566,7 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, c
       {
 
          if ( index2 != 0 )
-         { //TODO: if(is_dipole){setTmatDipole(gleiche Indizes)}
+         {
             
             if (is_dipole)
             {
@@ -606,17 +574,16 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, c
             }
             else
             {               
-               setTmat( index1 - 1, index2 - 1, value );   // TODO: muss zu TmatInternal geändert werden
+               setTmat( index1 - 1, index2 - 1, value );
             }
             
             
          }
          else
-         { //TODO: if(is_dipole){EconstDipole}
-            
+         {
             if ( !is_dipole )
             {
-               Econst = value; // TODO: verändert sich durch zusätzliche Dipolmatrixelemente nicht - korrekt?
+               Econst = value;
             }
             
             stop   = true;
