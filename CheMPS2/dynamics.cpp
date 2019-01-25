@@ -491,8 +491,6 @@ int main( int argc, char ** argv ){
    double pulse_duration      = 0.0;
 
    // metainfos: pulse_fcidump
-   int frequency     = -1;
-   int amplitude     = -1;
    int ext_pot_norb  = -1;
    int ext_pot_nelec = -1;
 
@@ -723,18 +721,16 @@ int main( int argc, char ** argv ){
    if (apply_pulse)
    {     
 
-      /*******************************
-      *  external potential - read and parse metainfo from pulse_fcidump
-      *******************************/
+      /***************************************************
+      * Compare properties of fcidump and pulse_fcidump  * 
+      ***************************************************/
 
-      // Since the hamiltonian is timedependant, the system should not have a symmetrie in general
+      // In generall the symmetry is lost in this case, since there is an (possibly time dependant) external field 
       group = 0;
       
       // properties to be read from the external potential
-      int ext_pot_fcidump_norb  = -1;
-      int ext_pot_fcidump_nelec = -1;
-      int ext_pot_fcidump_ampl  = -1; // Amplitude of the electrical field
-      int ext_pot_fcidump_freq  = -1; // frequency of the electrical field
+      int pulse_fcidump_norb  = -1;
+      int pulse_fcidump_nelec = -1;
 
       // read fcidump-file that contains the one electron dipole matrix elements 
       {
@@ -743,36 +739,27 @@ int main( int argc, char ** argv ){
          int pos, pos2;
          getline( thePulseFcidump, line ); // &FCI NORB= X,NELEC= Y,MS2= Z,
          
-         // Check if file is an fcidump
+         // Check if thePulseFcidump is an fcidump file
          pos = line.find( "FCI" );
          if ( pos == string::npos ){
             cerr << "The file " << pulse_fcidump << " is not a fcidump file!" << endl;
             return -1;
          }
 
-         pos = line.find( "AMPL" ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
-         ext_pot_fcidump_ampl = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
-
-         pos = line.find( "FREQ" ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
-         ext_pot_fcidump_freq = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
-
          pos = line.find( "NORB"  ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
-         ext_pot_fcidump_norb = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
+         pulse_fcidump_norb = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
 
          pos = line.find( "NELEC" ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
-         ext_pot_fcidump_nelec = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
+         pulse_fcidump_nelec = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
 
          thePulseFcidump.close();
       }
+
       //put values into variables
-      if ( amplitude == -1 ){amplitude = ext_pot_fcidump_ampl;}
-      if ( frequency == -1 ){frequency = ext_pot_fcidump_freq;}
+      if ( ext_pot_norb  == -1 ){ext_pot_norb  = pulse_fcidump_norb;}
+      if ( ext_pot_nelec == -1 ){ext_pot_nelec = pulse_fcidump_nelec;}
 
-      if ( ext_pot_norb  == -1 ){ext_pot_norb  = ext_pot_fcidump_norb;}
-      if ( ext_pot_nelec == -1 ){ext_pot_nelec = ext_pot_fcidump_nelec;}
-
-      // validiere Input der Files fcidump und pulse_fcidump gegeneiander
-      if ( nelectrons   != ext_pot_fcidump_nelec)
+      if ( nelectrons   != pulse_fcidump_nelec)
       {
          cerr << "Inconsistent Input Execption!\n"
             << "The number of electrons specified in the the file "
@@ -783,11 +770,11 @@ int main( int argc, char ** argv ){
             << "The number of electrons specified in the file "
             << pulse_fcidump
             << "is "
-            << ext_pot_fcidump_nelec
+            << pulse_fcidump_nelec
             << "\nThese to files must have the same number of electrons!"<< endl; 
             return -1;
       }
-      if ( fcidump_norb != ext_pot_fcidump_norb)
+      if ( fcidump_norb != pulse_fcidump_norb)
       {
          cerr << "Inconsistent Input Execption!\n"
             << "The number of orbitals specified in the the file "
@@ -798,7 +785,7 @@ int main( int argc, char ** argv ){
             << "The number of orbitals specified in the file "
             << pulse_fcidump
             << "is "
-            << ext_pot_fcidump_norb
+            << pulse_fcidump_norb
             << "\nThese to files must have the same number of orbitals!"<< endl; 
             return -1;
       }
@@ -1002,8 +989,6 @@ int main( int argc, char ** argv ){
       }
    }
 
-
-
    /**************************
    *  Parse pulse properties *
    ***************************/
@@ -1047,17 +1032,6 @@ int main( int argc, char ** argv ){
    } else {
       cout << "   REORDER_FIEDLER    = " << (( reorder_fiedler ) ? "TRUE" : "FALSE" ) << endl;
    }
-   
-   if ( apply_pulse ) {
-      cout << "\nExpose the molecule to a short electrical pulse with the following properties\n" << endl;
-      cout << "   PULSE_ENVELOP   = " << pulse_envelop       << "\n";
-      cout << "   PULSE_AMPLITUDE = " << pulse_amplitude     << "\n";
-      cout << "   PULSE_FREQUENCY = " << pulse_frequency     << "\n";
-      cout << "   PULSE_DURATION  = " << pulse_duration      << "\n";
-      cout << "\n";
-      
-   }
-   
    cout << "   TIME_TYPE          = " << time_type << endl;
    cout << "   TIME_STEP_MAJOR    = " << time_step_major << endl;
    cout << "   TIME_STEP_MINOR    = " << time_step_minor << endl;
@@ -1078,8 +1052,17 @@ int main( int argc, char ** argv ){
    cout << "   TIME_DUMPFCI       = " << (( time_dumpfci    ) ? "TRUE" : "FALSE" ) << endl;
    cout << "   TIME_DUMP2RDM      = " << (( time_dump2rdm   ) ? "TRUE" : "FALSE" ) << endl;
    cout << "   TIME_ENERGY_OFFSET = " << time_energy_offset                        << endl;
-   cout << " " << endl;
 
+   if ( apply_pulse ) {
+      cout << "\nExpose the molecule to a short electrical pulse with the following properties\n" << endl;
+      cout << "   PULSE_1E_MX_EL  = " << pulse_fcidump       << "\n";
+      cout << "   PULSE_ENVELOP   = " << pulse_envelop       << "\n";
+      cout << "   PULSE_AMPLITUDE = " << pulse_amplitude     << "\n";
+      cout << "   PULSE_FREQUENCY = " << pulse_frequency     << "\n";
+      cout << "   PULSE_DURATION  = " << pulse_duration      << "\n";
+      cout << "\n";
+   }
+   cout << " " << endl;
 
 
    /********************************
@@ -1232,8 +1215,6 @@ int main( int argc, char ** argv ){
       return -1;
    }
 
-   
-
    for ( int site = 0; site < prob->gL(); site++ ) {
       delete mpsIn[ site ];
    }
@@ -1247,28 +1228,5 @@ int main( int argc, char ** argv ){
    delete[] time_2_ninit_parsed;
    delete[] time_hf_state_parsed;
 
-   // testing: apply_pulse wird korrekt geparst
-   std::cout << "\nJA ICH BIN DIE VERSION DIE DU GLAUBST\n";
-   std::cout << "\n" << "apply_pulse >>>>>>>>>>>> " << apply_pulse << "\n";
-   std::cout << "fcidump       : " << fcidump <<std::endl;
-   std::cout << "pulse_fcidump : " << pulse_fcidump <<std::endl;
-
-   std::cout << "Number of electrons in the ext pot fcidump file :"
-             << ext_pot_nelec
-             << "\n"
-             "Number of electrons in the fcidump file :"
-             << nelectrons
-             << "\n";
-   std::cout << "Amplitude :"
-             << amplitude
-             << "\n";
-   std::cout << "Frequncy :"
-             << frequency
-             << "\n";
-   std::cout << "Group :"
-             << group
-             << "\n";
-
    return 0;
-
 }
