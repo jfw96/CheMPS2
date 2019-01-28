@@ -169,7 +169,7 @@ double CheMPS2::Hamiltonian::calcDipolePrefactor( const double phyTime ) const {
    
    double result = 0.0;
 
-   //FIXME: insert exact formulas as soon as dipole matrix elements have been calculated with pyscf. => Units etc. Should return something like: {envelop(duration)} * pulse_amplitude * exp( - i pulse_frequency * phyTime )
+   //FIXME: insert exact formulas as soon as dipole matrix elements have been calculated with pyscf. => Units etc. Should return something like: {envelop(duration)} * const * pulse_amplitude * sin( pulse_frequency * phyTime )
    switch ( pulseEnvelop )
    {
       case 'A':
@@ -185,7 +185,7 @@ double CheMPS2::Hamiltonian::calcDipolePrefactor( const double phyTime ) const {
          break;
 
       case 'D':
-         result = gaussian( phyTime, pulseDuration / 2, pulseDuration / 6 ) * ( ( phyTime <= pulseDuration ) ? 1 : 0 ) ; // * ( ( time < pulseDuration ) ? 1 : 0 )
+         result = gaussian( phyTime, pulseDuration / 2, pulseDuration / 6 )  ; // * ( ( phyTime <= pulseDuration ) ? 1 : 0 )
          break;
 
       default:
@@ -209,9 +209,10 @@ double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2, const 
          result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] )
                   + preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
 
+         
          // // testing:
          // {
-         //    // testing: prefactor * dipolmatrix elements == quantitative expectation  // TODO: ACHTUNG! && time != 0.0 nur zum testen! bewirkt, dass erster zurückgegebener Wert der unveränderte dipoleintrag ist, sofern fcidumpDipole == fcidump verwendet wird
+         //    // testing: prefactor * dipolmatrix elements == quantitative expectation  // TODO: Nur zum testen! bewirkt, dass erster zurückgegebener Wert der unveränderte dipoleintrag ist, sofern fcidumpDipole == fcidump verwendet wird
          //    double value = preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
 
          //    // testing gebe wert der fcidump datei bei t = 0 aus

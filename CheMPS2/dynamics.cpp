@@ -343,18 +343,6 @@ cout << "\n"
 "       FCIDUMP = /path/to/fcidump\n"
 "              Note that orbital irreps in the FCIDUMP file follow molpro convention!\n"
 "\n"
-// Commit-msg: Füge Erklärung zu zusätzliche Inputs an Hilfefunktion an
-//
-// - PULSE_1E_MX_EL: fcidump-file mit allen Infos zum zeitabhängigen Teil des physikalischen Hamiltonoperators.
-//
-// - EXT_POTENTIAL_IS_TIME_DEPENDANT: Fange Fehlerfall, dass PULSE_1E_MX_EL leer ist. Sodass Rechnung in diesem Fall nicht startet und mit zeitunabhängigem Algorithmus verwechselt wird.
-"       PULSE_1E_MX_EL = /path/to/external/potential\n"
-"              External potential in fcidump-ext-pot-format. Note that orbital irreps in the PULSE_1E_MX_EL file follow molpro convention!\n"
-"              Only has affect if EXT_POTENTIAL_IS_TIME_DEPENDANT is TRUE (default FALSE).\n"
-"\n"
-"       PULSE_APPLY = bool\n"
-"              Set if the external potential is time dependent. Only has affect if PULSE_1E_MX_EL is given (TRUE or FALSE; default FALSE).\n"
-"\n"
 "       GROUP = int\n"
 "              Set the psi4 symmetry group number [0-7] which corresponds to the FCIDUMP file.\n"
 "              Only has affect if EXT_POTENTIAL_IS_TIME_DEPENDANT is FALSE (default FALSE).\n"
@@ -438,7 +426,25 @@ cout << "\n"
 "       TIME_ENERGY_OFFSET = double\n"
 "              Set the energy offset used for the dynamics calculation. (default 0.0).\n"
 "\n"
-" " << endl;
+"       PULSE_APPLY = bool\n"
+"              Set if the external potential is time dependent (TRUE or FALSE; default FALSE). If true all PULSE_* options are mandatory.\n"
+"\n"
+"       PULSE_1E_MX_EL = /path/to/dipole/matrix/elements\n"
+"              One electron integrals that corresponds to the electical pulse (dipole matrix elements) in fcidump format. Note that orbital irreps in the PULSE_1E_MX_EL file follow molpro convention!\n"
+"              Only has affect if PULSE_APPLY is TRUE (default FALSE).\n"
+"\n"
+"       PULSE_ENVELOP = char ('A','B','C','D','Z')\n"
+"              Specify the envelop of the electrical pulse. TODO: as soon as dipole matrix elements are calculated with pyscf: add final names and formulas here\n"
+"\n"
+"       PULSE_AMPLITUDE = double \n"
+"              Specify the amplitude of electric field strength for the pulse.\n"
+"\n"
+"       PULSE_FREQUENCY = double \n"
+"              Specify the frequency of electric field for the pulse.\n"
+"\n"
+"       PULSE_DURATION = double \n"
+"              Specify the time of exposure for the electrical field.\n"
+" " << endl; 
 
 }
 
@@ -1103,7 +1109,7 @@ int main( int argc, char ** argv ){
    if( time_n_min.length() > 0 ) { prob->setup_occu_min( time_n_min_parsed ); }
 
    /***********************************
-   *  Reorder the orbitals if desired * TODO: This might be a little bit tricky...
+   *  Reorder the orbitals if desired *
    ***********************************/
 
    if (( group == 7 ) && ( reorder_fiedler == false ) && ( reorder_order.length() == 0 )){ prob->SetupReorderD2h(); }
