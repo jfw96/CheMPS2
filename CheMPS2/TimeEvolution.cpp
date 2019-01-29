@@ -1018,10 +1018,14 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
 
             
             if ( prob->getApplyPulse()) {
-               updateHamiltonian( t, time_step_minor );
+
+               double nextTime = t + time_step_minor;
+   
+               std::cout << "\nUpdate Hamiltonian\n"
+                        << " ( t = " << t << " ) --> ( t = " << nextTime << " )\n" << std::endl;
+               
+               prob->construct_mxelem( nextTime );
             }
-            
-            //TODO: updateHamiltonian(amplitude, frequency, time) an dieser Stelle. Evtl: genauer schauen bei RK4: dort zwischen Hamiltonians
 
             for ( int site = 0; site < L; site++ ) {
                delete MPS[ site ];

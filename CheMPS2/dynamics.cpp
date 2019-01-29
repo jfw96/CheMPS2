@@ -655,7 +655,7 @@ int main( int argc, char ** argv ){
       }
 
       if ( line.find( "PULSE_AMPLITUDE" ) != string::npos ){
-         find_double( &pulse_amplitude, line, "PULSE_AMPLITUDE", true, 0.0 );
+         find_double( &pulse_amplitude, line, "PULSE_AMPLITUDE", false, -100000 );
       }
 
       if ( line.find( "PULSE_FREQUENCY" ) != string::npos ){
@@ -796,7 +796,6 @@ int main( int argc, char ** argv ){
             return -1;
       }
    }
-   ///
    
    /*********************************
    *  Check the sweep instructions  *
@@ -826,7 +825,7 @@ int main( int argc, char ** argv ){
 
 
    /*********************************
-   *  Parse reordering if required  * => TODO: noch nicht endgültig sicher, ob das so bleiben kann.
+   *  Parse reordering if required  *
    *********************************/
 
    int * dmrg2ham = NULL;
@@ -999,10 +998,10 @@ int main( int argc, char ** argv ){
    *  Parse pulse properties *
    ***************************/
    
-   if ( pulse_amplitude < 0.0 ){
-      cerr << "PULSE_AMPLITUDE should be greater or equal to zero !" << endl;
-      return -1;
-   }
+   // if ( pulse_amplitude < 0.0 ){
+   //    cerr << "PULSE_AMPLITUDE should be greater or equal to zero !" << endl;
+   //    return -1;
+   // }
 
    if ( pulse_frequency <= 0.0 ){
       cerr << "PULSE_FREQUENCY should be greater than zero !" << endl;
@@ -1080,13 +1079,7 @@ int main( int argc, char ** argv ){
    // create hamiltonian based on the given fcidump-files
    CheMPS2::Hamiltonian * ham;
    if( apply_pulse ){
-      ham = new CheMPS2::Hamiltonian( fcidump,
-                                      pulse_fcidump,
-                                      group,
-                                      pulse_envelop,
-                                      pulse_amplitude,
-                                      pulse_frequency,
-                                      pulse_duration );
+      ham = new CheMPS2::Hamiltonian( fcidump, pulse_fcidump, group );
    } else {
       ham = new CheMPS2::Hamiltonian( fcidump, group );
    }
@@ -1104,7 +1097,25 @@ int main( int argc, char ** argv ){
    delete [] value_maxit;
    delete [] value_noise;
 
-   CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
+
+   CheMPS2::Problem * prob;
+   if ( apply_pulse ) {
+      prob = new CheMPS2::Problem( ham,
+                                   multiplicity - 1,
+                                   nelectrons,
+                                   irrep,
+                                   pulse_envelop,
+                                   pulse_duration,
+                                   pulse_amplitude,
+                                   pulse_frequency );
+   }
+   else
+   {
+      prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
+   }
+   
+   
+   //CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
    if( time_n_max.length() > 0 ) { prob->setup_occu_max( time_n_max_parsed ); }
    if( time_n_min.length() > 0 ) { prob->setup_occu_min( time_n_min_parsed ); }
 
@@ -1213,8 +1224,6 @@ int main( int argc, char ** argv ){
 
       if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
 
-      std::cout << "\n\nProblem says: apply pulse = " << prob->getApplyPulse() << " \n";
-
       delete taylor;
    } else {
       cerr << " Your TIME_TYPE is not implemented yet" << std::endl;
@@ -1236,3 +1245,33 @@ int main( int argc, char ** argv ){
 
    return 0;
 }
+
+
+
+
+
+
+
+
+// // testing:
+         // {
+         //    // testing: prefactor * dipolmatrix elements == quantitative expectation  // TODO: Nur zum testen! bewirkt, dass erster zurückgegebener Wert der unveränderte dipoleintrag ist, sofern fcidumpDipole == fcidump verwendet wird
+         //    double value = preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
+
+         //    // testing gebe wert der fcidump datei bei t = 0 aus
+         //    if ( phyTime == 0.0 ) {
+
+         //       double value0 = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
+         //       std::cout << "\ntime :   " << phyTime  << "    "
+         //                << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
+         //                << "         dipole :   " << value0 
+         //                << std::endl;
+         //    } 
+         //    else
+         //    {
+         //       std::cout << "\ntime :   " << phyTime  << "    "
+         //                   << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
+         //                   << "         dipole :   " << value
+         //                   << std::endl;
+         //    }
+         // }

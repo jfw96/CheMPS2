@@ -50,6 +50,26 @@ namespace CheMPS2 {
              \param DtIn The time step for time evoulution */
       Problem( const Hamiltonian * Hamin, const int TwoSin, const int Nin, const int Irrepin, const int InitialIn = INIT_RANDOM );
 
+      //! Constructor
+      /** \param Hamin Pointer to the Hamiltonian
+             \param TwoSin Twice the targeted spin
+             \param Nin The targeted particle number
+             \param Irrepin The targeted irrep  
+             \param DtIn The time step for time evoulution
+             \param envelop The amplitude of the electric field of the pulse
+             \param envelop The frequency of the electric field of the pulse
+             \param envelop The duration of the electric field of the pulse
+             \param envelop The envelop type of the electric field of the pulse */
+      Problem( const Hamiltonian * Hamin,
+               const int TwoSin,
+               const int Nin,
+               const int Irrepin,
+               const char envelop,
+               const double amplitude,
+               const double frequency,
+               const double duration,
+               const int InitialIn = INIT_RANDOM );
+
       //! Destructor
       virtual ~Problem();
 
@@ -157,6 +177,28 @@ namespace CheMPS2 {
       int gNmin ( int boundary ) const;
 
       private:
+
+      // Calculate the time dependant prefactor for the dipole one electron integrals
+      double calcDipolePrefactor( const double phyTime ) const;
+      
+      // helper for calcDipolePrefactor. Returns value of the gaussian function for an given double
+      double gaussian( const double variable, const double mean, const double std ) const;
+
+      //Flag for applying a electrical pulse
+      const bool applyPulse;
+
+      // Time of exposure in the electrical field of the pulse
+      const char pulseEnvelop;
+      
+      // Amplitude of the electrical field of the pulse
+      const double pulseAmplitude;
+
+      // Frequency of the electrical field of the pulse
+      const double pulseFrequency;
+
+      // Duration of the electrical field of the pulse
+      const double pulseDuration;
+
       //Pointer to the Hamiltonian --> constructed and destructed outside of this class
       const Hamiltonian * Ham;
 

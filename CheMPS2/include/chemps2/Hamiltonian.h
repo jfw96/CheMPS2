@@ -74,18 +74,10 @@ namespace CheMPS2 {
       //! Constructor which loads two FCIDUMP from disk (which can be generated with the plugin psi4plugins/fcidump.cc and has Molpro orbital symmetries!)
       /** \param fcidump : The filename of the FCIDUMP that contains the internal part pof the hamiltonian
       /** \param fcidumpTime : The filename of the FCIDUMP that contains the dipole matrix elements
-          \param psi4groupnumber The group number according to psi4's conventions
-          \param envelop The amplitude of the electric field of the pulse
-          \param envelop The frequency of the electric field of the pulse
-          \param envelop The duration of the electric field of the pulse
-          \param envelop The envelop type of the electric field of the pulse */
+          \param psi4groupnumber The group number according to psi4's conventions */
       Hamiltonian( const string fcidump,
                    const string fcidumpDipole,
-                   const int psi4groupnumber,
-                   const char envelop,
-                   const double amplitude,
-                   const double frequency,
-                   const double duration );
+                   const int psi4groupnumber );
 
       //! Destructor
       virtual ~Hamiltonian();
@@ -146,9 +138,8 @@ namespace CheMPS2 {
       //! Get a Tmat element
       /** \param index1 The first index
              \param index2 The second index
-             \param time The physical time at which the one electron integrals are queried. Note: if a short electrical pulse is applied, then the one electron integrals include the dipol matrix elements as well.
              \return \f$T_{index1,index2}\f$ */
-      double getTmat( const int index1, const int index2, const double time = 0 ) const;
+      double getTmat( const int index1, const int index2 ) const;
 
 
       ///
@@ -212,23 +203,6 @@ namespace CheMPS2 {
 
       private:
 
-      double gaussian( const double variable, const double mean, const double std ) const;
-      
-      // Time of exposure in the electrical field of the pulse
-      const char pulseEnvelop;
-      
-      // Amplitude of the electrical field of the pulse
-      const double pulseAmplitude;
-
-      // Frequency of the electrical field of the pulse
-      const double pulseFrequency;
-
-      // Duration of the electrical field of the pulse
-      const double pulseDuration;
-
-      // Calculate the time dependant prefactor for the dipole one electron integrals
-      double calcDipolePrefactor( const double time ) const;
-
       //number of orbitals
       int L;
 
@@ -256,7 +230,7 @@ namespace CheMPS2 {
       //Constant part of the Hamiltonian
       double Econst;
 
-      //Flag for beeing time dependent
+      //Flag for applying an electrical pulse
       const bool applyPulse;
 
       //If filename=="LOADH5" in Hamiltonian::Hamiltonian then the HDF5 Hamiltonian is loaded

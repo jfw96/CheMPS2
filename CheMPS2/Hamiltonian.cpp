@@ -43,11 +43,7 @@ using std::ifstream;
 CheMPS2::Hamiltonian::Hamiltonian( const int Norbitals,
                                    const int nGroup,
                                    const int * OrbIrreps )
-                                   : applyPulse    ( false )
-                                   , pulseAmplitude( 0.0   )
-                                   , pulseFrequency( 0.0   )
-                                   , pulseDuration ( 0.0   )
-                                   , pulseEnvelop  ( 'Z'   ) {
+                                   : applyPulse    ( false ) {
 
    L = Norbitals;
    assert( nGroup >= 0 );
@@ -75,11 +71,7 @@ CheMPS2::Hamiltonian::Hamiltonian( const int Norbitals,
 
 CheMPS2::Hamiltonian::Hamiltonian( const string filename,
                                    const int psi4groupnumber )
-                                   : applyPulse    ( false )
-                                   , pulseAmplitude( 0.0   )
-                                   , pulseFrequency( 0.0   )
-                                   , pulseDuration ( 0.0   )
-                                   , pulseEnvelop  ( 'Z'   )  {
+                                   : applyPulse    ( false )  {
 
    SymmInfo.setGroup( psi4groupnumber );
    CreateAndFillFromFCIDUMP( filename, false );
@@ -89,11 +81,7 @@ CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5,
                                    const string main_file,
                                    const string file_tmat,
                                    const string file_vmat )
-                                   : applyPulse      (false) 
-                                   , pulseAmplitude  ( 0.0 )
-                                   , pulseFrequency  ( 0.0 )
-                                   , pulseDuration   ( 0.0 )
-                                   , pulseEnvelop    ( 'Z' ) {
+                                   : applyPulse      (false)  {
 
    if ( fileh5 ) {
       CreateAndFillFromH5( main_file, file_tmat, file_vmat );
@@ -105,20 +93,12 @@ CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5,
 
 CheMPS2::Hamiltonian::Hamiltonian( const string fcidump,
                                    const string fcidumpTime,
-                                   const int psi4groupnumber,
-                                   const char envelop,
-                                   const double amplitude,
-                                   const double frequency,
-                                   const double duration )
-                                   : applyPulse      ( true      )
-                                   , pulseAmplitude  ( amplitude )
-                                   , pulseDuration   ( duration  )
-                                   , pulseEnvelop    ( envelop   )
-                                   , pulseFrequency  ( frequency ) {
+                                   const int psi4groupnumber )
+                                   : applyPulse      ( true      ) {
 
   SymmInfo.setGroup( psi4groupnumber );
-  CreateAndFillFromFCIDUMP( fcidump, false );
-  CreateAndFillFromFCIDUMP( fcidumpTime, true );
+  CreateAndFillFromFCIDUMP( fcidump    , false );
+  CreateAndFillFromFCIDUMP( fcidumpTime, true  );
 }
 
 
@@ -153,90 +133,13 @@ void CheMPS2::Hamiltonian::setTmatDipole( const int index1, const int index2, co
    TmatDipole->set( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ], val );
 }
 
-double CheMPS2::Hamiltonian::gaussian( const double variable, const double mean, const double std ) const {
-
-   double result = 0.0;
-
-   double pre = sqrt( 2 * M_PI ) * std;
-   double exponent = - pow( variable - mean, 2 )  /  ( 2 * pow( std, 2 ) );
-
-   result = exp( exponent ) / pre;
-   return result;
-
-}
-
-double CheMPS2::Hamiltonian::calcDipolePrefactor( const double phyTime ) const {
-   
-   double result = 0.0;
-
-   //FIXME: insert exact formulas as soon as dipole matrix elements have been calculated with pyscf. => Units etc. Should return something like: {envelop(duration)} * const * pulse_amplitude * sin( pulse_frequency * phyTime )
-   switch ( pulseEnvelop )
-   {
-      case 'A':
-         result = 1;
-         break;
-      
-      case 'B':
-         result = pulseAmplitude * ( ( phyTime <= pulseDuration ) ? 1 : 0 ) ;
-         break;
-
-      case 'C':
-         result = pulseAmplitude * sin( phyTime * ( M_PI / pulseDuration ) ) * ( ( phyTime <= pulseDuration ) ? 1 : 0 ) ;
-         break;
-
-      case 'D':
-         result = gaussian( phyTime, pulseDuration / 2, pulseDuration / 6 )  ; // * ( ( phyTime <= pulseDuration ) ? 1 : 0 )
-         break;
-
-      default:
-         result = 0;
-         break;
-   }
-
-   return result;
-}
-
-double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2, const double phyTime ) const {
+double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2 ) const {
 
    double result = 0.0;
 
    if ( orb2irrep[ index1 ] == orb2irrep[ index2 ] ) {
-      
-      if ( applyPulse ) {
 
-         const double preFactor = calcDipolePrefactor( phyTime );
-
-         result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] )
-                  + preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
-
-         
-         // // testing:
-         // {
-         //    // testing: prefactor * dipolmatrix elements == quantitative expectation  // TODO: Nur zum testen! bewirkt, dass erster zurückgegebener Wert der unveränderte dipoleintrag ist, sofern fcidumpDipole == fcidump verwendet wird
-         //    double value = preFactor * ( TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] ) );
-
-         //    // testing gebe wert der fcidump datei bei t = 0 aus
-         //    if ( phyTime == 0.0 ) {
-
-         //       double value0 = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
-         //       std::cout << "\ntime :   " << phyTime  << "    "
-         //                << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
-         //                << "         dipole :   " << value0 
-         //                << std::endl;
-         //    } 
-         //    else
-         //    {
-         //       std::cout << "\ntime :   " << phyTime  << "    "
-         //                   << orb2indexSy[ index1 ] + 1 << "    " << orb2indexSy[ index2 ] + 1
-         //                   << "         dipole :   " << value
-         //                   << std::endl;
-         //    }
-         // }
-         
-      }
-      else {
          result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
-      }
    }
 
    return result;
@@ -425,8 +328,6 @@ void CheMPS2::Hamiltonian::CreateAndFillFromH5( const string file_parent, const 
 }
 
 void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, const bool is_dipole ) {
-  
-   std::cout << "\nis_dipole >>>>>>>>>>>>> " << is_dipole << "\n";
 
    struct stat file_info;
    const bool on_disk = ( ( fcidumpfile.length() > 0 ) && ( stat( fcidumpfile.c_str(), &file_info ) == 0 ) );
