@@ -1000,6 +1000,15 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
       if ( t + time_step_major < time_final ) {
          for( double t_minor = 0.0; (time_step_major - t_minor) > 1e-6; t_minor+=time_step_minor ) {
 
+            if ( prob->getApplyPulse() && !( t == 0 && t_minor == 0 ) ) {
+               
+               // update Hamiltonian
+               double currentTime = t + t_minor;   
+               std::cout << "\nUpdate Hamiltonian ( t = " << currentTime << " )\n" << std::endl;
+               
+               prob->construct_mxelem( currentTime );
+            }
+
             SyBookkeeper * MPSBKDT = new SyBookkeeper( *MPSBK );
             CTensorT ** MPSDT      = new CTensorT *[ L ];
             for ( int index = 0; index < L; index++ ) {
@@ -1016,17 +1025,6 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
                doStep_euler( time_step_minor, kry_size, offset, backwards, MPS, MPSBK, MPSDT, MPSBKDT );
             }
 
-            
-            if ( prob->getApplyPulse()) {
-
-               double nextTime = t + time_step_minor;
-   
-               std::cout << "\nUpdate Hamiltonian\n"
-                        << " ( t = " << t << " ) --> ( t = " << nextTime << " )\n" << std::endl;
-               
-               prob->construct_mxelem( nextTime );
-            }
-
             for ( int site = 0; site < L; site++ ) {
                delete MPS[ site ];
             }
@@ -1037,7 +1035,6 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
             MPSBK = MPSBKDT;
          }
       }
-
       std::cout << hashline;
    }
 
@@ -1047,14 +1044,4 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
    delete[] MPS;
    delete MPSBK;
    delete hamOp;
-}
-
-void CheMPS2::TimeEvolution::updateHamiltonian( const double currentTime, const double timeStep ) {
-   
-   double nextTime = currentTime + timeStep;
-   
-   std::cout << "\nUpdate Hamiltonian\n"
-             << " ( t = " << currentTime << " ) --> ( t = " << nextTime << " )\n" << std::endl;
-   
-   prob->construct_mxelem( nextTime );
 }

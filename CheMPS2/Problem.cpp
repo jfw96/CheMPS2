@@ -455,7 +455,7 @@ double CheMPS2::Problem::calcDipolePrefactor( const double phyTime ) const {
       //double plain_wave = pulseAmplitude * sin ( 2 * M_PI * pulseFrequency * phyTime );
       result = envelop; //* plain_wave;
    }
-   std::cout << result << " " << pulseDuration << std::endl;   
+   //std::cout << result << " " << pulseDuration << std::endl;   
    return result;
 }
 
