@@ -1008,8 +1008,8 @@ int main( int argc, char ** argv ){
       return -1;
    }
    
-   if ( pulse_frequency <= (1 / time_step_minor ) ) {
-      cerr << "PULSE_FREQUENCY should be at least greater than 1 / time_step_minor !" << endl;
+   if ( pulse_frequency >= (1 / time_step_minor ) ) {
+      cerr << "PULSE_FREQUENCY should at least be greater than 1 / time_step_minor !" << endl;
       return -1;
    }
 
