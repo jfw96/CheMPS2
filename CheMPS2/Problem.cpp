@@ -448,7 +448,8 @@ double CheMPS2::Problem::calcDipolePrefactor( const double phyTime ) const {
 
          case 'D':
             envelop = pulseAmplitude * sin( phyTime * pulseFrequency * 2 * M_PI );
-
+            break;
+            
          default:
             envelop = 0.0;
             abort();
