@@ -768,7 +768,7 @@ int main( int argc, char ** argv ){
       if ( nelectrons   != pulse_fcidump_nelec)
       {
          cerr << "Inconsistent Input Execption!\n"
-            << "The number of electrons specified in the the file "
+            << "The number of electrons specified in the file "
             << fcidump
             << "is " 
             << nelectrons
@@ -1002,20 +1002,25 @@ int main( int argc, char ** argv ){
    //    cerr << "PULSE_AMPLITUDE should be greater or equal to zero !" << endl;
    //    return -1;
    // }
-
-   if ( pulse_frequency <= 0.0 ){
+   if( apply_pulse )
+   {
+      if ( pulse_frequency <= 0.0 )
+      {
       cerr << "PULSE_FREQUENCY should be greater than zero !" << endl;
       return -1;
-   }
-   
-   if ( pulse_frequency >= (1 / time_step_minor ) ) {
-      cerr << "PULSE_FREQUENCY should at least be greater than 1 / time_step_minor !" << endl;
-      return -1;
-   }
+      }
 
-   if ( pulse_duration < 0.0 ){
-      cerr << "PULSE_DURATION should be greater or equal to zero !" << endl;
-      return -1;
+      if ( time_step_minor >= (1 / pulse_frequency ) )
+      {
+         cerr << "TIME_STEP_MINOR should be smaller than than 1 / PULSE_FREQUENCY !" << endl;
+         return -1;
+      }
+
+      if ( pulse_duration < 0.0 )
+      {
+         cerr << "PULSE_DURATION should be greater or equal to zero !" << endl;
+         return -1;
+      }
    }
 
    /**********************

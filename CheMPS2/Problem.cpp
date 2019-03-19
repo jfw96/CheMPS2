@@ -443,13 +443,13 @@ double CheMPS2::Problem::calcDipolePrefactor( const double phyTime ) const {
             break;
 
          case 'C':
-            envelop = gaussian( phyTime, pulseDuration / 2, pulseDuration / 6 ) ;
+            envelop = pulseAmplitude * gaussian( phyTime, pulseDuration / 2, pulseDuration / 6 ) ;
             break;
 
          case 'D':
-            envelop = pulseAmplitude * sin( phyTime * pulseFrequency * 2 * M_PI );
+            envelop = pulseAmplitude * cos( phyTime * pulseFrequency * 2 * M_PI );
             break;
-            
+
          default:
             envelop = 0.0;
             abort();
@@ -459,16 +459,15 @@ double CheMPS2::Problem::calcDipolePrefactor( const double phyTime ) const {
       //double plain_wave = pulseAmplitude * sin ( 2 * M_PI * pulseFrequency * phyTime );
       result = envelop; //* plain_wave;
    }
-   //std::cout << result << " " << pulseDuration << std::endl;   
+   //std::cout << result << " " << pulseDuration << std::endl;
    return result;
 }
 
 double CheMPS2::Problem::gaussian( const double variable, const double mean, const double std ) const {
    double result = 0.0;
 
-   double pre = sqrt( 2 * M_PI ) * std;
+   double pre =  1; // set to 1 instead of sqrt( 2 * M_PI ) * std; in order to use the right max amplitude 
    double exponent = - pow( variable - mean, 2 )  /  ( 2 * pow( std, 2 ) );
-
    result = exp( exponent ) / pre;
    return result;
 }
