@@ -522,16 +522,19 @@ dcomplex CheMPS2::CFCI::getFCIcoeff( const int * bits_up, const int * bits_down,
    
    int irrep_up   = 0;
    int irrep_down = 0;
+   int irrep_total = 0;
    for ( unsigned int orb = 0; orb < L; orb++ ){
       if ( bits_up  [ orb ] ){ irrep_up   = Irreps::directProd( irrep_up   , getOrb2Irrep( orb ) ); }
       if ( bits_down[ orb ] ){ irrep_down = Irreps::directProd( irrep_down , getOrb2Irrep( orb ) ); }
+      irrep_total = ( ( bits_up[ orb ] + bits_down[ orb ] ) == 1 ) ? Irreps::directProd( irrep_total, getOrb2Irrep( orb ) ) : irrep_total;
    }
    
    const int counter_up   = str2cnt_up  [ irrep_up   ][ string_up   ];
    const int counter_down = str2cnt_down[ irrep_down ][ string_down ];
    
    if (( counter_up == -1 ) || ( counter_down == -1 )){ return 0.0; }
-   
+   if( irrep_total != TargetIrrep ) { return 0.0; }
+
    return vector[ irrep_center_jumps[ 0 ][ irrep_up ] + counter_up + numPerIrrep_up[ irrep_up ] * counter_down ];
 
 }
@@ -2080,6 +2083,40 @@ void CheMPS2::CFCI::HDF5_MAKE_DATASET( hid_t setID, const char * name, int rank,
    }
 }
 
+double CheMPS2::CFCI::calc1h0p( dcomplex * state, const int * hf_state ){
+   
+   double result = 0;
+
+   int* alphas = new int[ L ];
+   int* betas = new int[ L ];
+
+   for( int idx = 0; idx < L; idx++ ){
+      if( hf_state[ idx ] == 2 ){
+         betas[ idx ] = 1;
+         alphas[ idx ] = 1;
+      } else if ( hf_state[ idx ] == 0 ) {
+         betas[ idx ] = 0;
+         alphas[ idx ] = 0;
+      } else {
+         std::cerr << "CheMPS2::TimeEvolution::calc1h0p is implemented for closed shell molecules only. Exiting..." << std::endl;
+         abort();
+      }
+   }
+
+   for( int idx = 0; idx < L; idx++ ){
+      if( alphas[ idx ] == 1 ){
+         alphas[ idx ] = 0;
+         result += std::pow( std::abs( getFCIcoeff( alphas, betas, state ) ), 2.0 );
+         alphas[ idx ] = 1;
+      }
+   }
+
+   delete[] alphas;
+   delete[] betas;
+
+   return result;
+}
+
 double CheMPS2::CFCI::calcWieght( int nHoles, int nParticles, dcomplex * state, const int * hf_state ){
 
    double result = 0;
@@ -2137,7 +2174,7 @@ double CheMPS2::CFCI::calcWieght( int nHoles, int nParticles, dcomplex * state, 
 }
 
 
-void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_major, const double time_step_minor, double finalTime, const bool dobackwards, dcomplex * inital, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM ){
+void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_major, const double time_step_minor, double finalTime, const bool dobackwards, dcomplex * inital, unsigned int krylovSize, const bool doDumpFCI, const bool doDump2RDM, const int nWeights, const int * hfState){
 
    std::cout << "\n";
    std::cout << "   Starting to propagate FCI wave function\n";
@@ -2214,11 +2251,13 @@ void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_
       std::cout << "  occupation numbers of molecular orbitals:      \n";
       std::cout << "   "; for ( int i = 0; i < L; i++ ) { std::cout << std::setw( 20 ) << oedmre[ i + L * i ];  }
       std::cout                                                  << "\n";
+      std::cout                                                  << "\n";
 
       char dataPointname[ 1024 ];
       sprintf( dataPointname, "/Output/DataPoint%.5f", t );
       const hid_t dataPointID = HDF5FILEID != H5_CHEMPS2_TIME_NO_H5OUT ? H5Gcreate( HDF5FILEID, dataPointname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT ) : H5_CHEMPS2_TIME_NO_H5OUT;
       hsize_t Lsq[ 2 ]; Lsq[ 0 ] = L; Lsq[ 1 ] = L;
+      hsize_t weightSze = nWeights;
       HDF5_MAKE_DATASET( dataPointID, "chrono",      1, &dimScalar, H5T_NATIVE_DOUBLE, &elapsed         );
       HDF5_MAKE_DATASET( dataPointID, "t",           1, &dimScalar, H5T_NATIVE_DOUBLE, &t               );
       HDF5_MAKE_DATASET( dataPointID, "Tmax",        1, &dimScalar, H5T_NATIVE_DOUBLE, &finalTime       );
@@ -2231,6 +2270,36 @@ void CheMPS2::CFCI::TimeEvolution( const char time_type, const double time_step_
       HDF5_MAKE_DATASET( dataPointID, "ImOInit",     1, &dimScalar, H5T_NATIVE_DOUBLE, &imOinit         );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_REAL",   2, Lsq,        H5T_NATIVE_DOUBLE, oedmre           );
       HDF5_MAKE_DATASET( dataPointID, "OEDM_IMAG",   2, Lsq,        H5T_NATIVE_DOUBLE, oedmim           );
+
+      if ( nWeights > 0 ){
+         int deltaN  = 0;
+         int nElecHF = 0; for ( int index = 0; index < L; index++ ) { nElecHF += hfState[ index ]; }
+         deltaN      = nElecHF - ( Nel_up + Nel_down );
+
+         int*     nHoles =    new int[ nWeights ];
+         int* nParticles =    new int[ nWeights ];
+         double* weights = new double[ nWeights ];
+
+         for( int iWeight = 0; iWeight < nWeights; iWeight++ ){
+            nHoles[ iWeight ]     = iWeight + deltaN;
+            nParticles[ iWeight ] = iWeight;
+            weights[ iWeight ]    =  calcWieght( iWeight + deltaN, iWeight, act, hfState );
+         }
+
+         std::cout << "  The lowest " << nWeights << " CI weights are:\n";
+         for( int iWeight = 0; iWeight < nWeights; iWeight++ ){
+            std::cout << "  " << nHoles[ iWeight ] <<  "h" << nParticles[ iWeight] << "p-weight  = " << weights[ iWeight ] << "\n";
+         }
+         std::cout                                                 << "\n";
+
+         HDF5_MAKE_DATASET( dataPointID, "nHoles",     1, &weightSze, H5T_STD_I32LE,      nHoles     );
+         HDF5_MAKE_DATASET( dataPointID, "nParticles", 1, &weightSze, H5T_STD_I32LE,      nParticles );
+         HDF5_MAKE_DATASET( dataPointID, "weights",    1, &weightSze, H5T_NATIVE_DOUBLE,  weights    );
+
+         delete[] nHoles;
+         delete[] nParticles;
+         delete[] weights;
+      }
 
       if( doDumpFCI ){
          std::vector< std::vector< int > > alphasOut;

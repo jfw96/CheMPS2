@@ -360,8 +360,10 @@ int main( int argc, char ** argv ){
    string time_alpha      = "";
    string time_beta       = "";   
    string time_hdf5output = "";
+   string time_hf_state   = "";
    int    time_krysize    = 0;
    int    time_c_i_gs     = -1;
+   int    time_n_weights  = 0; 
    bool   time_backward   = false;   
    bool   time_dumpfci    = false;
    bool   time_dump2rdm   = false;
@@ -458,6 +460,15 @@ int main( int argc, char ** argv ){
          find_integer( &time_krysize, line, "TIME_KRYSIZE", true, 1, false, -1 );
       }
 
+      if ( line.find( "TIME_N_WEIGHTS" ) != string::npos ){
+         find_integer( &time_n_weights, line, "TIME_N_WEIGHTS", true, 1, false, -1 );
+      }
+
+      if ( line.find( "TIME_HF_STATE" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         time_hf_state = line.substr( pos, line.length() - pos );
+      }
+
    }
    input.close();
 
@@ -518,7 +529,8 @@ int main( int argc, char ** argv ){
 
    int * time_alpha_parsed    = new int[ fcidump_norb ];
    int * time_beta_parsed     = new int[ fcidump_norb ];
-
+   int * time_hf_state_parsed = NULL;
+   
    if ( time_step_major <= 0.0 ){
       cerr << "TIME_STEP_MAJOR should be greater than zero !" << endl;
       return -1;
@@ -592,6 +604,26 @@ int main( int argc, char ** argv ){
       return -1;
    }
 
+   if( time_n_weights > 0 ){
+      const int hf_ini  = count( time_hf_state.begin(), time_hf_state.end(), ',' ) + 1;
+      const bool hf_ok = ( fcidump_norb == hf_ini );
+
+      if ( hf_ok == false ){
+         cerr << "There should be " << fcidump_norb << " numbers in TIME_HF_STATE  !" << endl;
+         return -1;
+      }
+
+      time_hf_state_parsed = new int[ fcidump_norb ];
+      fetch_ints( time_hf_state, time_hf_state_parsed, fcidump_norb );
+
+      for ( int cnt = 0; cnt < fcidump_norb; cnt ++ ){
+         if ( !(time_hf_state_parsed[ cnt ] == 0 || time_hf_state_parsed[ cnt ] == 2 ) ){
+            cerr << "The occupation number in TIME_HF_STATE has to be 0 or 2 (closed shell) !" << endl;
+            return -1;
+         }
+      }
+   }
+
    /**********************
    *  Print the options  *
    ***********************/
@@ -628,7 +660,6 @@ int main( int argc, char ** argv ){
    int sum_up      = 0; for( int idx = 0; idx < fcidump_norb; idx++ ) {   sum_up += time_alpha_parsed[ idx ]; }
    int sum_down    = 0; for( int idx = 0; idx < fcidump_norb; idx++ ) { sum_down +=  time_beta_parsed[ idx ]; }
 
-
    if( time_c_i_gs == -1 ){
 
       /***********************************************
@@ -643,9 +674,10 @@ int main( int argc, char ** argv ){
 
       solver = new CheMPS2::CFCI( ham, sum_up, sum_down, irrep, 100.0, 2, fileID );
       dcomplex * vectorInit = new dcomplex[ solver->getVecLength( 0 ) ];
+      solver->ClearVector(solver->getVecLength( 0 ), vectorInit);
       solver->setFCIcoeff( time_alpha_parsed, time_beta_parsed, 1.0, vectorInit );
 
-      solver->TimeEvolution( time_type, time_step_major, time_step_minor, time_final, time_backward, vectorInit, time_krysize, time_dumpfci, time_dump2rdm );
+      solver->TimeEvolution( time_type, time_step_major, time_step_minor, time_final, time_backward, vectorInit, time_krysize, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
       delete[] vectorInit;
 
    } else {
@@ -708,7 +740,7 @@ int main( int argc, char ** argv ){
       zscal_( &length , &factor , vectorInit , &inc );
 
       // do the time evolution
-      solver->TimeEvolution( time_type, time_step_major, time_step_minor, time_final, time_backward, vectorInit, time_krysize, time_dumpfci, time_dump2rdm );
+      solver->TimeEvolution( time_type, time_step_major, time_step_minor, time_final, time_backward, vectorInit, time_krysize, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
       delete[] vectorInit;
 
    }
@@ -719,6 +751,7 @@ int main( int argc, char ** argv ){
    delete ham;
    delete [] time_alpha_parsed;
    delete [] time_beta_parsed;
+   delete [] time_hf_state_parsed;
 
    return 0;
 }
