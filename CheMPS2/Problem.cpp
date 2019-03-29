@@ -411,7 +411,7 @@ void CheMPS2::Problem::construct_mxelem( const double phyTime ) {
 
                   const double dipPrefact = prefact * calcDipolePrefactor( phyTime );
 
-                  value +=   dipPrefact * ( ( orb1 == orb3 ) ? Ham->getTmatDipole( map2, map4 ) : 0 )
+                  value -=   dipPrefact * ( ( orb1 == orb3 ) ? Ham->getTmatDipole( map2, map4 ) : 0 )
                            + dipPrefact * ( ( orb2 == orb4 ) ? Ham->getTmatDipole( map1, map3 ) : 0 );
                
                }
