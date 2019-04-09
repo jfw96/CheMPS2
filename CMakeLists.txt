@@ -128,7 +128,7 @@ if (MKL)
 endif ()
 
 # <<<  Find HDF5  >>>
-find_package (TargetHDF5 REQUIRED)
+find_package(HDF5 REQUIRED COMPONENTS CXX HL)
 
 # <<<  Add source files, tests, sphinx, and doxygen  >>>
 

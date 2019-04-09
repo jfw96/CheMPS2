@@ -112,7 +112,7 @@ set (CHEMPS2LIB_SOURCE_FILES "CASPT2.cpp"
 
 add_library (chemps2-base OBJECT ${CHEMPS2LIB_SOURCE_FILES} )
 target_include_directories (chemps2-base PRIVATE ${CheMPS2_SOURCE_DIR}/CheMPS2/include/chemps2
-                                                 $<TARGET_PROPERTY:tgt::hdf5,INTERFACE_INCLUDE_DIRECTORIES>)
+                                                 ${HDF5_INCLUDE_DIRS})
 
 if (BUILD_FPIC OR NOT STATIC_ONLY)
     set_target_properties (chemps2-base PROPERTIES POSITION_INDEPENDENT_CODE 1)
@@ -122,7 +122,7 @@ if (NOT STATIC_ONLY)
     add_library           (chemps2-shared SHARED  $<TARGET_OBJECTS:chemps2-base>)
     target_link_libraries (chemps2-shared PRIVATE ${LIBC_INTERJECT})
     target_link_libraries (chemps2-shared PUBLIC  tgt::lapack
-                                                  tgt::hdf5)
+                                                  ${HDF5_CXX_LIBRARIES})
                                                   
     set_target_properties (chemps2-shared PROPERTIES SOVERSION ${CheMPS2_LIB_SOVERSION}
                                                      MACOSX_RPATH ON
@@ -134,7 +134,7 @@ if (NOT SHARED_ONLY)
     add_library           (chemps2-static STATIC  $<TARGET_OBJECTS:chemps2-base>)
     target_link_libraries (chemps2-static PRIVATE ${LIBC_INTERJECT})
     target_link_libraries (chemps2-static PUBLIC  tgt::lapack
-                                                  tgt::hdf5)
+                                                  ${HDF5_CXX_LIBRARIES})
                                                   
     set_target_properties (chemps2-static PROPERTIES SOVERSION ${CheMPS2_LIB_SOVERSION}
                                                      MACOSX_RPATH ON
@@ -149,27 +149,27 @@ else ()
 endif()
 
 add_executable             (chemps2-bin executable.cpp)
-target_link_libraries      (chemps2-bin tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} )
+target_link_libraries      (chemps2-bin ${HDF5_CXX_LIBRARIES} ${HDF5_CXX_HL_LIBRARIES} chemps2-lib ${LIBC_INTERJECT} )
 set_target_properties      (chemps2-bin PROPERTIES OUTPUT_NAME "chemps2")
 
 add_executable             (chemps2-dyn dynamics.cpp)
-target_link_libraries      (chemps2-dyn tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} )
+target_link_libraries      (chemps2-dyn ${HDF5_CXX_LIBRARIES} ${HDF5_CXX_HL_LIBRARIES} chemps2-lib ${LIBC_INTERJECT} )
 set_target_properties      (chemps2-dyn PROPERTIES OUTPUT_NAME "chemps2dyn")
 
 add_executable             (chemps2-fci fcidynamics.cpp)
-target_link_libraries      (chemps2-fci tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
+target_link_libraries      (chemps2-fci ${HDF5_CXX_LIBRARIES} ${HDF5_CXX_HL_LIBRARIES} chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
 set_target_properties      (chemps2-fci PROPERTIES OUTPUT_NAME "chemps2fci")
 
 add_executable             (chemps2-ion ionize.cpp)
-target_link_libraries      (chemps2-ion tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
+target_link_libraries      (chemps2-ion ${HDF5_CXX_LIBRARIES} ${HDF5_CXX_HL_LIBRARIES} chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
 set_target_properties      (chemps2-ion PROPERTIES OUTPUT_NAME "chemps2ion")
 
 add_executable             (chemps2-conv convert.cpp)
-target_link_libraries      (chemps2-conv tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
+target_link_libraries      (chemps2-conv ${HDF5_CXX_LIBRARIES} ${HDF5_CXX_HL_LIBRARIES} chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
 set_target_properties      (chemps2-conv PROPERTIES OUTPUT_NAME "chemps2conv")
 
 add_executable             (chemps2-play playground.cpp)
-target_link_libraries      (chemps2-play tgt::hdf5 chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
+target_link_libraries      (chemps2-play ${HDF5_CXX_LIBRARIES} ${HDF5_CXX_HL_LIBRARIES} chemps2-lib ${LIBC_INTERJECT} tgt::lapack )
 set_target_properties      (chemps2-play PROPERTIES OUTPUT_NAME "chemps2play")
 
 # <<<  Install  >>>
@@ -201,14 +201,14 @@ if (NOT STATIC_ONLY)
     target_compile_definitions (chemps2-shared INTERFACE USING_${PROJECT_NAME})
     target_include_directories (chemps2-shared INTERFACE $<BUILD_INTERFACE:${CheMPS2_SOURCE_DIR}/CheMPS2/include/chemps2>
                                                          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-                                                         $<TARGET_PROPERTY:tgt::hdf5,INTERFACE_INCLUDE_DIRECTORIES>)
+                                                         ${HDF5_INCLUDE_DIRS})
 endif()
 
 if (NOT SHARED_ONLY)
     target_compile_definitions (chemps2-static INTERFACE USING_${PROJECT_NAME})
     target_include_directories (chemps2-static INTERFACE $<BUILD_INTERFACE:${CheMPS2_SOURCE_DIR}/CheMPS2/include/chemps2>
                                                          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-                                                         $<TARGET_PROPERTY:tgt::hdf5,INTERFACE_INCLUDE_DIRECTORIES>)
+                                                         ${HDF5_INCLUDE_DIRS})
 endif()
 
 # <<<  Export Config  >>>
