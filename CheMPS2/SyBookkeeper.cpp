@@ -412,6 +412,21 @@ void CheMPS2::subspaceExpand( int index, bool movingRight, const SyBookkeeper * 
    }
 }
 
+void CheMPS2::SyBookkeeper::addConfigurations( SyBookkeeper * orig ){
+   // Copy the CURdim
+   for ( int boundary = 0; boundary <= gL(); boundary++ ) {
+      for ( int N = gNmin( boundary ); N <= gNmax( boundary ); N++ ) {
+         for ( int TwoS = gTwoSmin( boundary, N ); TwoS <= gTwoSmax( boundary, N ); TwoS += 2 ) {
+            for ( int irrep = 0; irrep < num_irreps; irrep++ ) {
+               if( orig->gCurrentDim( boundary, N, TwoS, irrep ) > gCurrentDim( boundary, N, TwoS, irrep ) ){
+                  SetDim( boundary, N, TwoS, irrep, orig->gCurrentDim( boundary, N, TwoS, irrep ) );
+               }
+            }
+         }
+      }
+   }
+}
+
 std::ostream & CheMPS2::operator<<( std::ostream & os, const CheMPS2::SyBookkeeper & bk ) {
    os << "#################################################################\n";
 

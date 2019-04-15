@@ -921,7 +921,7 @@ int main( int argc, char ** argv ){
    if ( ( time_ninit.length() > 0  ) && ( time_2_ninit.length() > 0 ) ){
       cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
       cout << "   TIME_2_NINIT       = [ " << time_2_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << time_2_ninit_parsed[ cnt ]; } cout << " ]" << endl;
-      cout << "   TIME_PREFACS = [ " << time_ninit_prefacs_parsed[ 0 ]; for ( int cnt = 1; cnt < 2; cnt++ ){ cout << " ; " << time_ninit_prefacs_parsed[ cnt ]; } cout << " ]" << endl;
+      cout << "   TIME_PREFACS       = [ " << time_ninit_prefacs_parsed[ 0 ]; for ( int cnt = 1; cnt < 2; cnt++ ){ cout << " ; " << time_ninit_prefacs_parsed[ cnt ]; } cout << " ]" << endl;
    } else if ( time_ninit.length() > 0 ){
       cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
    } else {
@@ -1004,6 +1004,7 @@ int main( int argc, char ** argv ){
       CheMPS2::CTensorT    ** mpsB = new CheMPS2::CTensorT *[ prob->gL() ];
 
       bkIn = new CheMPS2::SyBookkeeper( *bkA );
+      bkIn->addConfigurations( bkB );
       mpsIn = new CheMPS2::CTensorT *[ prob->gL() ];
 
       for ( int index = 0; index < prob->gL(); index++ ) {

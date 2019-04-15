@@ -157,6 +157,8 @@ namespace CheMPS2 {
 
       void allToZeroAtLink( const int index );
 
+      void addConfigurations( SyBookkeeper * orig );
+
       private:
       // Pointer to the Problem --> constructed and destructed outside of this class
       const Problem * Prob;
