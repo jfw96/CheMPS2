@@ -1068,63 +1068,66 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
       } 
 
       if ( doDumpATM ){
+         if ( nWeights == 0 ){
+            std::cerr << "CheMPS2::TimeEvolution::DumpATM only works if TIME_N_WEIGHTS > 0 " << std::endl;
+            abort();
+         } 
          const hsize_t Lsize = L * L * L;
          double *atm_real = new double[L * L * L];
          double *atm_imag = new double[L * L * L];
+         
 
          int *alphas = new int[L];
          int *betas = new int[L];
 
-         for (int idx = 0; idx < L; idx++)
-         {
-            if (hfState[idx] == 2)
+            for (int idx = 0; idx < L; idx++)
             {
-               betas[idx] = 1;
-               alphas[idx] = 1;
-            }
-            else if (hfState[idx] == 0)
-            {
-               betas[idx] = 0;
-               alphas[idx] = 0;
-            }
-            else
-            {
-               std::cerr << "CheMPS2::TimeEvolution::DumpATM is implemented for closed shell molecules only. Exiting..." << std::endl;
-               abort();
-            }
-         }
-
-         for (int a = 0; a < L; a++)
-         {
-            for (int i = 0; i < L; i++)
-            {
-               for (int j = 0; j < i; j++)
+               if (hfState[idx] == 2)
                {
-                  
-                  int *toCreate =  alphas;
-                  int *toAnniA  =  alphas;
-                  int *toAnniB  =  alphas;
-
-                  toCreate[a]++;
-                  toAnniA[i]--;
-                  toAnniB[j]--;
-
-                  if ((toAnniB[j] >= 0) && (toAnniA[i] >= 0) && (toCreate[a] <= 1) && (i != j) && (i != a) && (j != a))
-                  {
-                     atm_real[a + L * (i + L * j)] = std::real(getFCICoefficient(prob, MPS, alphas, betas));
-                     atm_imag[a + L * (i + L * j)] = (-1.0) * std::imag(getFCICoefficient(prob, MPS, alphas, betas));
-                  }
-
-                  toCreate[a]--;
-                  toAnniA[i]++;
-                  toAnniB[j]++;
+                  betas[idx] = 1;
+                  alphas[idx] = 1;
+               }
+               else if (hfState[idx] == 0)
+               {
+                  betas[idx] = 0;
+                  alphas[idx] = 0;
+               }
+               else
+               {
+                  std::cerr << "CheMPS2::TimeEvolution::DumpATM is implemented for closed shell molecules only. Exiting..." << std::endl;
+                  abort();
                }
             }
-         }
-      
-      
 
-            
+            for (int a = 0; a < L; a++)
+            {
+               for (int i = 0; i < L; i++)
+               {
+                  for (int j = 0; j < i; j++)
+                  {
+
+                     int *toCreate = alphas;
+                     int *toAnniA = alphas;
+                     int *toAnniB = alphas;
+
+                     toCreate[a]++;
+                     toAnniA[i]--;
+                     toAnniB[j]--;
+                     
+
+                     if ((toAnniB[j] >= 0) && (toAnniA[i] >= 0) && (toCreate[a] <= 1) && (i != j) && (i != a) && (j != a))
+                     {
+                        atm_real[a + L * (i + L * j)] = std::real(getFCICoefficient(prob, MPS, alphas, betas));
+                        atm_imag[a + L * (i + L * j)] = (-1.0) * std::imag(getFCICoefficient(prob, MPS, alphas, betas));
+                     }
+
+                     toCreate[a]--;
+                     toAnniA[i]++;
+                     toAnniB[j]++;
+                  }
+               }
+            }
+
          HDF5_MAKE_DATASET(dataPointID, "ATM_REAL", 1, &Lsize, H5T_NATIVE_DOUBLE, atm_real);
          HDF5_MAKE_DATASET(dataPointID, "ATM_IMAG", 1, &Lsize, H5T_NATIVE_DOUBLE, atm_imag);
 

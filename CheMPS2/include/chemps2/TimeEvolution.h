@@ -20,16 +20,17 @@ namespace CheMPS2 {
 
       ~TimeEvolution();
 
-      void Propagate( const char time_type, const double time_step_major, 
-                      const double time_step_minor, const double time_final, 
-                      CTensorT ** mpsIn, SyBookkeeper * bkIn, 
-                      const int kry_size, 
-                      const bool backwards, const double offset,
-                      const bool do_ortho, const bool doDumpFCI, 
-                      const bool doDump2RDM, const int nWeights = 0,
-                      const int * hfState = NULL );
+      void Propagate(const char time_type, const double time_step_major,
+                     const double time_step_minor, const double time_final,
+                     CTensorT **mpsIn, SyBookkeeper *bkIn,
+                     const int kry_size,
+                     const bool backwards, const double offset,
+                     const double time_offset, const bool do_ortho,
+                     const bool doDump2RDM, const bool doDumpFCI,
+                     const bool doDumpCMPS, const bool doDumpATM, const double time_step_dumpcmps,
+                     const int nWeights = 0, const int *hfState = NULL);
 
-      private:
+   private:
       void HDF5_MAKE_DATASET( hid_t setID, const char * name, int rank,
                               const hsize_t * dims, hid_t typeID, const void * data );
 
