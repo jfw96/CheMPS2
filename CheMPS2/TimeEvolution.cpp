@@ -5,12 +5,79 @@
 #include <iostream>
 #include <algorithm>
 #include <sys/time.h>
+#include <math.h>
+//#include <string.h> 
+//#include <sstream> 
 
 #include "COneDM.h"
 #include "CTwoDMBuilder.h"
 #include "HamiltonianOperator.h"
 #include "Lapack.h"
 #include "TwoDMBuilder.h"
+
+
+
+void saveMPS(const std::string name, const double t,CheMPS2::CTensorT ** MPSlocation, CheMPS2::SyBookkeeper * BKlocation) {
+ 
+   //The hdf5 file
+   hid_t file_id = H5Fcreate(name.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+   //The current virtual dimensions
+   for( int bound = 0; bound <= BKlocation->gL(); bound++ ){
+      for( int N = BKlocation->gNmin( bound ); N <= BKlocation->gNmax( bound ); N++ ){
+         for( int TwoS = BKlocation->gTwoSmin( bound, N ); TwoS <= BKlocation->gTwoSmax( bound, N ); TwoS += 2 ){
+            for( int Irrep = 0; Irrep < BKlocation->getNumberOfIrreps(); Irrep++ ){
+   
+               std::stringstream sstream;
+               sstream << "/VirtDim_" << bound << "_" << N << "_" << TwoS << "_" << Irrep;
+               hid_t group_id2 = H5Gcreate( file_id, sstream.str().c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+               
+               hsize_t dimarray2     = 1; //One integer
+               hid_t dataspace_id2   = H5Screate_simple( 1, &dimarray2, NULL );
+               hid_t dataset_id2     = H5Dcreate( group_id2, "Value", H5T_STD_I32LE, dataspace_id2, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+               int toWrite2 = BKlocation->gCurrentDim( bound, N, TwoS, Irrep );
+               H5Dwrite( dataset_id2, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &toWrite2 );
+            
+               H5Dclose( dataset_id2 );
+               H5Sclose( dataspace_id2 );
+
+               H5Gclose( group_id2 );
+               
+            }
+         }
+      }
+   }
+      
+   //The MPS
+   for (int site = 0; site < BKlocation->gL(); site++ ){
+      
+      std::stringstream sstream;
+      sstream << "/MPS_" << site;
+      hid_t group_id3 = H5Gcreate( file_id, sstream.str().c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+      
+      hsize_t dimarray3     = 2 * MPSlocation[ site ]->gKappa2index( MPSlocation[ site ]->gNKappa() ); //An array of doubles
+      hid_t dataspace_id3   = H5Screate_simple( 1, &dimarray3, NULL );
+      hid_t dataset_id3     = H5Dcreate( group_id3, "Values", H5T_IEEE_F64LE, dataspace_id3, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
+      H5Dwrite( dataset_id3, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, MPSlocation[ site ]->gStorage() );
+   
+      H5Dclose( dataset_id3 );
+      H5Sclose( dataspace_id3 );
+
+      H5Gclose( group_id3 );
+      
+   }
+
+      
+   const hsize_t dimarray1 = 1;
+   H5LTmake_dataset(file_id , "t",1, &dimarray1, H5T_NATIVE_DOUBLE,&t);
+      
+   
+      
+   H5Fclose( file_id );
+
+} 
+
+
 
 CheMPS2::TimeEvolution::TimeEvolution( Problem * probIn, ConvergenceScheme * schemeIn, hid_t HDF5FILEIDIN )
     : prob( probIn ), scheme( schemeIn ), HDF5FILEID( HDF5FILEIDIN ), L( probIn->gL() ) {
@@ -784,8 +851,10 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
                                         CTensorT ** mpsIn, SyBookkeeper * bkIn, 
                                         const int kry_size,
                                         const bool backwards, const double offset,
+                                        const double time_offset,
                                         const bool do_ortho, const bool doDumpFCI, 
-                                        const bool doDump2RDM, const int nWeights,
+                                        const bool doDump2RDM,const bool doDumpCMPS, 
+                                        const double time_step_dumpcmps, const int nWeights,
                                         const int * hfState ) {
    std::cout << "\n";
    std::cout << "   Starting to propagate MPS\n";
@@ -802,13 +871,15 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
    CheMPS2::SyBookkeeper * MPSBK  = new CheMPS2::SyBookkeeper( *bkIn );
    CheMPS2::CTensorT    ** MPS    = new CheMPS2::CTensorT *[ prob->gL() ];
 
+   int CMPS_index = 1;
+
    for ( int index = 0; index < prob->gL(); index++ ) {
       MPS[ index ] = new CheMPS2::CTensorT( mpsIn[ index ] );
    }
 
    double first_energy;
 
-   for ( double t = 0.0; t < time_final; t += time_step_major ) {
+   for ( double t = time_offset; t < time_final; t += time_step_major ) {
 
       int * actdims          = new int[ L + 1 ];
       const hsize_t numInst  = scheme->get_number();
@@ -994,7 +1065,7 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
          delete[] tedm_imag;
          delete thetdmbuilder;
          delete thetdm;
-      }      
+      } 
 
       if ( t + time_step_major < time_final ) {
          for( double t_minor = 0.0; (time_step_major - t_minor) > 1e-6; t_minor+=time_step_minor ) {
@@ -1025,10 +1096,21 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
             MPSBK = MPSBKDT;
          }
       }
-
       std::cout << hashline;
-   }
 
+      if ( doDumpCMPS ) {
+        // if( std::abs( ( time_step_dumpcmps / time_step_major ) - round( time_step_dumpcmps / time_step_major ) ) < 1e-8 && t !=0.0)  {
+           //if( std::abs(fmod( t, time_step_dumpcmps)) < 1e-10 && t !=0.0 ) {
+           if( std::abs(t/time_step_dumpcmps - CMPS_index) < 1e-10 && t !=0.0 ) {
+            //std::string outputfile = "CMPS.h5";
+            char CmpsFilename[ 1024 ];
+            sprintf( CmpsFilename, "CMPS_%i.h5", CMPS_index );
+            saveMPS( CmpsFilename, t, MPS, MPSBK );
+            std::cout << "The CMPS has been successfully stored in " << CmpsFilename << " .\n";
+            CMPS_index += 1; 
+         }
+      }
+   }
    for ( int site = 0; site < L; site++ ) {
       delete MPS[ site ];
    }

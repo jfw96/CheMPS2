@@ -421,11 +421,14 @@ cout << "\n"
 "       TIME_DUMPFCI = bool\n"
 "              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
 "\n"
+"       TIME_STEP_DUMPCMPS = double\n"
+"              Set the time step (DT) for dumping the MPS coefficients into HDF5 file. If set to 0.0, nothing would be dumped. (default 0.0).\n"
+"\n"
 "       TIME_DUMP2RDM = bool\n"
 "              Set if the 2RDM is dumped into the HDF5 file. Only has affect if TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
 "\n"
-"       TIME_ENERGY_OFFSET = double\n"
-"              Set the energy offset used for the dynamics calculation. (default 0.0).\n"
+"       TIME_OFFSET = double\n"
+"              Set the time offset used for the dynamics calculation. (default 0.0).\n"
 "\n"
 " " << endl;
 
@@ -471,7 +474,10 @@ int main( int argc, char ** argv ){
    bool   time_ortho         = false;
    bool   time_dumpfci       = false;
    bool   time_dump2rdm      = false;
+   bool   time_dumpcmps      = false;  
+   double time_step_dumpcmps = 0.0;    
    double time_energy_offset = 0.0;
+   double time_offset        = 0.0;    
 
    struct option long_options[] =
    {
@@ -545,8 +551,11 @@ int main( int argc, char ** argv ){
       if ( find_boolean( &time_ortho,       line, "TIME_ORTHO"        ) == false ){ return -1; }
       if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"      ) == false ){ return -1; }
       if ( find_boolean( &time_dump2rdm,    line, "TIME_DUMP2RDM"     ) == false ){ return -1; }
+      //if ( find_boolean( &time_dumpcmps,    line, "TIME_DUMPCMPS"     ) == false ){ return -1; } 
 
+      if ( find_double( &time_step_dumpcmps, line, "TIME_STEP_DUMPCMPS", false, 0.0 ) == false ){ return -1; } 
       if ( find_double( &time_energy_offset, line, "TIME_ENERGY_OFFSET", false, 0.0 ) == false ){ return -1; }
+      if ( find_double( &time_offset, line, "TIME_OFFSET", false, 0.0 ) == false ){ return -1; }  
 
       if ( line.find( "SWEEP_STATES" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
@@ -749,6 +758,22 @@ int main( int argc, char ** argv ){
       cerr << "TIME_FINAL should be greater than zero !" << endl;
       return -1;
    }
+   if ( time_step_dumpcmps < 0.0 ){
+      cerr << "TIME_STEP_DUMPCMPS should be greater than zero !" << endl;
+      return -1;
+   }
+   if( std::abs( ( time_step_dumpcmps / time_step_major ) - round( time_step_dumpcmps / time_step_major ) ) > 1e-6 ){
+      cerr << "TIME_STEP_DUMPCMPS must be N*TIME_STEP_MAJOR !" << endl;
+      return -1;
+   }
+   if ( time_step_dumpcmps > 0.0 ){
+      time_dumpcmps = true;
+   }
+
+   if ( time_offset >= time_final ){
+      cerr << "TIME_OFFSET should be smaller than TIME_FINAL!" << endl;
+      return -1;
+   }
 
    if( ( time_init.length() > 0 ) && ( time_ninit.length() > 0 ) ){
       cerr << " Please give only one inital state: TIME_NINIT or TIME_INIT, not both !" << endl;
@@ -937,7 +962,10 @@ int main( int argc, char ** argv ){
    cout << "   TIME_ORTHO         = " << (( time_ortho      ) ? "TRUE" : "FALSE" ) << endl;
    cout << "   TIME_DUMPFCI       = " << (( time_dumpfci    ) ? "TRUE" : "FALSE" ) << endl;
    cout << "   TIME_DUMP2RDM      = " << (( time_dump2rdm   ) ? "TRUE" : "FALSE" ) << endl;
+   cout << "   TIME_DUMPCMPS      = " << (( time_dumpcmps   ) ? "TRUE" : "FALSE" ) << endl;
+   cout << "   TIME_STEP_DUMPCMPS = " << time_step_dumpcmps                        << endl;
    cout << "   TIME_ENERGY_OFFSET = " << time_energy_offset                        << endl;
+   cout << "   TIME_OFFSET        = " << time_offset                               << endl;
    cout << " " << endl;
 
    /********************************
@@ -1064,7 +1092,7 @@ int main( int argc, char ** argv ){
 
       CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
       taylor->Propagate( time_type, time_step_major, time_step_minor, time_final, mpsIn, bkIn,
-                         time_krysize, time_backward, time_energy_offset, time_ortho, time_dumpfci, time_dump2rdm, time_n_weights, time_hf_state_parsed );
+                         time_krysize, time_backward, time_energy_offset, time_offset, time_ortho, time_dumpfci, time_dump2rdm, time_dumpcmps,time_step_dumpcmps,time_n_weights, time_hf_state_parsed );
 
       if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
 
