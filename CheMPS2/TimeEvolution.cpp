@@ -1075,7 +1075,8 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
          const hsize_t Lsize = L * L * L;
          double *atm_real = new double[L * L * L];
          double *atm_imag = new double[L * L * L];
-         
+
+         const int TwoS = prob->gTwoS();
 
          int *alphas = new int[L];
          int *betas = new int[L];
@@ -1106,14 +1107,13 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
                   for (int j = 0; j < i; j++)
                   {
 
-                     int *toCreate = alphas;
-                     int *toAnniA = alphas;
-                     int *toAnniB = alphas;
+                     int *toCreate = (TwoS == -1) ? alphas : betas;
+                     int *toAnniA = (TwoS == -1) ? alphas : betas;
+                     int *toAnniB = (TwoS == -1) ? alphas : betas;
 
                      toCreate[a]++;
                      toAnniA[i]--;
                      toAnniB[j]--;
-                     
 
                      if ((toAnniB[j] >= 0) && (toAnniA[i] >= 0) && (toCreate[a] <= 1) && (i != j) && (i != a) && (j != a))
                      {
