@@ -147,7 +147,9 @@ namespace CheMPS2 {
       void setup_occu_max( int * max_occupations );
 
       void setup_occu_min( int * min_occupations );
-
+      void setup_occus( int * min_occupations, int * max_occupations);
+      
+      void setup_singles_doubles( int * occupations);
       int gNmax ( int boundary ) const;
 
       int gNmin ( int boundary ) const;

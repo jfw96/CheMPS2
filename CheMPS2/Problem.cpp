@@ -440,7 +440,8 @@ void CheMPS2::Problem::setup_occu_max( int * max_occupations ){
    max_occu = new int[ gL() + 1];
    
    for(int i = 0; i <= gL(); i++){
-      int frozenright = 0; for( int idx = i; idx < gL(); idx++ ) { frozenright += 2 - max_occupations[ idx ]; }
+      int frozenright = 0; 
+      for( int idx = i; idx < gL(); idx++ ) { frozenright += 2 - max_occupations[ idx ]; }
       max_occu[ i ] = std::min( std::min( std::min( gN() - frozenright, 2 * i ), gN() ), i + ( gN() - gTwoS() ) / 2 );
    }
 }
@@ -454,18 +455,99 @@ void CheMPS2::Problem::setup_occu_min( int * min_occupations ){
    }
 }
 
+
+void CheMPS2::Problem::setup_occus( int * min_occupations, int * max_occupations ){
+   // check sum over max >= gN()
+   //missing check if sum over min <= gN()
+
+   
+   min_occu = new int[ gL() + 1 ];
+   max_occu = new int[ gL() + 1 ];
+   int tmp_min_min = 0;
+   int tmp_min_max = 0;
+   int tmp_max_min = 0;
+   int tmp_max_max = 0;
+   
+
+   int frozenright = 0;
+   int frozenleft = 0;
+   for( int i = 0; i <= gL(); i++){
+      
+      frozenright = 0;
+      frozenleft = 0;
+      
+      
+      for( int idx = i; idx < gL(); idx++){ frozenright += min_occupations[ idx ]; }
+      for( int idx = 0; idx < i; idx++){ frozenleft += min_occupations[ idx ]; }
+
+      tmp_min_min = frozenleft;
+      tmp_min_max = gN() - frozenright;
+      
+
+      frozenleft = 0;
+      frozenright = 0;
+
+      
+      for( int idx = i; idx < gL(); idx++){ frozenright += max_occupations[ idx ]; }
+      for( int idx = 0; idx < i; idx++){ frozenleft += max_occupations[ idx ]; }
+      
+      tmp_max_min = gN() - frozenright;
+      tmp_max_max = frozenleft;
+
+
+      max_occu[ i ] = std::min( tmp_min_max, tmp_max_max );
+      min_occu[ i ] = std::max( tmp_min_min, tmp_max_min );
+      //std::cout << "   test      = " << tmp_max_min            << "\n";
+      //std::cout << "   test      = " << tmp_min_min             << "\n";
+      //std::cout << "   test      = " << min_occu[i]             << "\n";
+   }
+}
+
+
+
+
+//general implementation
+void CheMPS2::Problem::setup_singles_doubles( int * occupations ){
+   
+   min_occu = new int[ gL() + 1 ];
+   max_occu = new int[ gL() + 1];
+   int ground_occu = 0;
+
+   for(int i = 0; i < gL(); i++){ ground_occu += occupations[ i ]; }
+
+   for(int boundary = 0; boundary <= gL(); boundary++){
+      if( boundary <= (ground_occu/2 - 1)){ 
+         min_occu[ boundary ] = std::max(gN()-2-2*(ground_occu/2 - boundary),std::max(0, boundary - gL() + ( gN() + gTwoS() ) / 2));
+         max_occu[ boundary ] = std::min(2 * boundary, boundary + ( gN() - gTwoS() ) / 2);
+      } else if( boundary > (ground_occu/2 - 1) && boundary < gL()){
+         min_occu[ boundary ] = std::max( std::max(gN() - 2, boundary - gL() + ( gN() + gTwoS() ) / 2), gN() + 2 * ( boundary - gL() ));
+         max_occu[ boundary ] = std::min(gN(), boundary + ( gN() - gTwoS() ) / 2);
+      } else{
+         min_occu[ boundary ] = gN();
+         max_occu[ boundary ] = gN();
+      }
+      
+   }
+}
 int CheMPS2::Problem::gNmax ( int boundary ) const {
+   
    if( max_occu != NULL ){
-      return max_occu[ boundary ];
+      
+      return std::min( std::min( max_occu[ boundary ], gN() ), boundary + ( gN() - gTwoS() ) / 2 );
    } else {
+      
       return std::min( std::min( 2 * boundary, gN() ), boundary + ( gN() - gTwoS() ) / 2 );
    }
 }
 
 int CheMPS2::Problem::gNmin ( int boundary ) const {
+   
+   
    if( min_occu != NULL ){
-      return min_occu[ boundary ];
+     
+      return std::max( std::max( min_occu[ boundary ], gN() + 2 * ( boundary - gL() ) ), boundary - gL() + ( gN() + gTwoS() ) / 2 );
    } else {
-      return std::max( std::max( 0, gN() + 2 * ( boundary - gL() ) ), boundary - gL() + ( gN() + gTwoS() ) / 2 );
+      
+      return std::max( std::max( 0, gN() + 2 * ( boundary - gL() ) ), boundary - gL() + ( gN() + gTwoS() ) / 2 );//first two terms for particle symmetry
    }
 }

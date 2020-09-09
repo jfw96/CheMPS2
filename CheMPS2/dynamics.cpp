@@ -457,6 +457,7 @@ int main( int argc, char ** argv ){
    string sweep_cutoff = "";
 
    bool   reorder_fiedler   = false;
+   bool   cisd              = false;
    string reorder_order     = "";
 
    char   time_type          = 'K';
@@ -556,6 +557,7 @@ int main( int argc, char ** argv ){
       if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"      ) == false ){ return -1; }
       if ( find_boolean( &time_dump2rdm,    line, "TIME_DUMP2RDM"     ) == false ){ return -1; }
       if ( find_boolean( &time_dumpatm,    line, "TIME_DUMPATM"     ) == false ){ return -1; } 
+       if ( find_boolean( &cisd,             line, "CISD"              ) == false ){ return -1; }
 
       if ( find_double( &time_step_dumpcmps, line, "TIME_STEP_DUMPCMPS", false, 0.0 ) == false ){ return -1; } 
       if ( find_double( &time_energy_offset, line, "TIME_ENERGY_OFFSET", false, 0.0 ) == false ){ return -1; }
@@ -971,6 +973,7 @@ int main( int argc, char ** argv ){
    cout << "   TIME_STEP_DUMPCMPS = " << time_step_dumpcmps                        << endl;
    cout << "   TIME_ENERGY_OFFSET = " << time_energy_offset                        << endl;
    cout << "   TIME_OFFSET        = " << time_offset                               << endl;
+   cout << "   CISD               = " << (( cisd            ) ? "TRUE" : "FALSE" ) << endl;
    cout << " " << endl;
 
    /********************************
@@ -993,9 +996,10 @@ int main( int argc, char ** argv ){
    delete [] value_noise;
 
    CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
-   if( time_n_max.length() > 0 ) { prob->setup_occu_max( time_n_max_parsed ); }
-   if( time_n_min.length() > 0 ) { prob->setup_occu_min( time_n_min_parsed ); }
-
+   //if( time_n_max.length() > 0 ) { prob->setup_occu_max( time_n_max_parsed ); }
+   //if( time_n_min.length() > 0 ) { prob->setup_occu_min( time_n_min_parsed ); }
+   if( time_n_min.length() > 0 && time_n_max.length() > 0 ) { prob->setup_occus( time_n_min_parsed, time_n_max_parsed );}
+   if( cisd == true ) { prob->setup_singles_doubles( time_hf_state_parsed ); }
    /***********************************
    *  Reorder the orbitals if desired *
    ***********************************/
@@ -1120,7 +1124,8 @@ int main( int argc, char ** argv ){
    delete[] time_2_ninit_parsed;
    delete[] time_hf_state_parsed;
    delete [] time_ninit_prefacs_parsed;
-
+   delete [] time_n_min_parsed;
+   delete [] time_n_max_parsed;
    return 0;
 
 }
