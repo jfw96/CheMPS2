@@ -1072,7 +1072,6 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
          const hsize_t Lsize = L * L * L;
          double *atm_real = new double[L * L * L];
          double *atm_imag = new double[L * L * L];
-         const int TwoS = prob->gTwoS();
 
          for (int i = 0; i < L*L*L; i++ ){
             atm_real[i] = 0.0;
@@ -1102,33 +1101,35 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
             }
          }
       
-         for (int a = 0; a < L; a++)
-         {
-            for (int i = 0; i < L; i++)
-            {
-               for (int j = 0; j < i; j++)
-               {
+         for (int a = 0; a < L; a++){
+            for (int i = 0; i < L; i++){
+               for (int j = 0; j < i; j++){
+                  for( int twoKappa = -1; twoKappa <= 1; twoKappa+=2 ){
+                     for( int twoTau = -1; twoTau <= 1; twoTau+=2 ){
+                        for( int twoSigma = -1; twoSigma <= 1; twoSigma+=2 ){
+                           int * toCreate = ( twoKappa == -1 ) ? alphas : betas;
+                           int * toAnniA = ( twoTau == -1 ) ? alphas : betas;
+                           int * toAnniB = ( twoSigma == -1 ) ? alphas : betas;  
                   
-                  int *toCreate = (TwoS == -1) ? alphas : betas;
-                  int *toAnniA = (TwoS == -1) ? alphas : betas;
-                  int *toAnniB = (TwoS == -1) ? alphas : betas;
+                           toCreate[ a ]++;
+                           toAnniA[ i ]--;
+                           toAnniB[ j ]--;
 
-                  toCreate[ a ]++;
-                  toAnniA[ i ]--;
-                  toAnniB[ j ]--;
-
-                  if ((toAnniB[j] >= 0) && (toAnniA[i] >= 0) && (toCreate[a] <= 1) && (i != j) && (i != a) && (j != a))
-                  {
-                     atm_real[a + L * (i + L * j)] = std::real(getFCICoefficient(prob, MPS, alphas, betas));
-                     atm_imag[a + L * (i + L * j)] = (-1.0) * std::imag(getFCICoefficient(prob, MPS, alphas, betas));
-                  } 
+                           if ((toAnniB[j] >= 0) && (toAnniA[i] >= 0) && (toCreate[a] <= 1) && (i != j) && (i != a) && (j != a)){
+                              atm_real[a + L * (i + L * j)] = std::real(getFCICoefficient(prob, MPS, alphas, betas));
+                              atm_imag[a + L * (i + L * j)] = (-1.0) * std::imag(getFCICoefficient(prob, MPS, alphas, betas));
+                           } 
                   
-                  toCreate[ a ]--;
-                  toAnniA[ i ]++;
-                  toAnniB[ j ]++;
-               }
+                           toCreate[ a ]--;
+                           toAnniA[ i ]++;
+                           toAnniB[ j ]++;
+                        }   
+                     }
+                  }
+               }   
             }
          }
+         
                
          delete[] alphas;
          delete[] betas;
