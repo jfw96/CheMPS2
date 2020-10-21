@@ -421,8 +421,8 @@ void print_help(){
            "       TIME_DUMPFCI = bool\n"
            "              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
            "\n"
-           "       TIME_DUMPATM = bool\n"
-           "              Set if the Auger Transition matrix (ATM) are dumped into the HDF5 file. Only has affect if TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
+           "       TIME_DUMPCIDC = bool\n"
+           "              Set if the CI double coefficients (CIDC) are dumped into the HDF5 file. Only has affect if TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
            "\n"
            "       TIME_STEP_DUMPCMPS = double\n"
            "              Set the time step (DT) for dumping the MPS coefficients into HDF5 file. If set to 0.0, nothing would be dumped. (default 0.0).\n"
@@ -479,7 +479,7 @@ int main( int argc, char ** argv ){
    bool   time_dumpfci       = false;
    bool   time_dump2rdm      = false;
    bool   time_dumpcmps      = false; 
-   bool   time_dumpatm       = false; 
+   bool   time_dumpcidc       = false; 
    double time_step_dumpcmps = 0.0;    
    double time_energy_offset = 0.0;
    double time_offset        = 0.0;    
@@ -556,7 +556,7 @@ int main( int argc, char ** argv ){
       if ( find_boolean( &time_ortho,       line, "TIME_ORTHO"        ) == false ){ return -1; }
       if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"      ) == false ){ return -1; }
       if ( find_boolean( &time_dump2rdm,    line, "TIME_DUMP2RDM"     ) == false ){ return -1; }
-      if ( find_boolean( &time_dumpatm,    line, "TIME_DUMPATM"     ) == false ){ return -1; } 
+      if ( find_boolean( &time_dumpcidc,    line, "TIME_DUMPCIDC"     ) == false ){ return -1; } 
        if ( find_boolean( &cisd,             line, "CISD"              ) == false ){ return -1; }
 
       if ( find_double( &time_step_dumpcmps, line, "TIME_STEP_DUMPCMPS", false, 0.0 ) == false ){ return -1; } 
@@ -969,7 +969,7 @@ int main( int argc, char ** argv ){
    cout << "   TIME_DUMPFCI       = " << (( time_dumpfci    ) ? "TRUE" : "FALSE" ) << endl;
    cout << "   TIME_DUMP2RDM      = " << (( time_dump2rdm   ) ? "TRUE" : "FALSE" ) << endl;
    cout << "   TIME_DUMPCMPS      = " << (( time_dumpcmps   ) ? "TRUE" : "FALSE" ) << endl;
-   cout << "   TIME_DUMPATM      = " << ((time_dumpatm) ? "TRUE" : "FALSE") << endl;
+   cout << "   TIME_DUMPCIDC      = " << ((time_dumpcidc) ? "TRUE" : "FALSE") << endl;
    cout << "   TIME_STEP_DUMPCMPS = " << time_step_dumpcmps                        << endl;
    cout << "   TIME_ENERGY_OFFSET = " << time_energy_offset                        << endl;
    cout << "   TIME_OFFSET        = " << time_offset                               << endl;
@@ -1101,7 +1101,7 @@ int main( int argc, char ** argv ){
 
       CheMPS2::TimeEvolution * taylor = new CheMPS2::TimeEvolution( prob, opt_scheme, fileID );
       taylor->Propagate(time_type, time_step_major, time_step_minor, time_final, mpsIn, bkIn,
-                        time_krysize, time_backward, time_energy_offset, time_offset, time_ortho, time_dumpfci, time_dump2rdm, time_dumpcmps, time_dumpatm, time_step_dumpcmps, time_n_weights, time_hf_state_parsed);
+                        time_krysize, time_backward, time_energy_offset, time_offset, time_ortho, time_dumpfci, time_dump2rdm, time_dumpcmps, time_dumpcidc, time_step_dumpcmps, time_n_weights, time_hf_state_parsed);
 
       if ( fileID != H5_CHEMPS2_TIME_NO_H5OUT){ H5Fclose( fileID ); }
 

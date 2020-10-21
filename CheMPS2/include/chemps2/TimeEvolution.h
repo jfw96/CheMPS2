@@ -27,7 +27,7 @@ namespace CheMPS2 {
                      const bool backwards, const double offset,
                      const double time_offset, const bool do_ortho,
                      const bool doDump2RDM, const bool doDumpFCI,
-                     const bool doDumpCMPS, const bool doDumpATM, const double time_step_dumpcmps,
+                     const bool doDumpCMPS, const bool doDumpCIDC, const double time_step_dumpcmps,
                      const int nWeights = 0, const int *hfState = NULL);
 
    private:
