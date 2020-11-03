@@ -1072,7 +1072,6 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
          const hsize_t Lsize = L * L * L;
          double *cidc_real = new double[L * L * L];
          double *cidc_imag = new double[L * L * L];
-         double result = 0.0;
 
          for (int i = 0; i < L*L*L; i++ ){
             cidc_real[i] = 0.0;
@@ -1105,9 +1104,9 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
          for (int a = 0; a < L; a++){
             for (int i = 0; i < L; i++){
                for (int j = 0; j < i; j++){
-                  for( int twoKappa = 1; twoKappa <= 1; twoKappa+=2 ){
-                     for( int twoTau = 1; twoTau <= 1; twoTau+=2 ){
-                        for( int twoSigma = 1; twoSigma <= 1; twoSigma+=2 ){
+                  for( int twoKappa = -1; twoKappa <= 1; twoKappa+=2 ){
+                     for( int twoTau = -1; twoTau <= 1; twoTau+=2 ){
+                        for( int twoSigma = -1; twoSigma <= 1; twoSigma+=2 ){
                            int * toCreate = ( twoKappa == -1 ) ? alphas : betas;
                            int * toAnniA = ( twoTau == -1 ) ? alphas : betas;
                            int * toAnniB = ( twoSigma == -1 ) ? alphas : betas;  
@@ -1117,11 +1116,8 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
                            toAnniB[ j ]--;
 
                            if ((toAnniB[j] >= 0) && (toAnniA[i] >= 0) && (toCreate[a] <= 1) && (i != j) && (i != a) && (j != a)){
-                              std::cout << "twoKappa" << twoKappa << " .\n";
-                              std::cout << i << j << " .\n";
-                              cidc_real[a + L * (i + L * j)] = std::real(getFCICoefficient(prob, MPS, alphas, betas));
-                              cidc_imag[a + L * (i + L * j)] = std::imag(getFCICoefficient(prob, MPS, alphas, betas));
-                              result += std::pow( std::abs( getFCICoefficient( prob, MPS, alphas, betas ) ), 2.0 );
+                              cidc_real[a + L * (i + L * j)] += std::real(getFCICoefficient(prob, MPS, alphas, betas));
+                              cidc_imag[a + L * (i + L * j)] += (-1.0) * std::imag(getFCICoefficient(prob, MPS, alphas, betas));
                            } 
                   
                            toCreate[ a ]--;
@@ -1138,7 +1134,7 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
          delete[] alphas;
          delete[] betas;
          
-         std::cout << "result = " << result << " .\n";
+         
          HDF5_MAKE_DATASET(dataPointID, "CIDC_REAL", 1, &Lsize, H5T_NATIVE_DOUBLE, cidc_real);
          HDF5_MAKE_DATASET(dataPointID, "CIDC_IMAG", 1, &Lsize, H5T_NATIVE_DOUBLE, cidc_imag);
          
