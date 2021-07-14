@@ -393,6 +393,9 @@ cout << "\n"
 "       TIME_2_NINIT = int, int, int\n"
 "              Set the occupation numbers of a second state that is supposed with the first. Ordered as in the FCIDUMP file. (positive integers).\n"
 "\n"
+"       TIME_NINIT_PREFACS = flt\n"
+"              Set the prefactors of the states specificed by TIME_NINIT and TIME_2_NINIT (Default 1.0). (flt).\n"
+"\n"
 "       TIME_INIT = /path/to/inital/state\n"
 "              Set to load the inital state from HDF5 file.\n"
 "\n"
@@ -470,23 +473,24 @@ int main( int argc, char ** argv ){
    bool   reorder_fiedler   = false;
    string reorder_order     = "";
 
-   char   time_type       = 'K';
-   double time_step_major = 0.0;
-   double time_step_minor = 0.0;
-   double time_final      = 0.0;
-   string time_init       = "";
-   string time_ninit      = "";
-   string time_2_ninit    = "";
-   string time_hf_state   = "";
-   string time_n_min      = "";
-   string time_n_max      = "";
-   string time_hdf5output = "";
-   int    time_n_weights  = 0; 
-   int    time_krysize    = 0;
-   bool   time_backward   = false;
-   bool   time_ortho      = false;
-   bool   time_dumpfci    = false;
-   bool   time_dump2rdm   = false;
+   char   time_type          = 'K';
+   double time_step_major    = 0.0;
+   double time_step_minor    = 0.0;
+   double time_final         = 0.0;
+   string time_init          = "";
+   string time_ninit         = "";
+   string time_2_ninit       = "";
+   string time_ninit_prefacs = "";
+   string time_hf_state      = "";
+   string time_n_min         = "";
+   string time_n_max         = "";
+   string time_hdf5output    = "";
+   int    time_n_weights     = 0; 
+   int    time_krysize       = 0;
+   bool   time_backward      = false;
+   bool   time_ortho         = false;
+   bool   time_dumpfci       = false;
+   bool   time_dump2rdm      = false;
    double time_energy_offset = 0.0;
 
    bool apply_pulse           = false;
@@ -629,6 +633,11 @@ int main( int argc, char ** argv ){
       if ( line.find( "TIME_2_NINIT" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
          time_2_ninit = line.substr( pos, line.length() - pos );
+      }
+
+      if ( line.find( "TIME_PREFACS" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         time_ninit_prefacs = line.substr( pos, line.length() - pos );
       }
 
       if ( line.find( "TIME_HF_STATE" ) != string::npos ){
@@ -849,6 +858,8 @@ int main( int argc, char ** argv ){
    int * time_n_max_parsed    = NULL;
    int * time_n_min_parsed    = NULL;
 
+   dcomplex * time_ninit_prefacs_parsed  = new dcomplex[ 2 ]; 
+
    if ( time_step_major <= 0.0 ){
       cerr << "TIME_STEP_MAJOR should be greater than zero !" << endl;
       return -1;
@@ -922,7 +933,7 @@ int main( int argc, char ** argv ){
 
       for ( int cnt = 0; cnt < fcidump_norb; cnt ++ ){
          if ( ( time_2_ninit_parsed[ cnt ] < 0 ) || ( time_2_ninit_parsed[ cnt ] > 2 ) ){
-            cerr << "The occupation number in TIME_NINIT has to be 0, 1 or 2 !" << endl;
+            cerr << "The occupation number in TIME_2_NINIT has to be 0, 1 or 2 !" << endl;
             return -1;
          }
       }
@@ -931,6 +942,26 @@ int main( int argc, char ** argv ){
       if ( elec_sum != nelectrons ){
          cerr << "There should be " << nelectrons << " distributed over the molecular orbitals in TIME_NINIT !" << endl;
          return -1;
+      }
+
+      if ( time_ninit_prefacs.length() > 0){
+         double * prefacs_components  = new double[ 4 ];
+         fetch_doubles( time_ninit_prefacs, prefacs_components, 4 );
+         time_ninit_prefacs_parsed[0] = dcomplex( prefacs_components[0], prefacs_components[1] );
+         time_ninit_prefacs_parsed[1] = dcomplex( prefacs_components[2], prefacs_components[3] );
+
+         for ( int cnt = 0; cnt < 2; cnt++ ){
+            if ( abs( time_ninit_prefacs_parsed[ cnt ] ) > 1.0 ){
+               cerr << "Prefactors in TIME_PREFACS need to have norm smaller or equal to one !" << endl;
+               return -1;
+            }
+         }
+
+         delete [] prefacs_components;
+      } else {
+         for ( int cnt = 0; cnt < 2; cnt++ ){
+            time_ninit_prefacs_parsed[ cnt ] = 1.0 / sqrt( 2.0 );
+         }
       }
    }
 
@@ -1046,7 +1077,11 @@ int main( int argc, char ** argv ){
    cout << "   TIME_STEP_MAJOR    = " << time_step_major << endl;
    cout << "   TIME_STEP_MINOR    = " << time_step_minor << endl;
    cout << "   TIME_FINAL         = " << time_final << endl;
-   if( time_ninit.length() > 0 ){
+   if ( ( time_ninit.length() > 0  ) && ( time_2_ninit.length() > 0 ) ){
+      cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
+      cout << "   TIME_2_NINIT       = [ " << time_2_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << time_2_ninit_parsed[ cnt ]; } cout << " ]" << endl;
+      cout << "   TIME_PREFACS       = [ " << time_ninit_prefacs_parsed[ 0 ]; for ( int cnt = 1; cnt < 2; cnt++ ){ cout << " ; " << time_ninit_prefacs_parsed[ cnt ]; } cout << " ]" << endl;
+   } else if ( time_ninit.length() > 0 ){
       cout << "   TIME_NINIT         = [ " << time_ninit_parsed[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << time_ninit_parsed[ cnt ]; } cout << " ]" << endl;
    } else {
       cout << "   TIME_INIT          = " << time_init << endl;
@@ -1165,6 +1200,7 @@ int main( int argc, char ** argv ){
       CheMPS2::CTensorT    ** mpsB = new CheMPS2::CTensorT *[ prob->gL() ];
 
       bkIn = new CheMPS2::SyBookkeeper( *bkA );
+      bkIn->addConfigurations( bkB );
       mpsIn = new CheMPS2::CTensorT *[ prob->gL() ];
 
       for ( int index = 0; index < prob->gL(); index++ ) {
@@ -1180,15 +1216,14 @@ int main( int argc, char ** argv ){
 
       CheMPS2::HamiltonianOperator * hamOp = new CheMPS2::HamiltonianOperator( prob );
 
-      dcomplex fac[] = {1.0, -1.0};
       CheMPS2::CTensorT    ** states[ 2 ]; 
       CheMPS2::SyBookkeeper    * bks[ 2 ]; 
       states[ 0 ] = mpsA;
       states[ 1 ] = mpsB;
       bks[ 0 ] = bkA;
       bks[ 1 ] = bkB;
-      hamOp->DSSum( 2, &fac[ 0 ], &states[ 0 ], &bks[ 0 ], mpsIn, bkIn, opt_scheme );
-      normalize( prob->gL(), mpsIn );
+
+      hamOp->DSSum( 2, &time_ninit_prefacs_parsed[ 0 ], &states[ 0 ], &bks[ 0 ], mpsIn, bkIn, opt_scheme );
 
       delete hamOp;
 
@@ -1247,6 +1282,7 @@ int main( int argc, char ** argv ){
    delete[] time_ninit_parsed;
    delete[] time_2_ninit_parsed;
    delete[] time_hf_state_parsed;
+   delete [] time_ninit_prefacs_parsed;
 
    return 0;
 }
