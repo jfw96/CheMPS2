@@ -1,4 +1,3 @@
-
 #include "TimeEvolution.h"
 #include <assert.h>
 #include <iomanip>
@@ -671,19 +670,21 @@ void CheMPS2::TimeEvolution::doStep_arnoldi( const double time_step,
    //    }
    // }
 
-   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-         std::cout << krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] << " ";
-      }
-      std::cout << std::endl;
-   }
 
-   for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
-      for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
-         std::cout << overlaps[ irow +  icol * krylovSpaceDimension ] << " ";
-      }
-      std::cout << std::endl;
-   }
+   // // commented out for clarity in the terminal output
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << krylovHamiltonian[ irow +  icol * krylovSpaceDimension ] << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
+   // // commented out for clarity in the terminal output
+   // for ( int irow = 0; irow < krylovSpaceDimension; irow++ ){
+   //    for ( int icol = 0; icol < krylovSpaceDimension; icol++ ){
+   //       std::cout << overlaps[ irow +  icol * krylovSpaceDimension ] << " ";
+   //    }
+   //    std::cout << std::endl;
+   // }
 
    //////////////////////////////////////////////////////////////////////////////////////
    //
@@ -1151,6 +1152,15 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
 
       if ( t + time_step_major < time_final ) {
          for( double t_minor = 0.0; (time_step_major - t_minor) > 1e-6; t_minor+=time_step_minor ) {
+
+            if ( prob->getApplyPulse() && !( t == 0 && t_minor == 0 ) ) {
+               
+               // update Hamiltonian
+               double currentTime = t + t_minor;   
+               std::cout << "\nUpdate Hamiltonian ( t = " << currentTime << " )\n" << std::endl;
+               
+               prob->construct_mxelem( currentTime );
+            }
 
             SyBookkeeper * MPSBKDT = new SyBookkeeper( *MPSBK );
             CTensorT ** MPSDT      = new CTensorT *[ L ];

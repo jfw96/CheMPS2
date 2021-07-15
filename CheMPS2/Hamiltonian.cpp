@@ -31,12 +31,19 @@
 #include "MyHDF5.h"
 #include "TwoIndex.h"
 
+#define _USE_MATH_DEFINES
+ 
+#include <cmath>
+
 using std::cout;
 using std::endl;
 using std::string;
 using std::ifstream;
 
-CheMPS2::Hamiltonian::Hamiltonian( const int Norbitals, const int nGroup, const int * OrbIrreps ) {
+CheMPS2::Hamiltonian::Hamiltonian( const int Norbitals,
+                                   const int nGroup,
+                                   const int * OrbIrreps )
+                                   : applyPulse    ( false ) {
 
    L = Norbitals;
    assert( nGroup >= 0 );
@@ -62,13 +69,19 @@ CheMPS2::Hamiltonian::Hamiltonian( const int Norbitals, const int nGroup, const 
    Vmat   = new FourIndex( SymmInfo.getGroupNumber(), irrep2num_orb );
 }
 
-CheMPS2::Hamiltonian::Hamiltonian( const string filename, const int psi4groupnumber ) {
+CheMPS2::Hamiltonian::Hamiltonian( const string filename,
+                                   const int psi4groupnumber )
+                                   : applyPulse    ( false )  {
 
    SymmInfo.setGroup( psi4groupnumber );
-   CreateAndFillFromFCIDUMP( filename );
+   CreateAndFillFromFCIDUMP( filename, false );
 }
 
-CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5, const string main_file, const string file_tmat, const string file_vmat ) {
+CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5,
+                                   const string main_file,
+                                   const string file_tmat,
+                                   const string file_vmat )
+                                   : applyPulse      (false)  {
 
    if ( fileh5 ) {
       CreateAndFillFromH5( main_file, file_tmat, file_vmat );
@@ -77,6 +90,17 @@ CheMPS2::Hamiltonian::Hamiltonian( const bool fileh5, const string main_file, co
       assert( fileh5 == true );
    }
 }
+
+CheMPS2::Hamiltonian::Hamiltonian( const string fcidump,
+                                   const string fcidumpTime,
+                                   const int psi4groupnumber )
+                                   : applyPulse      ( true      ) {
+
+  SymmInfo.setGroup( psi4groupnumber );
+  CreateAndFillFromFCIDUMP( fcidump    , false );
+  CreateAndFillFromFCIDUMP( fcidumpTime, true  );
+}
+
 
 CheMPS2::Hamiltonian::~Hamiltonian() {
 
@@ -103,16 +127,36 @@ void CheMPS2::Hamiltonian::setTmat( const int index1, const int index2, const do
    Tmat->set( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ], val );
 }
 
+void CheMPS2::Hamiltonian::setTmatDipole( const int index1, const int index2, const double val ) {
+
+   assert( orb2irrep[ index1 ] == orb2irrep[ index2 ] );
+   TmatDipole->set( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ], val );
+}
+
 double CheMPS2::Hamiltonian::getTmat( const int index1, const int index2 ) const {
 
+   double result = 0.0;
+
    if ( orb2irrep[ index1 ] == orb2irrep[ index2 ] ) {
-      return Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
+
+         result = Tmat->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
+   }
+
+   return result;
+}
+
+const CheMPS2::TwoIndex * CheMPS2::Hamiltonian::getTmat() { return Tmat; }
+
+double CheMPS2::Hamiltonian::getTmatDipole( const int index1, const int index2 ) const {
+
+   if ( orb2irrep[ index1 ] == orb2irrep[ index2 ] ) {
+      return TmatDipole->get( orb2irrep[ index1 ], orb2indexSy[ index1 ], orb2indexSy[ index2 ] );
    }
 
    return 0.0;
 }
 
-const CheMPS2::TwoIndex * CheMPS2::Hamiltonian::getTmat() { return Tmat; }
+const CheMPS2::TwoIndex * CheMPS2::Hamiltonian::getTmatDipole() { return TmatDipole; }
 
 void CheMPS2::Hamiltonian::setVmat( const int index1, const int index2, const int index3, const int index4, const double val ) {
 
@@ -283,7 +327,7 @@ void CheMPS2::Hamiltonian::CreateAndFillFromH5( const string file_parent, const 
    read( file_parent, file_tmat, file_vmat );
 }
 
-void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile ) {
+void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile, const bool is_dipole ) {
 
    struct stat file_info;
    const bool on_disk = ( ( fcidumpfile.length() > 0 ) && ( stat( fcidumpfile.c_str(), &file_info ) == 0 ) );
@@ -308,7 +352,7 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile ) 
    pos  = line.find( "=", pos ); //1
    pos2 = line.find( ",", pos ); //4
    part = line.substr( pos + 1, pos2 - pos - 1 );
-   L    = atoi( part.c_str() );
+   L    = atoi( part.c_str() ); //NORBS = Number of Orbitals = L
    if ( CheMPS2::HAMILTONIAN_debugPrint ) { cout << "The number of orbitals <<" << part << ">> or " << L << "." << endl; }
 
    // Get the orbital irreps in psi4 convention (XOR, see Irreps.h).
@@ -340,7 +384,7 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile ) 
       pos = pos2;
    }
 
-   getline( thefcidump, line ); // /
+   getline( thefcidump, line );
    assert( line.size() < 16 );
 
    orb2indexSy   = new int[ L ];
@@ -352,8 +396,19 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile ) 
       orb2indexSy[ cnt ] = irrep2num_orb[ orb2irrep[ cnt ] ];
       irrep2num_orb[ orb2irrep[ cnt ] ]++;
    }
-   Tmat = new TwoIndex( SymmInfo.getGroupNumber(), irrep2num_orb );  // Constructor ends with Clear(); call
-   Vmat = new FourIndex( SymmInfo.getGroupNumber(), irrep2num_orb ); // Constructor ends with Clear(); call
+
+   // initialize one- and two-particle integrals
+   if ( !is_dipole )
+   {
+      Tmat = new TwoIndex( SymmInfo.getGroupNumber(), irrep2num_orb );  // Constructor ends with Clear(); call
+      Vmat = new FourIndex( SymmInfo.getGroupNumber(), irrep2num_orb ); // Constructor ends with Clear(); call
+   }
+   else
+   {
+      TmatDipole = new TwoIndex( SymmInfo.getGroupNumber(), irrep2num_orb );  // Constructor ends with Clear(); call
+   }
+   
+   
 
    // Read the Hamiltonian in
    bool stop = false;
@@ -401,13 +456,38 @@ void CheMPS2::Hamiltonian::CreateAndFillFromFCIDUMP( const string fcidumpfile ) 
          cout << "Same line: " << value << " " << index1 << " " << index2 << " " << index3 << " " << index4 << endl;
       }
 
-      if ( index4 != 0 ) {
-         setVmat( index1 - 1, index3 - 1, index2 - 1, index4 - 1, value ); // From chemists to physicist notation!
-      } else {
-         if ( index2 != 0 ) {
-            setTmat( index1 - 1, index2 - 1, value );
-         } else {
-            Econst = value;
+      if ( index4 != 0 ) { 
+         
+         if ( !is_dipole )
+         {
+            setVmat( index1 - 1, index3 - 1, index2 - 1, index4 - 1, value ); // From chemists to physicist notation!
+         }
+         
+      }
+      else
+      {
+
+         if ( index2 != 0 )
+         {
+            
+            if (is_dipole)
+            {
+               setTmatDipole( index1 - 1, index2 - 1, value );
+            }
+            else
+            {               
+               setTmat( index1 - 1, index2 - 1, value );
+            }
+            
+            
+         }
+         else
+         {
+            if ( !is_dipole )
+            {
+               Econst = value;
+            }
+            
             stop   = true;
          }
       }
@@ -618,4 +698,8 @@ void CheMPS2::Hamiltonian::debugcheck() const {
    cout << "2-electron integrals: Trace                          : " << test3 << endl;
    cout << "2-electron integrals: Sum over all elements          : " << test << endl;
    cout << "2-electron integrals: Sum over Vijkl with i<=j<=k<=l : " << test2 << endl;
+}
+
+bool CheMPS2::Hamiltonian::getApplyPulse() const {
+   return applyPulse;
 }

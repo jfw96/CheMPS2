@@ -30,10 +30,49 @@
 using std::cout;
 using std::endl;
 
-CheMPS2::Problem::Problem( const Hamiltonian * Hamin, const int TwoSin, const int Nin,
-                           const int Irrepin, const int InitialIn )
-    : Ham( Hamin ), L( Ham->getL() ), TwoS( TwoSin ), N( Nin ), Irrep( Irrepin ),
-      bReorder( false ), mx_elem( NULL ), Initial( InitialIn ) {
+CheMPS2::Problem::Problem( const Hamiltonian * Hamin,
+                           const int TwoSin,
+                           const int Nin,
+                           const int Irrepin,
+                           const int InitialIn )
+                           : Ham           ( Hamin       )
+                           , L             ( Ham->getL() )
+                           , TwoS          ( TwoSin      )
+                           , N             ( Nin         )
+                           , Irrep         ( Irrepin     )
+                           , bReorder      ( false       )
+                           , mx_elem       ( NULL        )
+                           , Initial       ( InitialIn   )
+                           , applyPulse    ( false       )
+                           , pulseAmplitude( 0.0         )
+                           , pulseFrequency( 0.0         )
+                           , pulseDuration ( 0.0         )
+                           , pulseEnvelop  ( 'Z'         ) {
+   checkConsistency();
+}
+
+CheMPS2::Problem::Problem( const Hamiltonian * Hamin,
+                           const int TwoSin,
+                           const int Nin,
+                           const int Irrepin,
+                           const char envelop,
+                           const double duration,
+                           const double amplitude,
+                           const double frequency,
+                           const int InitialIn )
+                           : Ham             ( Hamin       )
+                           , L               ( Ham->getL() )
+                           , TwoS            ( TwoSin      )
+                           , N               ( Nin         )
+                           , Irrep           ( Irrepin     )
+                           , bReorder        ( false       )
+                           , mx_elem         ( NULL        )
+                           , Initial         ( InitialIn   )
+                           , applyPulse      ( true        )
+                           , pulseEnvelop    ( envelop     )
+                           , pulseDuration   ( duration    )
+                           , pulseAmplitude  ( amplitude   )
+                           , pulseFrequency  ( frequency   ) {
    checkConsistency();
 }
 
@@ -350,10 +389,10 @@ void CheMPS2::Problem::setMxElement( const int alpha, const int beta, const int 
    mx_elem[ alpha + L * ( beta + L * ( gamma + L * delta ) ) ] = value;
 }
 
-void CheMPS2::Problem::construct_mxelem() {
-
+void CheMPS2::Problem::construct_mxelem( const double phyTime ) {
+   
    if ( mx_elem == NULL ) { mx_elem = new double[ L * L * L * L ]; }
-   const double prefact = 1.0 / ( N - 1 );
+   const double prefact    = 1.0 / ( N - 1 );
 
    for ( int orb1 = 0; orb1 < L; orb1++ ) {
       const int map1 = ( ( !bReorder ) ? orb1 : f2[ orb1 ] );
@@ -363,11 +402,74 @@ void CheMPS2::Problem::construct_mxelem() {
             const int map3 = ( ( !bReorder ) ? orb3 : f2[ orb3 ] );
             for ( int orb4 = 0; orb4 < L; orb4++ ) {
                const int map4 = ( ( !bReorder ) ? orb4 : f2[ orb4 ] );
-               setMxElement( orb1, orb2, orb3, orb4, Ham->getVmat( map1, map2, map3, map4 ) + prefact * ( ( orb1 == orb3 ) ? Ham->getTmat( map2, map4 ) : 0 ) + prefact * ( ( orb2 == orb4 ) ? Ham->getTmat( map1, map3 ) : 0 ) );
+               
+               double value = Ham->getVmat( map1, map2, map3, map4 )
+                              + prefact * ( ( orb1 == orb3 ) ? Ham->getTmat( map2, map4 ) : 0 )
+                              + prefact * ( ( orb2 == orb4 ) ? Ham->getTmat( map1, map3 ) : 0 );
+
+               if ( applyPulse ) {
+
+                  const double dipPrefact = prefact * calcDipolePrefactor( phyTime );
+
+                  value -=   dipPrefact * ( ( orb1 == orb3 ) ? Ham->getTmatDipole( map2, map4 ) : 0 )
+                           + dipPrefact * ( ( orb2 == orb4 ) ? Ham->getTmatDipole( map1, map3 ) : 0 );
+               
+               }
+               
+               setMxElement( orb1, orb2, orb3, orb4, value );
             }
          }
       }
    }
+}
+
+double CheMPS2::Problem::calcDipolePrefactor( const double phyTime ) const {
+   double result = 0.0;
+
+   if ( !applyPulse || phyTime >= pulseDuration ) {
+      result = 0.0;
+   }
+   else
+   {
+      double envelop;
+      switch ( pulseEnvelop )
+      {
+         case 'A':
+            envelop = pulseAmplitude;
+            break;
+         
+         case 'B':
+            envelop = pulseAmplitude * sin( phyTime * ( M_PI / pulseDuration ) );
+            break;
+
+         case 'C':
+            envelop = pulseAmplitude * gaussian( phyTime, pulseDuration / 2, pulseDuration / 6 ) ;
+            break;
+
+         case 'D':
+            envelop = pulseAmplitude * cos( phyTime * pulseFrequency * 2 * M_PI );
+            break;
+
+         default:
+            envelop = 0.0;
+            abort();
+            break;
+      }
+
+      //double plain_wave = pulseAmplitude * sin ( 2 * M_PI * pulseFrequency * phyTime );
+      result = envelop; //* plain_wave;
+   }
+   //std::cout << result << " " << pulseDuration << std::endl;
+   return result;
+}
+
+double CheMPS2::Problem::gaussian( const double variable, const double mean, const double std ) const {
+   double result = 0.0;
+
+   double pre =  1; // set to 1 instead of sqrt( 2 * M_PI ) * std; in order to use the right max amplitude 
+   double exponent = - pow( variable - mean, 2 )  /  ( 2 * pow( std, 2 ) );
+   result = exp( exponent ) / pre;
+   return result;
 }
 
 bool CheMPS2::Problem::checkConsistency() const {
@@ -550,4 +652,8 @@ int CheMPS2::Problem::gNmin ( int boundary ) const {
       
       return std::max( std::max( 0, gN() + 2 * ( boundary - gL() ) ), boundary - gL() + ( gN() + gTwoS() ) / 2 );//first two terms for particle symmetry
    }
+}
+
+bool CheMPS2::Problem::getApplyPulse() const {
+   return Ham->getApplyPulse();
 }

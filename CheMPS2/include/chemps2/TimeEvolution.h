@@ -31,6 +31,12 @@ namespace CheMPS2 {
                      const int nWeights = 0, const int *hfState = NULL);
 
    private:
+
+      // update the Hamilonian. Use if an electrical pulse is applied to the system
+          // /param time The current physical time of the system
+          // /param timeStep The time between to iterations ( doStep_arnoldi/euler/runge_kutta )
+      void updateHamiltonian( const double currentTime, const double timeStep );
+
       void HDF5_MAKE_DATASET( hid_t setID, const char * name, int rank,
                               const hsize_t * dims, hid_t typeID, const void * data );
 

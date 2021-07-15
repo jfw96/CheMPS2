@@ -71,8 +71,19 @@ namespace CheMPS2 {
              \param file_vmat The HDF5 Hamiltonian Vmat filename */
       Hamiltonian( const bool fileh5, const string main_file = HAMILTONIAN_ParentStorageName, const string file_tmat = HAMILTONIAN_TmatStorageName, const string file_vmat = HAMILTONIAN_VmatStorageName );
 
+      //! Constructor which loads two FCIDUMP from disk (which can be generated with the plugin psi4plugins/fcidump.cc and has Molpro orbital symmetries!)
+      /** \param fcidump : The filename of the FCIDUMP that contains the internal part pof the hamiltonian
+      /** \param fcidumpTime : The filename of the FCIDUMP that contains the dipole matrix elements
+          \param psi4groupnumber The group number according to psi4's conventions */
+      Hamiltonian( const string fcidump,
+                   const string fcidumpDipole,
+                   const int psi4groupnumber );
+
       //! Destructor
       virtual ~Hamiltonian();
+      
+      // return true if a short electrical pulse is applied to the system
+      bool getApplyPulse() const;
 
       //! Get the number of orbitals
       /** \return The number of orbitals */
@@ -96,6 +107,13 @@ namespace CheMPS2 {
              \param index2 The second index
              \param val The new Tmat element */
       void setTmat( const int index1, const int index2, const double val );
+
+      //! Set a TmatDipole  element
+      /** \param index1 The first index
+             \param index2 The second index
+             \param val The new TmatDipole element */
+      void setTmatDipole( const int index1, const int index2, const double val );
+
 
       //! Set a Vmat element
       /** \param index1 The first index
@@ -123,6 +141,15 @@ namespace CheMPS2 {
              \return \f$T_{index1,index2}\f$ */
       double getTmat( const int index1, const int index2 ) const;
 
+
+      ///
+      //! Get a Tmat element
+      /** \param index1 The first index
+             \param index2 The second index
+             \return \f$T_{index1,index2}\f$ */
+      double getTmatDipole( const int index1, const int index2 ) const;
+      ///
+
       //! Get a Vmat element
       /** \param index1 The first index
              \param index2 The second index
@@ -134,6 +161,13 @@ namespace CheMPS2 {
       //! Get the pointer to the one-electron integrals
       /** \return The pointer to the one-electron integrals */
       const TwoIndex * getTmat();
+
+
+      ///
+      //! Get the pointer to the dipole-one-electron integrals
+      /** \return The pointer to the dipole-one-electron integrals */
+      const TwoIndex * getTmatDipole(); 
+      ///
 
       //! Get the pointer to the two-electron integrals
       /** \return The pointer to the two-electron integrals */
@@ -168,6 +202,7 @@ namespace CheMPS2 {
       void readfock( const string fockfile, double * fockmx, const bool printinfo ) const;
 
       private:
+
       //number of orbitals
       int L;
 
@@ -183,8 +218,11 @@ namespace CheMPS2 {
       //index of an orbital within irrep block
       int * orb2indexSy;
 
-      //1-particle matrix elements
+      //1-particle matrix elements loaded from the fcidump-file "fcidump"
       TwoIndex * Tmat;
+
+      //1-particle matrix elements loaded from the fcidump-file "fcidump"
+      TwoIndex * TmatDipole;
 
       //2-particle matrix elements
       FourIndex * Vmat;
@@ -192,11 +230,15 @@ namespace CheMPS2 {
       //Constant part of the Hamiltonian
       double Econst;
 
+      //Flag for applying an electrical pulse
+      const bool applyPulse;
+
       //If filename=="LOADH5" in Hamiltonian::Hamiltonian then the HDF5 Hamiltonian is loaded
       void CreateAndFillFromH5( const string file_parent, const string file_tmat, const string file_vmat );
 
       //Load the FCIDUMP Hamiltonian (with molpro irreps!)
-      void CreateAndFillFromFCIDUMP( const string fcidumpfile );
+      // \param is_dipole: determs if fcidumpfile contains dipol matrix elements or not
+      void CreateAndFillFromFCIDUMP( const string fcidumpfile, const bool is_dipole );
    };
 }
 

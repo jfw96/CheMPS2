@@ -50,8 +50,31 @@ namespace CheMPS2 {
              \param DtIn The time step for time evoulution */
       Problem( const Hamiltonian * Hamin, const int TwoSin, const int Nin, const int Irrepin, const int InitialIn = INIT_RANDOM );
 
+      //! Constructor
+      /** \param Hamin Pointer to the Hamiltonian
+             \param TwoSin Twice the targeted spin
+             \param Nin The targeted particle number
+             \param Irrepin The targeted irrep  
+             \param DtIn The time step for time evoulution
+             \param envelop The amplitude of the electric field of the pulse
+             \param envelop The frequency of the electric field of the pulse
+             \param envelop The duration of the electric field of the pulse
+             \param envelop The envelop type of the electric field of the pulse */
+      Problem( const Hamiltonian * Hamin,
+               const int TwoSin,
+               const int Nin,
+               const int Irrepin,
+               const char envelop,
+               const double amplitude,
+               const double frequency,
+               const double duration,
+               const int InitialIn = INIT_RANDOM );
+
       //! Destructor
       virtual ~Problem();
+
+      // returs true if a short electrical pulse is applied to the system
+      bool getApplyPulse() const;
 
       //! Get the number of orbitals
       /** \return The number of orbitals */
@@ -82,7 +105,7 @@ namespace CheMPS2 {
       /** \return The maximum time */
       int gInitial() const { return Initial; }
 
-      //! Get the constant part of the Hamiltonian
+      //! Get the constant part of the Hamiltonian 
       /** \return The constant part of the Hamiltonian */
       double gEconst() const { return Ham->getEconst(); }
 
@@ -105,7 +128,8 @@ namespace CheMPS2 {
       void setMxElement( const int alpha, const int beta, const int gamma, const int delta, const double value );
 
       //! Construct a table with the h-matrix elements (two-body augmented with one-body). Remember to recall this function each time you change the Hamiltonian!
-      void construct_mxelem();
+      // /param time The time at which the hamiltonian is constructed. To be used if a electrical pulse is applied to the system ( applyPulse = true from Hamiltonian class ). 
+      void construct_mxelem( const double time = 0.0 );
 
       //! Check whether the given parameters L, N, and TwoS are not inconsistent and whether 0<=Irrep<nIrreps. A more thorough test will be done when the FCI virtual dimensions are constructed.
       /** \return True if consistent, else false */
@@ -155,6 +179,28 @@ namespace CheMPS2 {
       int gNmin ( int boundary ) const;
 
       private:
+
+      // Calculate the time dependant prefactor for the dipole one electron integrals
+      double calcDipolePrefactor( const double phyTime ) const;
+      
+      // helper for calcDipolePrefactor. Returns value of the gaussian function for an given double
+      double gaussian( const double variable, const double mean, const double std ) const;
+
+      //Flag for applying a electrical pulse
+      const bool applyPulse;
+
+      // Time of exposure in the electrical field of the pulse
+      const char pulseEnvelop;
+      
+      // Amplitude of the electrical field of the pulse
+      const double pulseAmplitude;
+
+      // Frequency of the electrical field of the pulse
+      const double pulseFrequency;
+
+      // Duration of the electrical field of the pulse
+      const double pulseDuration;
+
       //Pointer to the Hamiltonian --> constructed and destructed outside of this class
       const Hamiltonian * Ham;
 

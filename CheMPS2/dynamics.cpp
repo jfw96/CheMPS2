@@ -132,7 +132,7 @@ bool file_exists( const string filename, const string tag ){
    struct stat file_info;
    const bool on_disk = (( filename.length() > 0 ) && ( stat( filename.c_str(), &file_info ) == 0 ));
    if (( on_disk == false ) && ( am_i_master )){
-      cerr << "Unable to retrieve file " << filename << "!" << endl;
+      cerr << "Unable to retrieve file " << filename << "!" << endl; //FIXME: couts "Unable to retrieve file " << filename << "!", "Invalid option for " << "FCIDUMP" << "!" when tag is set to "EXT_POTENTIAL_FCIDUMP"
       cerr << "Invalid option for " << tag << "!" << endl;
    }
    return on_disk;
@@ -315,126 +315,149 @@ void print_help(){
 * The following is copied directly from chemps2.1 *
 **************************************************/
 
-           "   SYMMETRY\n"
-           "       Conventions for the symmetry group and irrep numbers (same as psi4):\n"
-           "\n"
-           "                        |  0    1    2    3    4    5    6    7\n"
-           "               ---------|-----------------------------------------\n"
-           "               0 : c1   |  A\n"
-           "               1 : ci   |  Ag   Au\n"
-           "               2 : c2   |  A    B\n"
-           "               3 : cs   |  Ap   App\n"
-           "               4 : d2   |  A    B1   B2   B3\n"
-           "               5 : c2v  |  A1   A2   B1   B2\n"
-           "               6 : c2h  |  Ag   Bg   Au   Bu\n"
-           "               7 : d2h  |  Ag   B1g  B2g  B3g  Au   B1u  B2u  B3u\n"
-           "\n"
-           "   ARGUMENTS\n"
-           "       -f, --file=inputfile\n"
-           "              Specify the input file.\n"
-           "\n"
-           "       -v, --version\n"
-           "              Print the version of chemps2.\n"
-           "\n"
-           "       -h, --help\n"
-           "              Display this help.\n"
-           "\n"
-           "   INPUT FILE\n"
-           "       FCIDUMP = /path/to/fcidump\n"
-           "              Note that orbital irreps in the FCIDUMP file follow molpro convention!\n"
-           "\n"
-           "       GROUP = int\n"
-           "              Set the psi4 symmetry group number [0-7] which corresponds to the FCIDUMP file.\n"
-           "\n"
-           "       MULTIPLICITY = int\n"
-           "              Overwrite the spin multiplicity [2S+1] of the FCIDUMP file.\n"
-           "\n"
-           "       NELECTRONS = int\n"
-           "              Overwrite the number of electrons of the FCIDUMP file.\n"
-           "\n"
-           "       IRREP = int\n"
-           "              Overwrite the target wavefunction irrep [0-7] of the FCIDUMP file (psi4 convention).\n"
-           "\n"
-           "       SWEEP_STATES = int, int, int\n"
-           "              Set the number of reduced renormalized basis states for the successive sweep instructions (positive integers).\n"
-           "\n"
-           "       SWEEP_MAX_SWEEPS = int, int, int\n"
-           "              Set the maximum number of sweeps for the successive sweep instructions (positive integers).\n"
-           "\n"
-           "       SWEEP_NOISE_PREFAC = flt, flt, flt\n"
-           "              Set the noise prefactors for the successive sweep instructions (floats).\n"
-           "\n"
-           "       SWEEP_CUTOFF = flt, flt, flt\n"
-           "              Set the cut off parameter for the Krylov space generation (positive floats).\n"
-           "\n"
-           "       REORDER_FIEDLER = bool\n"
-           "              When all orbitals are active orbitals, switch on orbital reordering based on the Fiedler vector of the exchange matrix (TRUE or FALSE; default FALSE).\n"
-           "\n"
-           "       REORDER_ORDER = int, int, int, int\n"
-           "              When all orbitals are active orbitals, provide a custom orbital reordering (default unspecified). When specified, this option takes precedence over REORDER_ORDER.\n"
-           "\n"
-           "       TIME_TYPE = char\n"
-           "              Set the type of time evolution calculation to be performed. Options are (K) for Krylov (default), (R) for Runge-Kutta, (E) for Euler, and (F) for FCI.\n"
-           "\n"
-           "       TIME_STEP_MAJOR = flt\n"
-           "              Set the time step (DT) for wave function analysis (positive float).\n"
-           "\n"
-           "       TIME_STEP_MINOR = flt\n"
-           "              Set the time step (DT) for the time evolution calculation (positive float).\n"
-           "\n"
-           "       TIME_FINAL = flt\n"
-           "              Set the final time for the time evolution calculation (positive float). \n"
-           "\n"
-           "       TIME_NINIT = int, int, int\n"
-           "              Set the occupation numbers for the inital state. Ordered as in the FCIDUMP file. (positive integers).\n"
-           "\n"
-           "       TIME_2_NINIT = int, int, int\n"
-           "              Set the occupation numbers of a second state that is supposed with the first. Ordered as in the FCIDUMP file. (positive integers).\n"
-           "\n"
-           "       TIME_NINIT_PREFACS = flt\n"
-           "              Set the prefactors of the states specificed by TIME_NINIT and TIME_2_NINIT (Default 1.0). (flt).\n"
-           "\n"
-           "       TIME_INIT = /path/to/inital/state\n"
-           "              Set to load the inital state from HDF5 file.\n"
-           "\n"
-           "       TIME_HF_STATE = int, int, int\n"
-           "              Set the occupation numbers for the corresponding Hartree-Fock state inital state.\n"
-           "\n"
-           "       TIME_N_WEIGHTS = int\n"
-           "              Set the numbers of CI-weights to be calculated (default 0).\n"
-           "\n"
-           "       TIME_N_MAX = int, int, int, int\n"
-           "              Set the maximum number of electrons for all sites in Hamiltonian order ( default 2, 2, 2, .... ).\n"
-           "\n"
-           "       TIME_N_MIN = int, int, int, int\n"
-           "              Set the minimum number of electrons for all sites in Hamiltonian order ( default 0, 0, 0, .... ).\n"
-           "\n"
-           "       TIME_KRYSIZE = int\n"
-           "              Set the maximum Krylov space dimension of a time propagation step.\n"
-           "\n"
-           "       TIME_HDF5OUTPUT = /path/to/hdf5/destination\n"
-           "              Set the file path for the HDF5 output when specified (default unspecified).\n"
-           "\n"
-           "       TIME_BACKWARD = bool\n"
-           "              Set if the time evolution is forward or backward (default FALSE).\n"
-           "\n"
-           "       TIME_DUMPFCI = bool\n"
-           "              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
-           "\n"
-           "       TIME_DUMPCIDC = bool\n"
+"   SYMMETRY\n"
+"       Conventions for the symmetry group and irrep numbers (same as psi4):\n"
+"\n"
+"                        |  0    1    2    3    4    5    6    7\n"
+"               ---------|-----------------------------------------\n"
+"               0 : c1   |  A\n"
+"               1 : ci   |  Ag   Au\n"
+"               2 : c2   |  A    B\n"
+"               3 : cs   |  Ap   App\n"
+"               4 : d2   |  A    B1   B2   B3\n"
+"               5 : c2v  |  A1   A2   B1   B2\n"
+"               6 : c2h  |  Ag   Bg   Au   Bu\n"
+"               7 : d2h  |  Ag   B1g  B2g  B3g  Au   B1u  B2u  B3u\n"
+"\n"
+"   ARGUMENTS\n"
+"       -f, --file=inputfile\n"
+"              Specify the input file.\n"
+"\n"
+"       -v, --version\n"
+"              Print the version of chemps2.\n"
+"\n"
+"       -h, --help\n"
+"              Display this help.\n"
+"\n"
+"   INPUT FILE\n"
+"       FCIDUMP = /path/to/fcidump\n"
+"              Note that orbital irreps in the FCIDUMP file follow molpro convention!\n"
+"\n"
+"       GROUP = int\n"
+"              Set the psi4 symmetry group number [0-7] which corresponds to the FCIDUMP file.\n"
+"              Only has affect if EXT_POTENTIAL_IS_TIME_DEPENDANT is FALSE (default FALSE).\n"
+"              If EXT_POTENTIAL_IS_TIME_DEPENDANT is FALSE it is treated like GROUP = 0.\n"
+"\n"
+"       MULTIPLICITY = int\n"
+"              Overwrite the spin multiplicity [2S+1] of the FCIDUMP file.\n"
+"\n"
+"       NELECTRONS = int\n"
+"              Overwrite the number of electrons of the FCIDUMP file.\n"
+"\n"
+"       IRREP = int\n"
+"              Overwrite the target wavefunction irrep [0-7] of the FCIDUMP file (psi4 convention).\n"
+"\n"
+"       SWEEP_STATES = int, int, int\n"
+"              Set the number of reduced renormalized basis states for the successive sweep instructions (positive integers).\n"
+"\n"
+"       SWEEP_MAX_SWEEPS = int, int, int\n"
+"              Set the maximum number of sweeps for the successive sweep instructions (positive integers).\n"
+"\n"
+"       SWEEP_NOISE_PREFAC = flt, flt, flt\n"
+"              Set the noise prefactors for the successive sweep instructions (floats).\n"
+"\n"
+"       SWEEP_CUTOFF = flt, flt, flt\n"
+"              Set the cut off parameter for the Krylov space generation (positive floats).\n"
+"\n"
+"       REORDER_FIEDLER = bool\n"
+"              When all orbitals are active orbitals, switch on orbital reordering based on the Fiedler vector of the exchange matrix (TRUE or FALSE; default FALSE).\n"
+"\n"
+"       REORDER_ORDER = int, int, int, int\n"
+"              When all orbitals are active orbitals, provide a custom orbital reordering (default unspecified). When specified, this option takes precedence over REORDER_ORDER.\n"
+"\n"
+"       TIME_TYPE = char\n"
+"              Set the type of time evolution calculation to be performed. Options are (K) for Krylov (default), (R) for Runge-Kutta, (E) for Euler, and (F) for FCI.\n"
+"\n"
+"       TIME_STEP_MAJOR = flt\n"
+"              Set the time step (DT) for wave function analysis (positive float).\n"
+"\n"
+"       TIME_STEP_MINOR = flt\n"
+"              Set the time step (DT) for the time evolution calculation (positive float).\n"
+"\n"
+"       TIME_FINAL = flt\n"
+"              Set the final time for the time evolution calculation (positive float). \n"
+"\n"
+"       TIME_NINIT = int, int, int\n"
+"              Set the occupation numbers for the inital state. Ordered as in the FCIDUMP file. (positive integers).\n"
+"\n"
+"       TIME_2_NINIT = int, int, int\n"
+"              Set the occupation numbers of a second state that is supposed with the first. Ordered as in the FCIDUMP file. (positive integers).\n"
+"\n"
+"       TIME_NINIT_PREFACS = flt\n"
+"              Set the prefactors of the states specificed by TIME_NINIT and TIME_2_NINIT (Default 1.0). (flt).\n"
+"\n"
+"       TIME_INIT = /path/to/inital/state\n"
+"              Set to load the inital state from HDF5 file.\n"
+"\n"
+"       TIME_HF_STATE = int, int, int\n"
+"              Set the occupation numbers for the corresponding Hartree-Fock state inital state.\n"
+"\n"
+"       TIME_N_WEIGHTS = int\n"
+"              Set the numbers of CI-weights to be calculated (default 0).\n"
+"\n"
+"       TIME_N_MAX = int, int, int, int\n"
+"              Set the maximum number of electrons for all sites in Hamiltonian order ( default 2, 2, 2, .... ).\n"
+"\n"
+"       TIME_N_MIN = int, int, int, int\n"
+"              Set the minimum number of electrons for all sites in Hamiltonian order ( default 0, 0, 0, .... ).\n"
+"\n"
+"       TIME_KRYSIZE = int\n"
+"              Set the maximum Krylov space dimension of a time propagation step.\n"
+"\n"
+"       TIME_HDF5OUTPUT = /path/to/hdf5/destination\n"
+"              Set the file path for the HDF5 output when specified (default unspecified).\n"
+"\n"
+"       TIME_BACKWARD = bool\n"
+"              Set if the time evolution is forward or backward (default FALSE).\n"
+"\n"
+"       TIME_DUMPFCI = bool\n"
+"              Set if the FCI coefficients are dumped into the HDF5 file. Only has affect if TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
+"\n"
+"       TIME_DUMPCIDC = bool\n"
            "              Set if the CI double coefficients (CIDC) are dumped into the HDF5 file. Only has affect if TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
            "\n"
            "       TIME_STEP_DUMPCMPS = double\n"
            "              Set the time step (DT) for dumping the MPS coefficients into HDF5 file. If set to 0.0, nothing would be dumped. (default 0.0).\n"
            "\n"
-           "       TIME_DUMP2RDM = bool\n"
-           "              Set if the 2RDM is dumped into the HDF5 file. Only has affect if TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
-           "\n"
-           "       TIME_OFFSET = double\n"
-           "              Set the time offset used for the dynamics calculation. (default 0.0).\n"
-           "\n"
-           " "
-        << endl;
+"       TIME_DUMP2RDM = bool\n"
+"              Set if the 2RDM is dumped into the HDF5 file. Only has affect if TIME_HDF5OUTPUT is specified (TRUE or FALSE; default FALSE).\n"
+"\n"
+"       TIME_OFFSET = double\n"
+"              Set the time offset used for the dynamics calculation. (default 0.0).\n"
+"\n"
+"       TIME_ENERGY_OFFSET = double\n"
+"              Set the energy offset used for the dynamics calculation. (default 0.0).\n"
+"\n"
+"       PULSE_APPLY = bool\n"
+"              Set if the external potential is time dependent (TRUE or FALSE; default FALSE). If true all PULSE_* options are mandatory.\n"
+"\n"
+"       PULSE_1E_MX_EL = /path/to/dipole/matrix/elements\n"
+"              One electron integrals that corresponds to the electical pulse (dipole matrix elements) in fcidump format. Note that orbital irreps in the PULSE_1E_MX_EL file follow molpro convention!\n"
+"              Only has affect if PULSE_APPLY is TRUE (default FALSE).\n"
+"\n"
+"       PULSE_ENVELOP = char ('A','B','C','D','Z')\n"
+"              Specify the envelop of the electrical pulse. TODO: as soon as dipole matrix elements are calculated with pyscf: add final names and formulas here\n"
+"\n"
+"       PULSE_AMPLITUDE = double \n"
+"              Specify the amplitude of electric field strength for the pulse.\n"
+"\n"
+"       PULSE_FREQUENCY = double \n"
+"              Specify the frequency of electric field for the pulse.\n"
+"\n"
+"       PULSE_DURATION = double \n"
+"              Specify the time of exposure for the electrical field.\n"
+" "
+<< endl; 
 }
 
 int main( int argc, char ** argv ){
@@ -484,6 +507,17 @@ int main( int argc, char ** argv ){
    double time_energy_offset = 0.0;
    double time_offset        = 0.0;    
 
+   bool apply_pulse           = false;
+   string pulse_fcidump       = ""; // path to file
+   char pulse_envelop         = 'Z';
+   double pulse_amplitude     = 0.0;
+   double pulse_frequency     = 0.0;
+   double pulse_duration      = 0.0;
+
+   // metainfos: pulse_fcidump
+   int ext_pot_norb  = -1;
+   int ext_pot_nelec = -1;
+
    struct option long_options[] =
    {
       {"file",    required_argument, 0, 'f'},
@@ -511,7 +545,6 @@ int main( int argc, char ** argv ){
             break;
       }
    }
-
    if ( inputfile.length() == 0 ){
       cerr << "The input file should be specified!" << endl;
       return -1;
@@ -522,6 +555,13 @@ int main( int argc, char ** argv ){
    while ( input.eof() == false ){
 
       getline( input, line );
+
+      if ( line.find( "PULSE_1E_MX_EL" ) != string::npos ){
+         const int pos = line.find( "=" ) + 1;
+         pulse_fcidump = line.substr( pos, line.length() - pos );
+         pulse_fcidump.erase( remove( pulse_fcidump.begin(), pulse_fcidump.end(), ' ' ), pulse_fcidump.end() );
+         if ( file_exists( pulse_fcidump, "PULSE_1E_MX_EL" ) == false ){ return -1; }
+      }
 
       if ( line.find( "FCIDUMP" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
@@ -549,20 +589,27 @@ int main( int argc, char ** argv ){
       if ( find_integer( &irrep,        line, "IRREP",        true, 0, true,   7 ) == false ){ return -1; }
 
       char options1[] = { 'K', 'R', 'E', 'F' };
-      if ( find_character( &time_type,        line, "TIME_TYPE",        options1, 4 ) == false ){ return -1; }
 
-      if ( find_boolean( &reorder_fiedler,  line, "REORDER_FIEDLER"   ) == false ){ return -1; }
-      if ( find_boolean( &time_backward,    line, "TIME_BACKWARD"     ) == false ){ return -1; }
-      if ( find_boolean( &time_ortho,       line, "TIME_ORTHO"        ) == false ){ return -1; }
-      if ( find_boolean( &time_dumpfci,     line, "TIME_DUMPFCI"      ) == false ){ return -1; }
-      if ( find_boolean( &time_dump2rdm,    line, "TIME_DUMP2RDM"     ) == false ){ return -1; }
+      if ( find_character( &time_type,     line, "TIME_TYPE",     options1, 4 ) == false ){ return -1; }
+      
+      if ( find_boolean( &reorder_fiedler,        line, "REORDER_FIEDLER"        ) == false ){ return -1; }
+      if ( find_boolean( &time_backward,          line, "TIME_BACKWARD"          ) == false ){ return -1; }
+      if ( find_boolean( &time_ortho,             line, "TIME_ORTHO"             ) == false ){ return -1; }
+      if ( find_boolean( &time_dumpfci,           line, "TIME_DUMPFCI"           ) == false ){ return -1; }
+      if ( find_boolean( &time_dump2rdm,          line, "TIME_DUMP2RDM"          ) == false ){ return -1; }
+
+      if ( find_boolean( &cisd,             line, "CISD"              ) == false ){ return -1; }
       if ( find_boolean( &time_dumpcidc,    line, "TIME_DUMPCIDC"     ) == false ){ return -1; } 
-       if ( find_boolean( &cisd,             line, "CISD"              ) == false ){ return -1; }
-
+   
       if ( find_double( &time_step_dumpcmps, line, "TIME_STEP_DUMPCMPS", false, 0.0 ) == false ){ return -1; } 
       if ( find_double( &time_energy_offset, line, "TIME_ENERGY_OFFSET", false, 0.0 ) == false ){ return -1; }
       if ( find_double( &time_offset, line, "TIME_OFFSET", false, 0.0 ) == false ){ return -1; }  
 
+      // pulse options
+      if ( find_boolean( &apply_pulse,            line, "PULSE_APPLY" ) == false ){ return -1; }
+      char options2[] = { 'A', 'B', 'C', 'D', 'Z' }; // pulse: shape of envelop
+      if ( find_character( &pulse_envelop, line, "PULSE_ENVELOP", options2, 5 ) == false ){            }
+      
       if ( line.find( "SWEEP_STATES" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
          sweep_states = line.substr( pos, line.length() - pos );
@@ -637,6 +684,18 @@ int main( int argc, char ** argv ){
       if ( line.find( "TIME_N_WEIGHTS" ) != string::npos ){
          find_integer( &time_n_weights, line, "TIME_N_WEIGHTS", true, 1, false, -1 );
       }
+
+      if ( line.find( "PULSE_AMPLITUDE" ) != string::npos ){
+         find_double( &pulse_amplitude, line, "PULSE_AMPLITUDE", false, -100000 );
+      }
+
+      if ( line.find( "PULSE_FREQUENCY" ) != string::npos ){
+         find_double( &pulse_frequency, line, "PULSE_FREQUENCY", true, 0.0 );
+      }
+
+      if ( line.find( "PULSE_DURATION" ) != string::npos ){
+         find_double( &pulse_duration, line, "PULSE_DURATION", true, 0.0 );
+      }
    }
    input.close();
 
@@ -644,10 +703,11 @@ int main( int argc, char ** argv ){
    *  Check the target symmetry  *
    *******************************/
 
-   if ( group == -1 ){
+   if ( group == -1 ){ 
       cerr << "GROUP is a mandatory option!" << endl; 
       return -1;
    }
+
    CheMPS2::Irreps Symmhelper( group );
    const int num_irreps = Symmhelper.getNumberOfIrreps();
 
@@ -660,11 +720,13 @@ int main( int argc, char ** argv ){
       string line;
       int pos, pos2;
       getline( thefcidump, line ); // &FCI NORB= X,NELEC= Y,MS2= Z,
+      // Check if file is an fcidump
       pos = line.find( "FCI" );
       if ( pos == string::npos ){
          cerr << "The file " << fcidump << " is not a fcidump file!" << endl; 
          return -1;
       }
+
       pos = line.find( "NORB"  ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
       fcidump_norb = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
       pos = line.find( "NELEC" ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
@@ -687,10 +749,85 @@ int main( int argc, char ** argv ){
       }
       delete [] psi2molpro;
    }
+
    if ( multiplicity == -1 ){ multiplicity = fcidump_two_s + 1; }
    if ( nelectrons   == -1 ){   nelectrons = fcidump_nelec;     }
    if ( irrep        == -1 ){        irrep = fcidump_irrep;     }
 
+   
+   if (apply_pulse)
+   {     
+
+      /***************************************************
+      * Compare properties of fcidump and pulse_fcidump  * 
+      ***************************************************/
+
+      // In generall the symmetry is lost in this case, since there is an (possibly time dependant) external field 
+      group = 0;
+      
+      // properties to be read from the external potential
+      int pulse_fcidump_norb  = -1;
+      int pulse_fcidump_nelec = -1;
+
+      // read fcidump-file that contains the one electron dipole matrix elements 
+      {
+         ifstream thePulseFcidump( pulse_fcidump.c_str() );
+         string line;
+         int pos, pos2;
+         getline( thePulseFcidump, line ); // &FCI NORB= X,NELEC= Y,MS2= Z,
+         
+         // Check if thePulseFcidump is an fcidump file
+         pos = line.find( "FCI" );
+         if ( pos == string::npos ){
+            cerr << "The file " << pulse_fcidump << " is not a fcidump file!" << endl;
+            return -1;
+         }
+
+         pos = line.find( "NORB"  ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
+         pulse_fcidump_norb = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
+
+         pos = line.find( "NELEC" ); pos = line.find( "=", pos ); pos2 = line.find( ",", pos );
+         pulse_fcidump_nelec = atoi( line.substr( pos+1, pos2-pos-1 ).c_str() );
+
+         thePulseFcidump.close();
+      }
+
+      //put values into variables
+      if ( ext_pot_norb  == -1 ){ext_pot_norb  = pulse_fcidump_norb;}
+      if ( ext_pot_nelec == -1 ){ext_pot_nelec = pulse_fcidump_nelec;}
+
+      if ( nelectrons   != pulse_fcidump_nelec)
+      {
+         cerr << "Inconsistent Input Execption!\n"
+            << "The number of electrons specified in the file "
+            << fcidump
+            << "is " 
+            << nelectrons
+            << ".\n"
+            << "The number of electrons specified in the file "
+            << pulse_fcidump
+            << "is "
+            << pulse_fcidump_nelec
+            << "\nThese to files must have the same number of electrons!"<< endl; 
+            return -1;
+      }
+      if ( fcidump_norb != pulse_fcidump_norb)
+      {
+         cerr << "Inconsistent Input Execption!\n"
+            << "The number of orbitals specified in the the file "
+            << fcidump
+            << "is " 
+            << fcidump_norb
+            << ".\n"
+            << "The number of orbitals specified in the file "
+            << pulse_fcidump
+            << "is "
+            << pulse_fcidump_norb
+            << "\nThese to files must have the same number of orbitals!"<< endl; 
+            return -1;
+      }
+   }
+   
    /*********************************
    *  Check the sweep instructions  *
    **********************************/
@@ -700,7 +837,7 @@ int main( int argc, char ** argv ){
       return -1;
    }
 
-   const int ni_d      = count( sweep_states.begin(), sweep_states.end(), ',' ) + 1;
+   const int ni_d      = count( sweep_states.begin(), sweep_states.end(), ',' ) + 1; // ni_d : the number of reduced renormalized basis states for the successive sweep instructions (positive integers)
    const int ni_maxit  = count( sweep_maxit.begin(),  sweep_maxit.end(),  ',' ) + 1;
    const int ni_noise  = count( sweep_noise.begin(),  sweep_noise.end(),  ',' ) + 1;
    const int ni_cutoff = count( sweep_cutoff.begin(), sweep_cutoff.end(), ',' ) + 1;
@@ -926,6 +1063,31 @@ int main( int argc, char ** argv ){
       }
    }
 
+   /**************************
+   *  Parse pulse properties *
+   ***************************/
+   
+   if( apply_pulse )
+   {
+      if ( pulse_frequency <= 0.0 )
+      {
+      cerr << "PULSE_FREQUENCY should be greater than zero !" << endl;
+      return -1;
+      }
+
+      if ( time_step_minor >= (1 / pulse_frequency ) )
+      {
+         cerr << "TIME_STEP_MINOR should be smaller than than 1 / PULSE_FREQUENCY !" << endl;
+         return -1;
+      }
+
+      if ( pulse_duration < 0.0 )
+      {
+         cerr << "PULSE_DURATION should be greater or equal to zero !" << endl;
+         return -1;
+      }
+   }
+
    /**********************
    *  Print the options  *
    ***********************/
@@ -944,7 +1106,7 @@ int main( int argc, char ** argv ){
       cout << "   REORDER_ORDER      = [ " << dmrg2ham[ 0 ]; for ( int cnt = 1; cnt < fcidump_norb; cnt++ ){ cout << " ; " << dmrg2ham[ cnt ]; } cout << " ]" << endl;
    } else {
       cout << "   REORDER_FIEDLER    = " << (( reorder_fiedler ) ? "TRUE" : "FALSE" ) << endl;
-   }   
+   }
    cout << "   TIME_TYPE          = " << time_type << endl;
    cout << "   TIME_STEP_MAJOR    = " << time_step_major << endl;
    cout << "   TIME_STEP_MINOR    = " << time_step_minor << endl;
@@ -972,16 +1134,37 @@ int main( int argc, char ** argv ){
    cout << "   TIME_DUMPCIDC      = " << ((time_dumpcidc) ? "TRUE" : "FALSE") << endl;
    cout << "   TIME_STEP_DUMPCMPS = " << time_step_dumpcmps                        << endl;
    cout << "   TIME_ENERGY_OFFSET = " << time_energy_offset                        << endl;
+
    cout << "   TIME_OFFSET        = " << time_offset                               << endl;
    cout << "   CISD               = " << (( cisd            ) ? "TRUE" : "FALSE" ) << endl;
+
+   if ( apply_pulse ) {
+      cout << "\nExpose the molecule to a short electrical pulse with the following properties\n" << endl;
+      cout << "   PULSE_1E_MX_EL  = " << pulse_fcidump       << "\n";
+      cout << "   PULSE_ENVELOP   = " << pulse_envelop       << "\n";
+      cout << "   PULSE_AMPLITUDE = " << pulse_amplitude     << "\n";
+      cout << "   PULSE_FREQUENCY = " << pulse_frequency     << "\n";
+      cout << "   PULSE_DURATION  = " << pulse_duration      << "\n";
+      cout << "\n";
+   }
+
    cout << " " << endl;
+
 
    /********************************
    *  Running the DMRG calculation *
    ********************************/
 
    CheMPS2::Initialize::Init();
-   CheMPS2::Hamiltonian * ham = new CheMPS2::Hamiltonian( fcidump, group );
+
+   // create hamiltonian based on the given fcidump-files
+   CheMPS2::Hamiltonian * ham;
+   if( apply_pulse ){
+      ham = new CheMPS2::Hamiltonian( fcidump, pulse_fcidump, group );
+   } else {
+      ham = new CheMPS2::Hamiltonian( fcidump, group );
+   }
+   
    CheMPS2::ConvergenceScheme * opt_scheme = new CheMPS2::ConvergenceScheme( ni_d );
    for ( int count = 0; count < ni_d; count++ ){
       opt_scheme->set_instruction( count, value_states[ count ],
@@ -994,12 +1177,28 @@ int main( int argc, char ** argv ){
    delete [] value_cutoff;
    delete [] value_maxit;
    delete [] value_noise;
+      
 
-   CheMPS2::Problem * prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
-   //if( time_n_max.length() > 0 ) { prob->setup_occu_max( time_n_max_parsed ); }
-   //if( time_n_min.length() > 0 ) { prob->setup_occu_min( time_n_min_parsed ); }
+   CheMPS2::Problem * prob;
+   if ( apply_pulse ) {
+      prob = new CheMPS2::Problem( ham,
+                                   multiplicity - 1,
+                                   nelectrons,
+                                   irrep,
+                                   pulse_envelop,
+                                   pulse_duration,
+                                   pulse_amplitude,
+                                   pulse_frequency );
+   }
+   else
+   {
+      prob = new CheMPS2::Problem( ham, multiplicity - 1, nelectrons, irrep );
+   }
+   
+
    if( time_n_min.length() > 0 && time_n_max.length() > 0 ) { prob->setup_occus( time_n_min_parsed, time_n_max_parsed );}
-   if( cisd == true ) { prob->setup_singles_doubles( time_hf_state_parsed ); }
+   if( cisd ) { prob->setup_singles_doubles( time_hf_state_parsed ); }
+
    /***********************************
    *  Reorder the orbitals if desired *
    ***********************************/
@@ -1127,5 +1326,4 @@ int main( int argc, char ** argv ){
    delete [] time_n_min_parsed;
    delete [] time_n_max_parsed;
    return 0;
-
 }
