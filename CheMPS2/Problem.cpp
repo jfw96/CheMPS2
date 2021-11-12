@@ -429,7 +429,7 @@ void CheMPS2::Problem::construct_mxelem( const double phyTime ) {
 double CheMPS2::Problem::calcDipolePrefactor( const double phyTime ) const {
    double result = 0.0;
 
-   if ( !applyPulse || phyTime >= pulseDuration ) {
+   if ( !applyPulse ) {
       result = 0.0;
    }
    else
@@ -467,7 +467,6 @@ double CheMPS2::Problem::calcDipolePrefactor( const double phyTime ) const {
       result = envelop; //* plain_wave;
    }
    //std::cout << result << " " << pulseDuration << std::endl;
-   cout << "dipolprefactor: " << result << " at time: " << phyTime << endl;
    return result;
 }
 

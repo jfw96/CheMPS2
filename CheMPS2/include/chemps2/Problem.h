@@ -180,10 +180,11 @@ namespace CheMPS2 {
 
       int gNmin ( int boundary ) const;
 
-      private:
-
       // Calculate the time dependant prefactor for the dipole one electron integrals
       double calcDipolePrefactor( const double phyTime ) const;
+      
+      private:
+
       
       // helper for calcDipolePrefactor. Returns value of the gaussian function for an given double
       double gaussian( const double variable, const double mean, const double std ) const;

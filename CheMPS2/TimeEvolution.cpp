@@ -1160,6 +1160,8 @@ void CheMPS2::TimeEvolution::Propagate( const char time_type, const double time_
                std::cout << "\nUpdate Hamiltonian ( t = " << currentTime << " )\n" << std::endl;
                
                prob->construct_mxelem( currentTime );
+               double gaussian = prob->calcDipolePrefactor(currentTime);
+               std::cout << "gaussian: " << gaussian  << "\n" << std::endl;
             }
 
             SyBookkeeper * MPSBKDT = new SyBookkeeper( *MPSBK );
