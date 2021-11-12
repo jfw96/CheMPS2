@@ -445,7 +445,7 @@ void print_help(){
 "              One electron integrals that corresponds to the electical pulse (dipole matrix elements) in fcidump format. Note that orbital irreps in the PULSE_1E_MX_EL file follow molpro convention!\n"
 "              Only has affect if PULSE_APPLY is TRUE (default FALSE).\n"
 "\n"
-"       PULSE_ENVELOP = char ('A','B','C','D','Z')\n"
+"       PULSE_ENVELOP = char ('A','B','C','D', 'G','Z')\n"
 "              Specify the envelop of the electrical pulse. TODO: as soon as dipole matrix elements are calculated with pyscf: add final names and formulas here\n"
 "\n"
 "       PULSE_AMPLITUDE = double \n"
@@ -454,8 +454,11 @@ void print_help(){
 "       PULSE_FREQUENCY = double \n"
 "              Specify the frequency of electric field for the pulse.\n"
 "\n"
+"       PULSE_START_TIME = double \n"
+"              Is the time at which the puls appears. The mean of the gaussian puls is PULSE_START_TIME + 4 PULSE_DURATION. For other pulses mean is PULSE_DURATION/2.\n"
+"\n"
 "       PULSE_DURATION = double \n"
-"              Specify the time of exposure for the electrical field.\n"
+"              Specify the time of exposure for the electrical field. If PULSE_ENVELOP ='G' (gaussian puls) then PULSE_DURATION is the standard deviation of the gaussian envelop.\n"
 " "
 << endl; 
 }
@@ -513,6 +516,7 @@ int main( int argc, char ** argv ){
    double pulse_amplitude     = 0.0;
    double pulse_frequency     = 0.0;
    double pulse_duration      = 0.0;
+   double pulse_time_start    = 0.0;
 
    // metainfos: pulse_fcidump
    int ext_pot_norb  = -1;
@@ -695,6 +699,10 @@ int main( int argc, char ** argv ){
 
       if ( line.find( "PULSE_DURATION" ) != string::npos ){
          find_double( &pulse_duration, line, "PULSE_DURATION", true, 0.0 );
+      }
+
+      if ( line.find( "PULSE_START_TIME" ) != string::npos ){
+         find_double( &pulse_time_start, line, "PULSE_START_TIME", true, 0.0 );
       }
    }
    input.close();
@@ -1086,6 +1094,12 @@ int main( int argc, char ** argv ){
          cerr << "PULSE_DURATION should be greater or equal to zero !" << endl;
          return -1;
       }
+
+      if ( pulse_time_start < 0.0 )
+      {
+         cerr << "PULSE_START_TIME should be greater or equal to zero !" << endl;
+         return -1;
+      }
    }
 
    /**********************
@@ -1140,11 +1154,12 @@ int main( int argc, char ** argv ){
 
    if ( apply_pulse ) {
       cout << "\nExpose the molecule to a short electrical pulse with the following properties\n" << endl;
-      cout << "   PULSE_1E_MX_EL  = " << pulse_fcidump       << "\n";
-      cout << "   PULSE_ENVELOP   = " << pulse_envelop       << "\n";
-      cout << "   PULSE_AMPLITUDE = " << pulse_amplitude     << "\n";
-      cout << "   PULSE_FREQUENCY = " << pulse_frequency     << "\n";
-      cout << "   PULSE_DURATION  = " << pulse_duration      << "\n";
+      cout << "   PULSE_1E_MX_EL    = " << pulse_fcidump       << "\n";
+      cout << "   PULSE_ENVELOP     = " << pulse_envelop       << "\n";
+      cout << "   PULSE_AMPLITUDE   = " << pulse_amplitude     << "\n";
+      cout << "   PULSE_FREQUENCY   = " << pulse_frequency     << "\n";
+      cout << "   PULSE_DURATION    = " << pulse_duration      << "\n";
+      cout << "   PULSE_START_TIME  = " << pulse_time_start    << "\n";
       cout << "\n";
    }
 
@@ -1188,7 +1203,8 @@ int main( int argc, char ** argv ){
                                    pulse_envelop,
                                    pulse_duration,
                                    pulse_amplitude,
-                                   pulse_frequency );
+                                   pulse_frequency,
+                                   pulse_time_start );
    }
    else
    {

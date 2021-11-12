@@ -47,6 +47,7 @@ CheMPS2::Problem::Problem( const Hamiltonian * Hamin,
                            , pulseAmplitude( 0.0         )
                            , pulseFrequency( 0.0         )
                            , pulseDuration ( 0.0         )
+                           , timeStart     ( 0.0         )
                            , pulseEnvelop  ( 'Z'         ) {
    checkConsistency();
 }
@@ -59,6 +60,7 @@ CheMPS2::Problem::Problem( const Hamiltonian * Hamin,
                            const double duration,
                            const double amplitude,
                            const double frequency,
+                           const double timeStart,
                            const int InitialIn )
                            : Ham             ( Hamin       )
                            , L               ( Ham->getL() )
@@ -72,6 +74,7 @@ CheMPS2::Problem::Problem( const Hamiltonian * Hamin,
                            , pulseEnvelop    ( envelop     )
                            , pulseDuration   ( duration    )
                            , pulseAmplitude  ( amplitude   )
+                           , timeStart       ( timeStart   )
                            , pulseFrequency  ( frequency   ) {
    checkConsistency();
 }
@@ -449,6 +452,10 @@ double CheMPS2::Problem::calcDipolePrefactor( const double phyTime ) const {
          case 'D':
             envelop = pulseAmplitude * cos( phyTime * pulseFrequency * 2 * M_PI );
             break;
+         
+         case 'G':
+            envelop = pulseAmplitude * gaussian(phyTime,timeStart+pulseDuration*4,pulseDuration) * sin(2 * M_PI * pulseFrequency * (timeStart + phyTime) );
+            break;
 
          default:
             envelop = 0.0;
@@ -460,15 +467,15 @@ double CheMPS2::Problem::calcDipolePrefactor( const double phyTime ) const {
       result = envelop; //* plain_wave;
    }
    //std::cout << result << " " << pulseDuration << std::endl;
+   cout << "dipolprefactor: " << result << " at time: " << phyTime << endl;
    return result;
 }
 
 double CheMPS2::Problem::gaussian( const double variable, const double mean, const double std ) const {
    double result = 0.0;
 
-   double pre =  1; // set to 1 instead of sqrt( 2 * M_PI ) * std; in order to use the right max amplitude 
    double exponent = - pow( variable - mean, 2 )  /  ( 2 * pow( std, 2 ) );
-   result = exp( exponent ) / pre;
+   result = exp( exponent );
    return result;
 }
 

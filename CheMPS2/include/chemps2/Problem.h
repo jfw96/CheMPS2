@@ -56,18 +56,20 @@ namespace CheMPS2 {
              \param Nin The targeted particle number
              \param Irrepin The targeted irrep  
              \param DtIn The time step for time evoulution
-             \param envelop The amplitude of the electric field of the pulse
-             \param envelop The frequency of the electric field of the pulse
-             \param envelop The duration of the electric field of the pulse
-             \param envelop The envelop type of the electric field of the pulse */
+             \param envelop The envelop type of the electric field of the pulse 
+             \param amplitude The amplitude of the electric field of the pulse
+             \param frequency The frequency of the electric field of the pulse
+             \param duration The duration of the electric field of the pulse
+             \param timeStart The time at which the puls has ists first non zero value */
       Problem( const Hamiltonian * Hamin,
                const int TwoSin,
                const int Nin,
                const int Irrepin,
                const char envelop,
+               const double duration,
                const double amplitude,
                const double frequency,
-               const double duration,
+               const double timeStart,
                const int InitialIn = INIT_RANDOM );
 
       //! Destructor
@@ -200,6 +202,9 @@ namespace CheMPS2 {
 
       // Duration of the electrical field of the pulse
       const double pulseDuration;
+
+      // Starting tme of the pulse
+      const double timeStart;
 
       //Pointer to the Hamiltonian --> constructed and destructed outside of this class
       const Hamiltonian * Ham;
