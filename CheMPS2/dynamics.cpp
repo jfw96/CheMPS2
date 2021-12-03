@@ -459,6 +459,9 @@ void print_help(){
 "\n"
 "       PULSE_DURATION = double \n"
 "              Specify the time of exposure for the electrical field. If PULSE_ENVELOP ='G' (gaussian puls) then PULSE_DURATION is the standard deviation of the gaussian envelop.\n"
+"\n"
+"       PULSE_SYMMETRY_MAINTAINED = bool (TRUE or FALSE)\n"
+"              Controls which symmetry is used. If the pulse receives the symmetry, then this value can be set to TRUE. In this case, the specified group is used. If this parameter takes the value FALSE, then the group 0 is used. Optional, defaults to FALSE.\n"
 " "
 << endl; 
 }
@@ -517,6 +520,8 @@ int main( int argc, char ** argv ){
    double pulse_frequency     = 0.0;
    double pulse_duration      = 0.0;
    double pulse_time_start    = 0.0;
+   bool   pulse_symmetry_maintained = false;
+
 
    // metainfos: pulse_fcidump
    int ext_pot_norb  = -1;
@@ -613,6 +618,8 @@ int main( int argc, char ** argv ){
       if ( find_boolean( &apply_pulse,            line, "PULSE_APPLY" ) == false ){ return -1; }
       char options2[] = { 'A', 'B', 'C', 'D', 'Z' }; // pulse: shape of envelop
       if ( find_character( &pulse_envelop, line, "PULSE_ENVELOP", options2, 5 ) == false ){            }
+      if ( find_boolean( &pulse_symmetry_maintained, line, "PULSE_SYMMETRY_MAINTAINED"    ) == false ){ return -1; }
+
       
       if ( line.find( "SWEEP_STATES" ) != string::npos ){
          const int pos = line.find( "=" ) + 1;
@@ -770,8 +777,11 @@ int main( int argc, char ** argv ){
       * Compare properties of fcidump and pulse_fcidump  * 
       ***************************************************/
 
-      // In generall the symmetry is lost in this case, since there is an (possibly time dependant) external field 
-      group = 0;
+      // In generall the symmetry is lost in this case, since there is an (possibly time dependant) external field
+      if (!pulse_symmetry_maintained)
+      {
+         group = 0;
+      }
       
       // properties to be read from the external potential
       int pulse_fcidump_norb  = -1;
@@ -1154,12 +1164,13 @@ int main( int argc, char ** argv ){
 
    if ( apply_pulse ) {
       cout << "\nExpose the molecule to a short electrical pulse with the following properties\n" << endl;
-      cout << "   PULSE_1E_MX_EL    = " << pulse_fcidump       << "\n";
-      cout << "   PULSE_ENVELOP     = " << pulse_envelop       << "\n";
-      cout << "   PULSE_AMPLITUDE   = " << pulse_amplitude     << "\n";
-      cout << "   PULSE_FREQUENCY   = " << pulse_frequency     << "\n";
-      cout << "   PULSE_DURATION    = " << pulse_duration      << "\n";
-      cout << "   PULSE_START_TIME  = " << pulse_time_start    << "\n";
+      cout << "   PULSE_1E_MX_EL            = " << pulse_fcidump       << "\n";
+      cout << "   PULSE_ENVELOP             = " << pulse_envelop       << "\n";
+      cout << "   PULSE_AMPLITUDE           = " << pulse_amplitude     << "\n";
+      cout << "   PULSE_FREQUENCY           = " << pulse_frequency     << "\n";
+      cout << "   PULSE_DURATION            = " << pulse_duration      << "\n";
+      cout << "   PULSE_START_TIME          = " << pulse_time_start    << "\n";
+      cout << "   PULSE_SYMMETRY_MAINTAINED = " << (( pulse_symmetry_maintained   ) ? "TRUE" : "FALSE" ) << "\n";
       cout << "\n";
    }
 
