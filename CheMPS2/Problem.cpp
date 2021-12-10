@@ -434,39 +434,39 @@ double CheMPS2::Problem::calcDipolePrefactor( const double phyTime ) const {
    }
    else
    {
-      double envelop;
+      double prefactor;
+      double time_final = timeStart + pulseDuration;
       switch ( pulseEnvelop )
       {
-         case 'A':
-            envelop = pulseAmplitude;
+         case 'R': case 'A':  // Rectangle
+            prefactor = ((phyTime <= time_final) && (phyTime >= timeStart)) ? pulseAmplitude : 0.0;
             break;
          
-         case 'B':
-            envelop = pulseAmplitude * sin( phyTime * ( M_PI / pulseDuration ) );
+         case 'G': // Gaussian envelop, sin oscillation
+            prefactor = pulseAmplitude * gaussian(phyTime,timeStart+pulseDuration*4,pulseDuration) * sin(2 * M_PI * pulseFrequency * (timeStart + phyTime) );
             break;
 
-         case 'C':
-            envelop = pulseAmplitude * gaussian( phyTime, pulseDuration / 2, pulseDuration / 6 ) ;
+         case 'C': // Gaussian only
+            prefactor = pulseAmplitude * gaussian(phyTime,timeStart+pulseDuration*4,pulseDuration) ;
+            break;
+
+         case 'B': case 'S': // Sin
+            prefactor = (phyTime <= time_final) ? pulseAmplitude * sin( phyTime * ( M_PI / pulseDuration ) ) : 0.0;
             break;
 
          case 'D':
-            envelop = pulseAmplitude * cos( phyTime * pulseFrequency * 2 * M_PI );
-            break;
-         
-         case 'G':
-            envelop = pulseAmplitude * gaussian(phyTime,timeStart+pulseDuration*4,pulseDuration) * sin(2 * M_PI * pulseFrequency * (timeStart + phyTime) );
+            prefactor = ((phyTime <= time_final) && (phyTime >= timeStart)) ? pulseAmplitude * cos( phyTime * pulseFrequency * 2 * M_PI ) : 0.0;
             break;
 
          default:
-            envelop = 0.0;
+            prefactor = 0.0;
             abort();
             break;
       }
 
-      //double plain_wave = pulseAmplitude * sin ( 2 * M_PI * pulseFrequency * phyTime );
-      result = envelop; //* plain_wave;
+      result = prefactor;
+      cout << "dipolprefactor: " << result << " at time: " << phyTime << endl; // debug cout
    }
-   //std::cout << result << " " << pulseDuration << std::endl;
    return result;
 }
 
