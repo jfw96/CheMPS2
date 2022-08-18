@@ -750,7 +750,7 @@ double CheMPS2::CDensityMatrix::Split( CTensorT * tensor, const int virtualdimen
    delete[] DimLtotal;
    delete[] DimRtotal;
 
-   //    return discardedWeight;
+   return discardedWeight;
 }
 
 // void CheMPS2::CSobject::prog2symm() {
