@@ -204,7 +204,7 @@ namespace CheMPS2 {
       // Duration of the electrical field of the pulse
       const double pulseDuration;
 
-      // Starting tme of the pulse
+      // Starting time of the pulse
       const double timeStart;
 
       //Pointer to the Hamiltonian --> constructed and destructed outside of this class
